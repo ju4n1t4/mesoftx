@@ -1,4 +1,4 @@
-create database if not exists mesoftx_db
+create database if not exists assesment_mesoftx_db
     with 
         owner = postgres
         encoding = 'UTF8'

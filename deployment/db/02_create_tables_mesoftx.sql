@@ -1,2 +1,0 @@
-/connect mesoftx_db;
-

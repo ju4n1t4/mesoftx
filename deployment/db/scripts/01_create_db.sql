@@ -1,15 +1,5 @@
-create database if not exists assesment_mesoftx_db
-    with 
-        owner = postgres
-        encoding = 'UTF8'
-        lc_collate = 'en_US.UTF-8'
-        lc_ctype = 'en_US.UTF-8'
-        template = template0;
+SELECT 'CREATE DATABASE assesment_mesoftx_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'assesment_mesoftx_db')\gexec
 
-create database if not exists users_db
-    with 
-        owner = postgres
-        encoding = 'UTF8'
-        lc_collate = 'en_US.UTF-8'
-        lc_ctype = 'en_US.UTF-8'
-        template = template0;
+SELECT 'CREATE DATABASE users_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'users_db')\gexec

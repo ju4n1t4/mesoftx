@@ -1,4 +1,4 @@
-/connect users_db;
+\connect users_db
 
 create table if not exists roles (
     id serial primary key,
@@ -8,7 +8,7 @@ create table if not exists roles (
 
 create table if not exists years (
     id serial primary key,
-    year number not null unique
+    year integer not null unique
 );
 
 create table if not exists periods (
@@ -21,7 +21,7 @@ create table if not exists academic_periods (
     name varchar(255) not null unique,
     code varchar(25) not null unique,
     period_id integer not null,
-    year_id integer not null,
+    year_id integer not null
 );
 
 create table if not exists faculty (

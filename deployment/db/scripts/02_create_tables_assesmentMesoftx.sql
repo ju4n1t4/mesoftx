@@ -1,4 +1,4 @@
-/connect assesment_mesoftx_db;
+\connect assesment_mesoftx_db
 
 create table if not exists student_outcomes (
     id serial primary key,

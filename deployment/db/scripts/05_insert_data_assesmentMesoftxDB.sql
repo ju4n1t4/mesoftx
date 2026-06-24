@@ -1,4 +1,4 @@
-/connect assesment_mesoftx_db;
+\connect assesment_mesoftx_db
 
 insert into student_outcomes (code, description) 
 values
@@ -7,7 +7,7 @@ values
 ('SO3', 'Habilidad para comunicarse eficazmente con una variedad de audiencias.'),
 ('SO4', 'Habilidad para reconocer responsabilidades éticas y profesionales en situaciones de ingeniería y emitir juicios informados, que deben considerar el impacto de las soluciones de ingeniería en contextos globales, económicos, ambientales y sociales.'),
 ('SO5', 'Habilidad para funcionar eficazmente en un equipo cuyos miembros juntos brindan liderazgo, crean un entorno colaborativo e inclusivo, establecen metas, planifican tareas y cumplen objetivos.'),
-('SO6', 'Habilidad para desarrollar y realizar experimentos apropiados, analizar e interpretar datos y utilizar criterios de ingeniería para sacar conclusiones.')
+('SO6', 'Habilidad para desarrollar y realizar experimentos apropiados, analizar e interpretar datos y utilizar criterios de ingeniería para sacar conclusiones.'),
 ('SO7', 'Habilidad para adquirir y aplicar nuevos conocimientos según sea necesario, utilizando estrategias de aprendizaje adecuadas.');
 
 insert into performance_indicators (code)

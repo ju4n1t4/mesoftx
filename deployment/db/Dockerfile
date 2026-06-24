@@ -5,9 +5,7 @@ LABEL org.opencontainers.image.description="PostgreSQL image initialized with Me
 
 ENV POSTGRES_DB=postgres
 
-COPY scripts /opt/mesoftx-db/scripts
-COPY init/00_init_mesoftx.sh /docker-entrypoint-initdb.d/00_init_mesoftx.sh
+COPY scripts/*.sql /docker-entrypoint-initdb.d/
 
-RUN chown -R postgres:postgres /opt/mesoftx-db /docker-entrypoint-initdb.d/00_init_mesoftx.sh \
-    && chmod 500 /docker-entrypoint-initdb.d/00_init_mesoftx.sh \
-    && chmod -R 400 /opt/mesoftx-db/scripts/*.sql
+RUN chown -R postgres:postgres /docker-entrypoint-initdb.d/*.sql \
+    && chmod 400 /docker-entrypoint-initdb.d/*.sql

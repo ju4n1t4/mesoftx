@@ -37,7 +37,7 @@ select
     'Admin',
     'ADMIN001',
     'admin@example.com',
-    '$2b$12$wPWm3gyFdWkjz0hSxQeAQuH7HBs7hTb7ji6CV5.SNaQ1g4oFEaDQy',
+    '$2b$12$CB7VijJO7m0Yf.YQR5qkT.Dc5AinZo75yIJOsjwLLhXpM5vh4sGK2',
     r.id,
     c.id
 from roles r

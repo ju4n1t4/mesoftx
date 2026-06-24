@@ -1,12 +1,12 @@
-# MesoftX Frontend dependencies
+# Dependencias Del Frontend MesoftX
 
-Install only these Angular runtime and build packages:
+Instalar solamente los paquetes necesarios de Angular para ejecucion y compilacion:
 
 ```bash
 npm install
 ```
 
-Runtime:
+Ejecucion:
 
 ```text
 @angular/common
@@ -20,7 +20,7 @@ tslib
 zone.js
 ```
 
-Build/dev:
+Compilacion y desarrollo:
 
 ```text
 @angular/build
@@ -29,4 +29,4 @@ Build/dev:
 typescript
 ```
 
-No Angular Material, Bootstrap or external UI component library is required.
+No se requiere Angular Material, Bootstrap ni otra libreria externa de componentes visuales.

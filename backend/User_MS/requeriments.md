@@ -1,6 +1,6 @@
-# User_MS Python dependencies
+# Dependencias Python De User_MS
 
-Install only these runtime packages:
+Instalar solamente estos paquetes de ejecucion:
 
 ```bash
 pip install -r requirements.txt

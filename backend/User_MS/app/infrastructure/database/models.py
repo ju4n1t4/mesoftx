@@ -25,7 +25,7 @@ class PeriodModel(Base):
     __tablename__ = "periods"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    period: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    period: Mapped[str] = mapped_column("code", String(2), unique=True, nullable=False)
 
 
 class AcademicPeriodModel(Base):

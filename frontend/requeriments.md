@@ -30,3 +30,5 @@ typescript
 ```
 
 No se requiere Angular Material, Bootstrap ni otra libreria externa de componentes visuales.
+
+El login con Google usa el script oficial de Google Identity Services cargado en runtime desde `https://accounts.google.com/gsi/client`; no requiere paquete npm adicional.

@@ -24,6 +24,12 @@ export class AuthService {
     );
   }
 
+  loginWithGoogle(idToken: string): Observable<TokenResponse> {
+    return this.http.post<TokenResponse>(`${environment.userMsApiUrl}/auth/google`, { id_token: idToken }).pipe(
+      tap((response) => this.setToken(response.access_token))
+    );
+  }
+
   logout(): void {
     sessionStorage.removeItem(TOKEN_KEY);
     this.tokenState.set(null);

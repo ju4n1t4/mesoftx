@@ -23,6 +23,10 @@ class LoginRequest(BaseModel):
         return value.strip().lower()
 
 
+class GoogleLoginRequest(BaseModel):
+    id_token: str = Field(..., min_length=1)
+
+
 class RoleCreate(BaseModel):
     name: str = Field(..., max_length=255)
     description: str | None = None

@@ -9,11 +9,17 @@ export interface ApiError {
 
 export type EntityRecord = Record<string, string | number | boolean | null | undefined | Array<number>>;
 
+export interface ResourceOption {
+  value: string | number;
+  label: string;
+}
+
 export interface ResourceField {
   key: string;
   label: string;
-  type: 'text' | 'number' | 'password' | 'textarea';
+  type: 'text' | 'number' | 'password' | 'textarea' | 'select' | 'multiselect';
   required?: boolean;
+  optionSource?: string;
 }
 
 export interface ResourceConfig {

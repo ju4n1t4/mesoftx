@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Observable, forkJoin } from 'rxjs';
 
-import { EntityRecord, ResourceConfig } from '../../core/models/api.models';
+import { EntityRecord, ResourceConfig, ResourceOption } from '../../core/models/api.models';
 import { UserMsService } from '../../core/services/user-ms.service';
 import { ButtonComponent } from '../../shared/atoms/button/button.component';
 import { CardComponent } from '../../shared/atoms/card/card.component';
@@ -22,17 +23,18 @@ const USER_RESOURCES: ResourceConfig[] = [
       { key: 'code', label: 'Codigo', type: 'text', required: true },
       { key: 'email', label: 'Correo', type: 'text', required: true },
       { key: 'password', label: 'Password', type: 'password' },
-      { key: 'role_id', label: 'Rol ID', type: 'number', required: true },
-      { key: 'career_id', label: 'Carrera ID', type: 'number', required: true }
+      { key: 'role_id', label: 'Rol', type: 'select', required: true, optionSource: 'roles' },
+      { key: 'career_id', label: 'Carrera', type: 'select', required: true, optionSource: 'careers' },
+      { key: 'subject_ids', label: 'Materias', type: 'multiselect', optionSource: 'subjects' }
     ]
   },
   { key: 'roles', title: 'Roles', endpoint: 'roles', fields: [{ key: 'name', label: 'Nombre', type: 'text', required: true }, { key: 'description', label: 'Descripcion', type: 'textarea' }] },
   { key: 'years', title: 'Anios', endpoint: 'years', fields: [{ key: 'year', label: 'Anio', type: 'number', required: true }] },
   { key: 'periods', title: 'Periodos', endpoint: 'periods', fields: [{ key: 'period', label: 'Periodo', type: 'text', required: true }] },
-  { key: 'academic-periods', title: 'Periodos Academicos', endpoint: 'academic-periods', fields: [{ key: 'period_id', label: 'Periodo ID', type: 'number', required: true }, { key: 'year_id', label: 'Anio ID', type: 'number', required: true }, { key: 'name', label: 'Nombre', type: 'text' }, { key: 'code', label: 'Codigo', type: 'text' }] },
+  { key: 'academic-periods', title: 'Periodos Academicos', endpoint: 'academic-periods', fields: [{ key: 'period_id', label: 'Periodo', type: 'select', required: true, optionSource: 'periods' }, { key: 'year_id', label: 'Anio', type: 'select', required: true, optionSource: 'years' }] },
   { key: 'faculty', title: 'Facultades', endpoint: 'faculty', fields: [{ key: 'name', label: 'Nombre', type: 'text', required: true }, { key: 'code', label: 'Codigo', type: 'text', required: true }, { key: 'description', label: 'Descripcion', type: 'textarea' }] },
-  { key: 'careers', title: 'Carreras', endpoint: 'careers', fields: [{ key: 'name', label: 'Nombre', type: 'text', required: true }, { key: 'code', label: 'Codigo', type: 'text', required: true }, { key: 'faculty_id', label: 'Facultad ID', type: 'number', required: true }, { key: 'description', label: 'Descripcion', type: 'textarea' }] },
-  { key: 'subjects', title: 'Materias', endpoint: 'subjects', fields: [{ key: 'name', label: 'Nombre', type: 'text', required: true }, { key: 'code', label: 'Codigo', type: 'text', required: true }, { key: 'career_id', label: 'Carrera ID', type: 'number', required: true }, { key: 'description', label: 'Descripcion', type: 'textarea' }] }
+  { key: 'careers', title: 'Carreras', endpoint: 'careers', fields: [{ key: 'name', label: 'Nombre', type: 'text', required: true }, { key: 'code', label: 'Codigo', type: 'text', required: true }, { key: 'faculty_id', label: 'Facultad', type: 'select', required: true, optionSource: 'faculty' }, { key: 'description', label: 'Descripcion', type: 'textarea' }] },
+  { key: 'subjects', title: 'Materias', endpoint: 'subjects', fields: [{ key: 'name', label: 'Nombre', type: 'text', required: true }, { key: 'code', label: 'Codigo', type: 'text', required: true }, { key: 'career_id', label: 'Carrera', type: 'select', required: true, optionSource: 'careers' }, { key: 'description', label: 'Descripcion', type: 'textarea' }] }
 ];
 
 @Component({
@@ -49,7 +51,7 @@ const USER_RESOURCES: ResourceConfig[] = [
         <h2>{{ editingId() ? 'Editar' : 'Crear' }} {{ activeResource().title }}</h2>
         <form [formGroup]="form" (ngSubmit)="save()">
           <mx-form-field *ngFor="let field of activeResource().fields" [label]="field.label">
-            <mx-input [type]="field.type" [formControlName]="field.key" />
+            <mx-input [type]="field.type" [options]="optionsFor(field.optionSource)" [formControlName]="field.key" />
           </mx-form-field>
           <p class="message" *ngIf="message()">{{ message() }}</p>
           <div class="actions">
@@ -93,12 +95,14 @@ export class UserManagementComponent implements OnInit {
   readonly loading = signal(false);
   readonly message = signal('');
   readonly editingId = signal<number | null>(null);
+  readonly options = signal<Record<string, ResourceOption[]>>({});
   form = this.formBuilder.group({});
 
   constructor(private readonly userMsService: UserMsService) {}
 
   ngOnInit(): void {
     this.buildForm();
+    this.loadOptions();
     this.load();
   }
 
@@ -110,7 +114,12 @@ export class UserManagementComponent implements OnInit {
   selectResource(resource: ResourceConfig): void {
     this.activeResource.set(resource);
     this.resetForm();
+    this.loadOptions();
     this.load();
+  }
+
+  optionsFor(source?: string): ResourceOption[] {
+    return source ? this.options()[source] ?? [] : [];
   }
 
   load(): void {
@@ -162,7 +171,7 @@ export class UserManagementComponent implements OnInit {
   private buildForm(): void {
     const group: Record<string, unknown[]> = {};
     this.activeResource().fields.forEach((field) => {
-      group[field.key] = ['', field.required ? [Validators.required] : []];
+      group[field.key] = [field.type === 'multiselect' ? [] : '', field.required ? [Validators.required] : []];
     });
     this.form = this.formBuilder.group(group);
   }
@@ -175,5 +184,42 @@ export class UserManagementComponent implements OnInit {
       acc[key] = value;
       return acc;
     }, {});
+  }
+
+  private loadOptions(): void {
+    const sources = Array.from(new Set(this.activeResource().fields.map((field) => field.optionSource).filter(Boolean))) as string[];
+    if (!sources.length) {
+      this.options.set({});
+      return;
+    }
+
+    const requests = sources.reduce<Record<string, Observable<EntityRecord[]>>>((acc, source) => {
+      acc[source] = this.userMsService.list(source);
+      return acc;
+    }, {});
+
+    forkJoin(requests).subscribe({
+      next: (result) => {
+        const options = sources.reduce<Record<string, ResourceOption[]>>((acc, source) => {
+          acc[source] = result[source].map((record) => ({
+            value: String(record['id']),
+            label: this.optionLabel(record)
+          }));
+          return acc;
+        }, {});
+        this.options.set(options);
+      },
+      error: () => {
+        this.options.set({});
+        this.message.set('No fue posible cargar las listas relacionadas.');
+      }
+    });
+  }
+
+  private optionLabel(record: EntityRecord): string {
+    const id = record['id'];
+    const label = record['name'] ?? record['description'] ?? record['code'] ?? record['period'] ?? record['year'] ?? id;
+    const code = record['code'] && record['code'] !== label ? ` - ${record['code']}` : '';
+    return `${label}${code}`;
   }
 }

@@ -13,7 +13,7 @@ services:
       JWT_SECRET_KEY: ${USER_MS_JWT_SECRET_KEY:-change-this-jwt-secret-with-at-least-32-chars}
       JWT_ALGORITHM: HS256
       JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${USER_MS_JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-60}
-      CORS_ORIGINS: ${USER_MS_CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      CORS_ORIGINS: ${USER_MS_CORS_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:4200}
     ports:
       - "${USER_MS_PORT:-8001}:8001"
     networks:
@@ -36,7 +36,7 @@ services:
       APP_ENV: container
       API_V1_PREFIX: /api/v1
       DATABASE_URL: ${ASSESMENT_MS_DATABASE_URL:-postgresql+psycopg2://postgres:postgres@mesoftx-db:5432/assesment_mesoftx_db}
-      CORS_ORIGINS: ${ASSESMENT_MS_CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      CORS_ORIGINS: ${ASSESMENT_MS_CORS_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:4200}
     ports:
       - "${ASSESMENT_MS_PORT:-8002}:8002"
     networks:

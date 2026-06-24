@@ -13,12 +13,13 @@ create table if not exists years (
 
 create table if not exists periods (
     id serial primary key,
-    period varchar(255) not null unique
+    code varchar(2) not null unique
 );
 
 create table if not exists academic_periods (
     id serial primary key,
     name varchar(255) not null unique,
+    code varchar(25) not null unique,
     period_id integer not null,
     year_id integer not null,
 );
@@ -53,6 +54,7 @@ create table if not exists users (
     code varchar(25) not null unique,
     email varchar(255) not null unique,
     password varchar(255),
+    active boolean default true,
     role_id integer not null,
     career_id integer not null,
     created_at timestamp default current_timestamp

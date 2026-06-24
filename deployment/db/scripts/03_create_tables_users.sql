@@ -90,3 +90,13 @@ alter table users_subjects
 alter table users_subjects
     add constraint fk_users_subject_subject
     foreign key (subject_id) references subjects(id);
+
+alter table academic_periods
+    add constraint fk_academic_period_period
+    foreign key (period_id) references periods(id);
+
+alter table academic_periods
+    add constraint fk_academic_period_year
+    foreign key (year_id) references years(id);
+
+

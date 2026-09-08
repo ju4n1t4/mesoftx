@@ -30,7 +30,7 @@
             ],
             "styles": [
               "node_modules/primeicons/primeicons.css",
-              "src/styles.scss"
+              "src/styles/index.scss"
             ],
             "scripts": []
           },
@@ -44,8 +44,8 @@
               "outputHashing": "all",
               "fileReplacements": [
                 {
-                  "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment.prod.ts"
+                  "replace": "src/environment/environment.ts",
+                  "with": "src/environment/environment.prod.ts"
                 }
               ]
             },
@@ -67,5 +67,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "analytics": false
   }
 }

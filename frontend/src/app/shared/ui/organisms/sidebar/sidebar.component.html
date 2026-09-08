@@ -1,0 +1,36 @@
+<aside class="sidebar">
+  <div class="brand">
+    <span class="brand-mark">M</span>
+    <div>
+      <strong>MESOFTX</strong>
+      <small>Coordinacion ABET</small>
+    </div>
+  </div>
+
+  <div class="profile">
+    <span>OR</span>
+    <div>
+      <strong>Prof. Oscar Rueda</strong>
+      <small>En linea</small>
+    </div>
+  </div>
+
+  <nav aria-label="Menu principal">
+    <span class="section-label">Panel principal</span>
+    <a *ngFor="let item of visibleItems" [routerLink]="item.path" routerLinkActive="active">
+      <i class="pi" [ngClass]="item.icon"></i>
+      {{ item.label }}
+    </a>
+  </nav>
+
+  <button class="logout" type="button" (click)="logout.emit()">
+    <i class="pi pi-sign-out"></i>
+    Salir
+  </button>
+
+  <div class="system">
+    <span>Estado del sistema</span>
+    <p>Base de datos <strong>Operativa</strong></p>
+    <p>Power BI <strong>Conectado</strong></p>
+  </div>
+</aside>

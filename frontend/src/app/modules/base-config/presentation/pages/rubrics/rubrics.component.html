@@ -1,0 +1,67 @@
+<section class="page">
+  <div class="heading">
+    <div>
+      <span>Configuracion / Parametrizacion de la rubrica</span>
+      <h1>Parametrizacion rubricas</h1>
+      <p>Configura los Student Outcomes, identificadores de desempeno y descriptores por nivel de logro.</p>
+    </div>
+    <mx-button icon="pi-cloud-upload">Publicar cambios</mx-button>
+  </div>
+
+  <div class="notice">
+    <i class="pi pi-pencil"></i>
+    <div>
+      <strong>Lo que publiques aqui es exactamente la rubrica que vera el docente al valorar.</strong>
+      <span>Los cambios se reflejan en el modulo Registrar valoracion cuando el backend habilite persistencia de rubricas.</span>
+    </div>
+  </div>
+
+  <section class="tabs">
+    <button *ngFor="let outcome of outcomes()" type="button" [class.active]="outcome.id === selectedOutcomeId()" (click)="selectOutcome(outcome.id)">
+      {{ outcome.code }}
+    </button>
+  </section>
+
+  <mx-card>
+    <div class="outcome">
+      <span>{{ selectedOutcome()?.code }}</span>
+      <div>
+        <strong>Descripcion del Student Outcome</strong>
+        <p>{{ selectedOutcome()?.description }}</p>
+      </div>
+    </div>
+  </mx-card>
+
+  <section class="rubric-table">
+    <div class="table-head">
+      <span>ID / Detalle</span>
+      <span><i class="dot red"></i>Insatisfactorio</span>
+      <span><i class="dot orange"></i>En desarrollo</span>
+      <span><i class="dot yellow"></i>Bueno</span>
+      <span><i class="dot green"></i>Supera</span>
+      <span></span>
+    </div>
+    <article *ngFor="let indicator of indicators()" class="rubric-row">
+      <textarea [(ngModel)]="indicator.description" aria-label="Descripcion"></textarea>
+      <textarea [(ngModel)]="indicator.n1" class="n1" aria-label="Nivel insatisfactorio"></textarea>
+      <textarea [(ngModel)]="indicator.n2" class="n2" aria-label="Nivel en desarrollo"></textarea>
+      <textarea [(ngModel)]="indicator.n3" class="n3" aria-label="Nivel bueno"></textarea>
+      <textarea [(ngModel)]="indicator.n4" class="n4" aria-label="Nivel supera"></textarea>
+      <button type="button" aria-label="Eliminar identificador" (click)="deleteIndicator(indicator.id)"><i class="pi pi-trash"></i></button>
+    </article>
+  </section>
+
+  <mx-card>
+    <h2>Agregar identificador</h2>
+    <form class="form" (ngSubmit)="addIndicator()">
+      <label>Codigo<input name="code" [(ngModel)]="draft.code" required /></label>
+      <label>Descripcion<input name="description" [(ngModel)]="draft.description" required /></label>
+      <label>N1<input name="n1" [(ngModel)]="draft.n1" required /></label>
+      <label>N2<input name="n2" [(ngModel)]="draft.n2" required /></label>
+      <label>N3<input name="n3" [(ngModel)]="draft.n3" required /></label>
+      <label>N4<input name="n4" [(ngModel)]="draft.n4" required /></label>
+      <mx-button type="submit" icon="pi-plus">Agregar</mx-button>
+    </form>
+    <p class="counter">{{ indicators().length }} identificadores configurados para {{ selectedOutcome()?.code }}</p>
+  </mx-card>
+</section>

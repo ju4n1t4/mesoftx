@@ -1,0 +1,28 @@
+.dashboard { padding: 28px; }
+.heading { margin-bottom: 22px; }
+h1 { font-size: 26px; line-height: 1; margin: 0 0 8px; }
+p { color: var(--mx-muted); font-size: 13px; margin: 0; }
+.metrics { display: grid; gap: 18px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 22px; }
+.content-grid { display: grid; gap: 18px; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); }
+.card-head { align-items: center; display: flex; justify-content: space-between; margin-bottom: 18px; }
+h2 { font-size: 16px; margin: 0; }
+.card-head span { color: var(--mx-success); font-size: 13px; font-weight: 800; }
+.progress-list { display: grid; gap: 18px; }
+.progress-row { align-items: center; display: grid; gap: 14px; grid-template-columns: 190px minmax(120px, 1fr) 46px; }
+.progress-row span, .progress-row strong { font-size: 13px; font-weight: 800; }
+.track { background: #eef0f3; border-radius: 999px; height: 8px; overflow: hidden; }
+.track div { border-radius: inherit; height: 100%; }
+.actions { display: grid; gap: 12px; margin-top: 18px; }
+.actions button { align-items: center; background: #23202d; border: 1px solid rgba(255,255,255,.06); border-radius: 8px; color: #fff; cursor: pointer; display: grid; gap: 2px 12px; grid-template-columns: 36px 1fr; min-height: 62px; padding: 10px; text-align: left; }
+.actions i { align-items: center; background: var(--mx-primary); border-radius: 8px; display: inline-flex; grid-row: span 2; height: 36px; justify-content: center; width: 36px; }
+.actions button:nth-child(2) i { background: var(--mx-secondary); }
+.actions button:nth-child(3) i { background: var(--mx-success); }
+.actions span { font-size: 13px; font-weight: 800; }
+.actions small { color: #aaa6b8; font-size: 11px; font-weight: 700; }
+.service-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 220px)); margin-top: 18px; }
+.service-grid article { align-items: center; background: #fff; border: 1px solid #bbf7d0; border-radius: 8px; color: var(--mx-success); display: flex; gap: 12px; padding: 12px; }
+.service-grid article.offline { border-color: #fecdd3; color: var(--mx-danger); }
+.service-grid span { color: var(--mx-muted); display: block; font-size: 11px; font-weight: 800; }
+.service-grid strong { display: block; font-size: 13px; margin-top: 2px; text-transform: capitalize; }
+@media (max-width: 1120px) { .metrics, .content-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .dashboard { padding: 18px; } .metrics, .content-grid, .service-grid { grid-template-columns: 1fr; } .progress-row { grid-template-columns: 1fr; } }

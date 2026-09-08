@@ -1,0 +1,52 @@
+<section class="page">
+  <div class="heading">
+    <div>
+      <span>Sistema / Configuracion</span>
+      <h1>Conexiones externas</h1>
+      <p>Administra servicios externos conectados a MESOFTX.</p>
+    </div>
+    <mx-button icon="pi-plus" (clicked)="newConnection()">Nueva conexion</mx-button>
+  </div>
+
+  <section class="connection-grid">
+    <mx-card *ngFor="let connection of connections()">
+      <div class="connection-head">
+        <div>
+          <span class="icon"><i class="pi pi-link"></i></span>
+          <strong>{{ connection.name }}</strong>
+          <small>{{ connection.type }}</small>
+        </div>
+        <mx-badge [tone]="toneFor(connection.status)">{{ labelFor(connection.status) }}</mx-badge>
+      </div>
+      <dl>
+        <div><dt>Endpoint</dt><dd>{{ connection.endpoint }}</dd></div>
+        <div><dt>Responsable</dt><dd>{{ connection.owner }}</dd></div>
+      </dl>
+      <div class="actions">
+        <button type="button" aria-label="Editar conexion" (click)="editConnection(connection)"><i class="pi pi-pencil"></i></button>
+        <button type="button" aria-label="Eliminar conexion" (click)="deleteConnection(connection.id)"><i class="pi pi-trash"></i></button>
+      </div>
+    </mx-card>
+  </section>
+
+  <mx-card>
+    <h2>{{ editingId() ? 'Editar conexion' : 'Registrar conexion' }}</h2>
+    <form class="form" (ngSubmit)="saveConnection()">
+      <label>Nombre<input name="name" [(ngModel)]="draft.name" required /></label>
+      <label>Tipo<input name="type" [(ngModel)]="draft.type" required /></label>
+      <label>Endpoint<input name="endpoint" [(ngModel)]="draft.endpoint" required /></label>
+      <label>Responsable<input name="owner" [(ngModel)]="draft.owner" required /></label>
+      <label>Estado
+        <select name="status" [(ngModel)]="draft.status">
+          <option value="conectado">Conectado</option>
+          <option value="sincronizando">Sincronizando</option>
+          <option value="inactivo">Inactivo</option>
+        </select>
+      </label>
+      <div class="form-actions">
+        <mx-button type="submit" icon="pi-save">Guardar</mx-button>
+        <mx-button type="button" variant="ghost" (clicked)="newConnection()">Limpiar</mx-button>
+      </div>
+    </form>
+  </mx-card>
+</section>

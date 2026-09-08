@@ -1,0 +1,85 @@
+<section class="page">
+  <div class="heading">
+    <div>
+      <span>Gestion / Usuarios y roles</span>
+      <h1>Usuarios</h1>
+      <p>Registra, actualiza, habilita e inhabilita usuarios de MESOFTX.</p>
+    </div>
+    <div class="filters">
+      <label>Rol
+        <select [(ngModel)]="roleFilter">
+          <option [ngValue]="0">Todos</option>
+          <option *ngFor="let role of roles()" [ngValue]="role.id">{{ role.name }}</option>
+        </select>
+      </label>
+      <mx-button icon="pi-plus" (clicked)="newUser()">Nuevo usuario</mx-button>
+    </div>
+  </div>
+
+  <mx-card>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Codigo</th>
+            <th>Programa</th>
+            <th>Materias</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of filteredUsers()">
+            <td>
+              <div class="person">
+                <span>{{ initials(user) }}</span>
+                <div>
+                  <strong>{{ user.name }} {{ user.surname }}</strong>
+                  <small>{{ user.email }}</small>
+                </div>
+              </div>
+            </td>
+            <td>{{ user.code }}</td>
+            <td>{{ programName(user.career_id) }}</td>
+            <td>{{ user.subject_ids.length }}</td>
+            <td><mx-badge tone="secondary">{{ roleName(user.role_id) }}</mx-badge></td>
+            <td><mx-badge [tone]="user.active ? 'success' : 'danger'">{{ user.active ? 'Activo' : 'Inactivo' }}</mx-badge></td>
+            <td class="row-actions">
+              <button type="button" aria-label="Editar usuario" (click)="editUser(user)"><i class="pi pi-pencil"></i></button>
+              <button type="button" aria-label="Cambiar estado" (click)="toggleUser(user)"><i class="pi pi-power-off"></i></button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </mx-card>
+
+  <mx-card>
+    <h2>{{ editingId() ? 'Editar usuario' : 'Registrar usuario' }}</h2>
+    <form class="form" (ngSubmit)="saveUser()">
+      <label>Nombres<input name="name" [(ngModel)]="draft.name" required /></label>
+      <label>Apellidos<input name="surname" [(ngModel)]="draft.surname" required /></label>
+      <label>Codigo<input name="code" [(ngModel)]="draft.code" required /></label>
+      <label>Correo<input name="email" type="email" [(ngModel)]="draft.email" required /></label>
+      <label>Password<input name="password" type="password" [(ngModel)]="draft.password" [required]="!editingId()" /></label>
+      <label>Rol
+        <select name="role_id" [(ngModel)]="draft.role_id">
+          <option *ngFor="let role of roles()" [ngValue]="role.id">{{ role.name }}</option>
+        </select>
+      </label>
+      <label>Programa
+        <select name="career_id" [(ngModel)]="draft.career_id">
+          <option *ngFor="let career of careers()" [ngValue]="career.id">{{ career.name }}</option>
+        </select>
+      </label>
+      <label>Materias<input name="subject_ids" [(ngModel)]="draft.subject_ids" placeholder="1,2,3" /></label>
+      <div class="form-actions">
+        <mx-button type="submit" icon="pi-save">{{ editingId() ? 'Actualizar' : 'Crear' }}</mx-button>
+        <mx-button type="button" variant="ghost" (clicked)="newUser()">Limpiar</mx-button>
+      </div>
+    </form>
+    <p *ngIf="message()" class="message">{{ message() }}</p>
+  </mx-card>
+</section>

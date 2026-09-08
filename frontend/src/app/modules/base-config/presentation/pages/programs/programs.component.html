@@ -1,0 +1,53 @@
+<section class="page">
+  <div class="heading">
+    <div>
+      <span>Gestion / Programas</span>
+      <h1>Programas academicos</h1>
+      <p>Programas de la Facultad de Ingenieria en proceso de acreditacion ABET y MESOFTX.</p>
+    </div>
+    <mx-button icon="pi-plus" (clicked)="newProgram()">Nuevo programa</mx-button>
+  </div>
+
+  <section class="program-grid">
+    <article *ngFor="let program of programs()" class="program-card">
+      <div class="top">
+        <span class="code">{{ program.code }}</span>
+        <mx-badge [tone]="badgeTone(program.status)">{{ labelFor(program.status) }}</mx-badge>
+      </div>
+      <h2>{{ program.name }}</h2>
+      <p>{{ program.accreditation }}</p>
+      <div class="progress-line">
+        <span>Cumplimiento ABET/MESOFTX</span>
+        <strong>{{ program.progress }}%</strong>
+      </div>
+      <div class="track">
+        <div [style.width.%]="program.progress" [style.background]="accentFor(program.progress)"></div>
+      </div>
+      <div class="actions">
+        <button type="button" aria-label="Editar programa" (click)="editProgram(program)"><i class="pi pi-pencil"></i></button>
+        <button type="button" aria-label="Eliminar programa" (click)="deleteProgram(program.id)"><i class="pi pi-trash"></i></button>
+      </div>
+    </article>
+  </section>
+
+  <mx-card>
+    <h2>{{ editingId() ? 'Editar programa' : 'Registrar programa' }}</h2>
+    <form class="form" (ngSubmit)="saveProgram()">
+      <label>Nombre<input name="name" [(ngModel)]="draft.name" required /></label>
+      <label>Codigo<input name="code" [(ngModel)]="draft.code" required maxlength="12" /></label>
+      <label>Acreditacion<input name="accreditation" [(ngModel)]="draft.accreditation" required /></label>
+      <label>Avance<input name="progress" type="number" min="0" max="100" [(ngModel)]="draft.progress" /></label>
+      <label>Estado
+        <select name="status" [(ngModel)]="draft.status">
+          <option value="acreditado">Acreditado</option>
+          <option value="en-proceso">En proceso</option>
+          <option value="evaluacion">Evaluacion</option>
+        </select>
+      </label>
+      <div class="form-actions">
+        <mx-button type="submit" icon="pi-save">Guardar</mx-button>
+        <mx-button type="button" variant="ghost" (clicked)="newProgram()">Limpiar</mx-button>
+      </div>
+    </form>
+  </mx-card>
+</section>

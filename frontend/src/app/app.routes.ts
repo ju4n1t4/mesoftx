@@ -1,12 +1,12 @@
 import { Routes } from '@angular/router';
 
-import { authGuard } from './core/guards/auth.guard';
-import { AppShellComponent } from './layout/app-shell.component';
+import { authGuard } from './modules/auth/application/guards/auth.guard';
+import { AppShellComponent } from './shared/ui/templates/app-shell/app-shell.component';
 
 export const routes: Routes = [
   {
     path: 'login',
-    loadComponent: () => import('./features/auth/login.component').then((m) => m.LoginComponent)
+    loadComponent: () => import('./modules/auth/presentation/pages/login/login.component').then((m) => m.LoginComponent)
   },
   {
     path: '',
@@ -15,23 +15,23 @@ export const routes: Routes = [
     children: [
       {
         path: 'dashboard',
-        loadComponent: () => import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent)
+        loadComponent: () => import('./modules/base-config/presentation/pages/dashboard/dashboard.component').then((m) => m.DashboardComponent)
       },
       {
         path: 'programas',
-        loadComponent: () => import('./features/configuration/programs.component').then((m) => m.ProgramsComponent)
+        loadComponent: () => import('./modules/base-config/presentation/pages/programs/programs.component').then((m) => m.ProgramsComponent)
       },
       {
         path: 'usuarios',
-        loadComponent: () => import('./features/configuration/users.component').then((m) => m.UsersComponent)
+        loadComponent: () => import('./modules/base-config/presentation/pages/users/users.component').then((m) => m.UsersComponent)
       },
       {
         path: 'student-outcomes',
-        loadComponent: () => import('./features/configuration/rubrics.component').then((m) => m.RubricsComponent)
+        loadComponent: () => import('./modules/base-config/presentation/pages/rubrics/rubrics.component').then((m) => m.RubricsComponent)
       },
       {
         path: 'configuracion',
-        loadComponent: () => import('./features/configuration/external-connections.component').then((m) => m.ExternalConnectionsComponent)
+        loadComponent: () => import('./modules/base-config/presentation/pages/external-connections/external-connections.component').then((m) => m.ExternalConnectionsComponent)
       },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' }
     ]

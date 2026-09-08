@@ -1,0 +1,4 @@
+<div class="field">
+  <i *ngIf="icon" class="pi" [ngClass]="icon"></i>
+  <input [type]="type" [value]="value" [placeholder]="placeholder" [autocomplete]="autocomplete" (input)="update($event)" (blur)="onTouched()">
+</div>

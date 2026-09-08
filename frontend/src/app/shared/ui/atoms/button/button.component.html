@@ -1,0 +1,4 @@
+<button class="mx-button" [class.secondary]="variant === 'secondary'" [class.ghost]="variant === 'ghost'" [type]="type" [disabled]="disabled" (click)="clicked.emit()">
+  <i *ngIf="icon" class="pi" [ngClass]="icon"></i>
+  <span><ng-content /></span>
+</button>

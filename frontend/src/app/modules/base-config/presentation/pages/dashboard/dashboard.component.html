@@ -1,0 +1,52 @@
+<section class="dashboard">
+  <div class="heading">
+    <div>
+      <h1>Panel de coordinacion</h1>
+      <p>Estado general del proceso de valoracion ABET en el periodo 202610.</p>
+    </div>
+  </div>
+
+  <section class="metrics">
+    <mx-metric-card label="Programas acreditables" value="5" hint="En proceso ABET" accent="var(--mx-primary)" />
+    <mx-metric-card label="Docentes activos" value="48" hint="Registrando valoraciones" accent="var(--mx-secondary)" />
+    <mx-metric-card label="Valoraciones cerradas" value="76%" hint="+12% esta semana" accent="var(--mx-success)" />
+    <mx-metric-card label="Cursos sin iniciar" value="9" hint="Requieren seguimiento" accent="var(--mx-danger)" />
+  </section>
+
+  <section class="content-grid">
+    <mx-card>
+      <div class="card-head">
+        <h2>Avance de valoracion por programa</h2>
+        <span>{{ averageProgress() }}%</span>
+      </div>
+      <div class="progress-list">
+        <div *ngFor="let program of programs" class="progress-row">
+          <span>{{ program.name }}</span>
+          <div class="track">
+            <div [style.width.%]="program.value" [style.background]="program.accent"></div>
+          </div>
+          <strong>{{ program.value }}%</strong>
+        </div>
+      </div>
+    </mx-card>
+
+    <mx-card>
+      <h2>Acciones rapidas</h2>
+      <div class="actions">
+        <button type="button"><i class="pi pi-sliders-h"></i><span>Parametrizar rubrica</span><small>Editar Student Outcomes</small></button>
+        <button type="button"><i class="pi pi-users"></i><span>Gestionar docentes</span><small>Roles y asignaciones</small></button>
+        <button type="button"><i class="pi pi-check-square"></i><span>Revisar valoraciones</span><small>Estado por curso</small></button>
+      </div>
+    </mx-card>
+  </section>
+
+  <section class="service-grid">
+    <article *ngFor="let status of statuses()" [class.offline]="status.status === 'sin-conexion'">
+      <i class="pi" [ngClass]="status.status === 'operativo' ? 'pi-check-circle' : 'pi-exclamation-triangle'"></i>
+      <div>
+        <span>{{ status.name }}</span>
+        <strong>{{ status.status }}</strong>
+      </div>
+    </article>
+  </section>
+</section>

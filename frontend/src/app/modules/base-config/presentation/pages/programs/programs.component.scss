@@ -1,0 +1,22 @@
+.page { padding: 28px; }
+.heading { align-items: flex-start; display: flex; justify-content: space-between; margin-bottom: 22px; }
+.heading span { color: var(--mx-muted); font-size: 12px; font-weight: 800; }
+h1 { font-size: 26px; margin: 8px 0 7px; }
+p { color: var(--mx-muted); font-size: 13px; margin: 0; }
+.program-grid { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 18px; }
+.program-card { background: #fff; border: 1px solid var(--mx-border); border-radius: var(--mx-radius-card); box-shadow: var(--mx-shadow-soft); padding: 18px; }
+.top, .progress-line, .actions { align-items: center; display: flex; justify-content: space-between; }
+.code { background: #f3e8ff; border-radius: 8px; color: var(--mx-secondary); font-size: 12px; font-weight: 800; padding: 7px 10px; }
+.program-card h2 { font-size: 17px; margin: 16px 0 5px; }
+.progress-line { color: var(--mx-muted); font-size: 12px; font-weight: 800; margin-top: 16px; }
+.progress-line strong { color: var(--mx-ink); }
+.track { background: #eef0f3; border-radius: 999px; height: 8px; margin-top: 9px; overflow: hidden; }
+.track div { border-radius: inherit; height: 100%; }
+.actions { gap: 8px; justify-content: flex-end; margin-top: 14px; }
+.actions button { background: #f7f7f9; border: 1px solid var(--mx-border); border-radius: 8px; cursor: pointer; height: 34px; width: 34px; }
+h2 { font-size: 17px; margin: 0 0 16px; }
+.form { display: grid; gap: 14px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+label { color: #55515e; display: grid; font-size: 12px; font-weight: 800; gap: 7px; }
+input, select { border: 1px solid var(--mx-border); border-radius: 8px; min-height: 40px; padding: 0 11px; }
+.form-actions { align-items: end; display: flex; gap: 10px; }
+@media (max-width: 1000px) { .program-grid, .form { grid-template-columns: 1fr; } .heading { display: grid; gap: 14px; } }

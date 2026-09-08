@@ -1,0 +1,59 @@
+.shell {
+  background: #f4f5f7;
+  display: flex;
+  min-height: 100vh;
+}
+
+main {
+  flex: 1;
+  min-width: 0;
+}
+
+header {
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid var(--mx-border);
+  display: flex;
+  justify-content: space-between;
+  min-height: 62px;
+  padding: 0 24px;
+}
+
+.crumb {
+  color: var(--mx-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.crumb strong {
+  color: var(--mx-ink);
+}
+
+.status {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.avatar {
+  align-items: center;
+  background: var(--mx-secondary);
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+@media (max-width: 860px) {
+  .shell {
+    display: block;
+  }
+
+  header {
+    padding: 0 16px;
+  }
+}

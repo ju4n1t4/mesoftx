@@ -1,0 +1,13 @@
+<div class="shell">
+  <mx-sidebar (logout)="logout()" />
+  <main>
+    <header>
+      <div class="crumb">Inicio / <strong>Dashboard</strong></div>
+      <div class="status">
+        <mx-badge tone="warning">Periodo 202610 · Activo</mx-badge>
+        <span class="avatar">OR</span>
+      </div>
+    </header>
+    <router-outlet />
+  </main>
+</div>

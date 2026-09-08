@@ -1,0 +1,41 @@
+<main class="login-page">
+  <section class="login-card">
+    <aside class="brand-panel">
+      <div class="brand">
+        <span>M</span>
+        <strong>MESOFTX</strong>
+      </div>
+      <div class="brand-copy">
+        <h1>Valoracion de Resultados de Aprendizaje ABET</h1>
+        <p>Plataforma institucional de la Facultad de Ingenieria · UNAB.</p>
+        <ul>
+          <li>Acceso con cuenta institucional UNAB</li>
+          <li>Redireccion automatica segun tu rol</li>
+          <li>Dashboards de indicadores en tiempo real</li>
+        </ul>
+      </div>
+    </aside>
+
+    <section class="form-panel">
+      <span class="eyebrow">Acceso · cuenta institucional</span>
+      <h2>Bienvenido</h2>
+      <p>Ingresa con tu cuenta institucional UNAB para continuar.</p>
+
+      <div #googleButton class="google-button"></div>
+      <div class="divider"><span>o continua con correo</span></div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <mx-form-field label="Correo institucional">
+          <mx-input formControlName="email" type="email" icon="pi-envelope" autocomplete="email" placeholder="profesor@unab.edu.co" />
+        </mx-form-field>
+        <mx-form-field label="Contrasena">
+          <mx-input formControlName="password" type="password" icon="pi-lock" autocomplete="current-password" placeholder="••••••••" />
+        </mx-form-field>
+        <p *ngIf="message()" class="message">{{ message() }}</p>
+        <mx-button type="submit" [disabled]="form.invalid || loading()" icon="pi-sign-in">
+          {{ loading() ? 'Validando...' : 'Iniciar sesion' }}
+        </mx-button>
+      </form>
+    </section>
+  </section>
+</main>

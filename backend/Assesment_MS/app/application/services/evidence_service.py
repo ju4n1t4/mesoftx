@@ -1,10 +1,10 @@
 from typing import Any
 
-from app.infrastructure.repositories.sqlalchemy_repositories import AssesmentEvidenceWithResultsRepository
+from app.application.ports.repositories import AssesmentEvidenceWithResultsRepositoryPort
 
 
 class EvidenceService:
-    def __init__(self, repository: AssesmentEvidenceWithResultsRepository):
+    def __init__(self, repository: AssesmentEvidenceWithResultsRepositoryPort):
         self.repository = repository
 
     def create_with_results(self, evidence_data: dict[str, Any], results_data: list[dict[str, Any]]) -> tuple[Any, list[Any]]:

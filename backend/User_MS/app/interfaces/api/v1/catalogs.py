@@ -3,12 +3,11 @@ from typing import Any
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from app.application.ports.repositories import EntityAlreadyExistsError, EntityNotFoundError
 from app.application.services.catalog_service import AcademicPeriodService, CatalogService
 from app.infrastructure.repositories.sqlalchemy_repositories import (
     AcademicPeriodRepository,
     CareerRepository,
-    EntityAlreadyExistsError,
-    EntityNotFoundError,
     FacultyRepository,
     PeriodRepository,
     RoleRepository,

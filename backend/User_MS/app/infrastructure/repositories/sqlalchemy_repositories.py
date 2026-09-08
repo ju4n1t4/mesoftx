@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.application.ports.repositories import EntityAlreadyExistsError
 from app.infrastructure.database.models import (
     AcademicPeriodModel,
     CareerModel,
@@ -17,18 +18,6 @@ from app.infrastructure.database.models import (
 )
 
 ModelT = TypeVar("ModelT")
-
-
-class RepositoryError(Exception):
-    pass
-
-
-class EntityAlreadyExistsError(RepositoryError):
-    pass
-
-
-class EntityNotFoundError(RepositoryError):
-    pass
 
 
 class SqlAlchemyRepository:

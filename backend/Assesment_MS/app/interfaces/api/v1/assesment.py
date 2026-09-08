@@ -1,16 +1,17 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.application.ports.repositories import EntityNotFoundError, InvalidReferenceError
 from app.application.services.catalog_service import CatalogService
+from app.application.services.document_storage_service import DocumentStorageError, DocumentStorageService
 from app.application.services.evidence_service import EvidenceService
+from app.core.config import get_settings
 from app.infrastructure.repositories.sqlalchemy_repositories import (
     AssesmentEvidenceRepository,
     AssesmentEvidenceWithResultsRepository,
     AssesmentResultRepository,
-    EntityNotFoundError,
-    InvalidReferenceError,
     PerformanceEvaluationDetailRepository,
     PerformanceEvaluationRepository,
     PerformanceIndicatorDetailRepository,
@@ -182,6 +183,33 @@ def list_assesment_evidence(db: Session = Depends(db_session)):
 def create_assesment_evidence(payload: AssesmentEvidenceCreate, db: Session = Depends(db_session)):
     try:
         return _service(AssesmentEvidenceRepository, db).create(payload.model_dump())
+    except InvalidReferenceError as exc:
+        raise map_repository_error(exc) from exc
+
+
+@router.post(
+    "/assesment-evidence/upload",
+    response_model=AssesmentEvidenceResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_assesment_evidence_with_document(
+    student_code: str = Form(..., max_length=25),
+    student_outcome_id: int = Form(..., gt=0),
+    file: UploadFile = File(...),
+    db: Session = Depends(db_session),
+):
+    settings = get_settings()
+    try:
+        evidence_name_doc = await DocumentStorageService(settings.assesment_document_path).save(file)
+        return _service(AssesmentEvidenceRepository, db).create(
+            {
+                "evidence_name_doc": evidence_name_doc,
+                "student_code": student_code,
+                "student_outcome_id": student_outcome_id,
+            },
+        )
+    except DocumentStorageError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except InvalidReferenceError as exc:
         raise map_repository_error(exc) from exc
 

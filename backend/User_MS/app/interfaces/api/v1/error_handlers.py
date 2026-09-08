@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 
-from app.infrastructure.repositories.sqlalchemy_repositories import EntityAlreadyExistsError, EntityNotFoundError
+from app.application.ports.repositories import EntityAlreadyExistsError, EntityNotFoundError
 
 
 def map_repository_error(exc: Exception) -> HTTPException:

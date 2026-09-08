@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.application.ports.repositories import InvalidReferenceError
 from app.infrastructure.database.models import (
     AssesmentEvidenceModel,
     AssesmentResultModel,
@@ -13,22 +14,6 @@ from app.infrastructure.database.models import (
     PerformanceIndicatorModel,
     StudentOutcomeModel,
 )
-
-
-class RepositoryError(Exception):
-    pass
-
-
-class EntityAlreadyExistsError(RepositoryError):
-    pass
-
-
-class EntityNotFoundError(RepositoryError):
-    pass
-
-
-class InvalidReferenceError(RepositoryError):
-    pass
 
 
 class SqlAlchemyRepository:

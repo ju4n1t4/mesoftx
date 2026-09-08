@@ -6,6 +6,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
+from app.application.ports.security import GoogleTokenVerificationError
+
 
 class GoogleTokenError(Exception):
     pass
@@ -15,6 +17,17 @@ class GoogleTokenError(Exception):
 class GoogleIdentity:
     email: str
     subject: str
+
+
+class GoogleIdentityService:
+    def __init__(self, expected_audience: str):
+        self.expected_audience = expected_audience
+
+    def verify(self, id_token: str) -> GoogleIdentity:
+        try:
+            return verify_google_id_token(id_token, self.expected_audience)
+        except GoogleTokenError as exc:
+            raise GoogleTokenVerificationError(str(exc)) from exc
 
 
 def verify_google_id_token(id_token: str, expected_audience: str) -> GoogleIdentity:

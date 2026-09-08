@@ -1,10 +1,8 @@
 from typing import Any
 
-from app.infrastructure.repositories.sqlalchemy_repositories import (
-    AcademicPeriodRepository,
+from app.application.ports.repositories import (
+    BaseRepositoryPort,
     EntityNotFoundError,
-    PeriodRepository,
-    YearRepository,
 )
 
 
@@ -15,7 +13,7 @@ PERIOD_NAMES = {
 
 
 class CatalogService:
-    def __init__(self, repository: Any):
+    def __init__(self, repository: BaseRepositoryPort):
         self.repository = repository
 
     def get(self, entity_id: int) -> Any:
@@ -40,9 +38,9 @@ class CatalogService:
 class AcademicPeriodService(CatalogService):
     def __init__(
         self,
-        repository: AcademicPeriodRepository,
-        period_repository: PeriodRepository,
-        year_repository: YearRepository,
+        repository: BaseRepositoryPort,
+        period_repository: BaseRepositoryPort,
+        year_repository: BaseRepositoryPort,
     ):
         super().__init__(repository)
         self.period_repository = period_repository

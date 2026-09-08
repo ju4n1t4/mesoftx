@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 
-from app.infrastructure.repositories.sqlalchemy_repositories import EntityNotFoundError, InvalidReferenceError
+from app.application.ports.repositories import EntityNotFoundError, InvalidReferenceError
 
 
 def map_repository_error(exc: Exception) -> HTTPException:

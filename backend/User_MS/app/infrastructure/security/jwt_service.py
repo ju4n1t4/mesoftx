@@ -10,6 +10,16 @@ class InvalidTokenError(Exception):
     pass
 
 
+class JwtTokenService:
+    def create_access_token(
+        self,
+        subject: str,
+        claims: dict[str, Any] | None = None,
+        expires_delta: timedelta | None = None,
+    ) -> str:
+        return create_access_token(subject, claims, expires_delta)
+
+
 def create_access_token(subject: str, claims: dict[str, Any] | None = None, expires_delta: timedelta | None = None) -> str:
     settings = get_settings()
     now = datetime.now(timezone.utc)

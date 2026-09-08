@@ -48,5 +48,6 @@
         <mx-button type="button" variant="ghost" (clicked)="newConnection()">Limpiar</mx-button>
       </div>
     </form>
+    <p *ngIf="message()" class="message">{{ message() }}</p>
   </mx-card>
 </section>

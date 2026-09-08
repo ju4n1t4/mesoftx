@@ -26,6 +26,9 @@ class BaseRepositoryPort(Protocol):
     def update(self, entity_id: int, data: dict[str, Any]) -> Any | None:
         ...
 
+    def delete(self, entity_id: int) -> bool:
+        ...
+
 
 class UserRepositoryPort(BaseRepositoryPort, Protocol):
     def get_by_email(self, email: str) -> Any | None:

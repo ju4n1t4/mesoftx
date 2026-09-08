@@ -113,6 +113,9 @@ class CareerCreate(BaseModel):
     code: str = Field(..., max_length=25)
     faculty_id: int = Field(..., gt=0)
     description: str | None = None
+    accreditation: str | None = Field(default=None, max_length=255)
+    progress: int = Field(default=0, ge=0, le=100)
+    status: str = Field(default="en-proceso", max_length=25)
 
 
 class CareerUpdate(BaseModel):
@@ -120,6 +123,9 @@ class CareerUpdate(BaseModel):
     code: str | None = Field(default=None, max_length=25)
     faculty_id: int | None = Field(default=None, gt=0)
     description: str | None = None
+    accreditation: str | None = Field(default=None, max_length=255)
+    progress: int | None = Field(default=None, ge=0, le=100)
+    status: str | None = Field(default=None, max_length=25)
 
 
 class CareerResponse(CareerCreate):

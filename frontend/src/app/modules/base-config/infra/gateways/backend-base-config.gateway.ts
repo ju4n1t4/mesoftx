@@ -4,7 +4,18 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../../../../environment/environment';
 import { BaseConfigGateway } from '../../application/ports/base-config.gateway';
-import { CareerRecord, RoleRecord, StudentOutcomeRecord, UserPayload, UserRecord } from '../../domain/models/base-config.models';
+import {
+  CareerPayload,
+  CareerRecord,
+  PerformanceEvaluationDetailRecord,
+  PerformanceEvaluationRecord,
+  PerformanceIndicatorDetailRecord,
+  PerformanceIndicatorRecord,
+  RoleRecord,
+  StudentOutcomeRecord,
+  UserPayload,
+  UserRecord
+} from '../../domain/models/base-config.models';
 
 @Injectable({ providedIn: 'root' })
 export class BackendBaseConfigGateway extends BaseConfigGateway {
@@ -18,6 +29,18 @@ export class BackendBaseConfigGateway extends BaseConfigGateway {
 
   careers(): Observable<CareerRecord[]> {
     return this.http.get<CareerRecord[]>(`${environment.userMsApiUrl}/careers`);
+  }
+
+  createCareer(payload: CareerPayload): Observable<CareerRecord> {
+    return this.http.post<CareerRecord>(`${environment.userMsApiUrl}/careers`, payload);
+  }
+
+  updateCareer(id: number, payload: Partial<CareerPayload>): Observable<CareerRecord> {
+    return this.http.put<CareerRecord>(`${environment.userMsApiUrl}/careers/${id}`, payload);
+  }
+
+  deleteCareer(id: number): Observable<void> {
+    return this.http.delete<void>(`${environment.userMsApiUrl}/careers/${id}`);
   }
 
   users(): Observable<UserRecord[]> {
@@ -50,5 +73,49 @@ export class BackendBaseConfigGateway extends BaseConfigGateway {
 
   updateStudentOutcome(id: number, payload: Partial<Omit<StudentOutcomeRecord, 'id'>>): Observable<StudentOutcomeRecord> {
     return this.http.put<StudentOutcomeRecord>(`${environment.assesmentMsApiUrl}/student-outcomes/${id}`, payload);
+  }
+
+  performanceIndicators(): Observable<PerformanceIndicatorRecord[]> {
+    return this.http.get<PerformanceIndicatorRecord[]>(`${environment.assesmentMsApiUrl}/performance-indicators`);
+  }
+
+  createPerformanceIndicator(payload: Omit<PerformanceIndicatorRecord, 'id'>): Observable<PerformanceIndicatorRecord> {
+    return this.http.post<PerformanceIndicatorRecord>(`${environment.assesmentMsApiUrl}/performance-indicators`, payload);
+  }
+
+  updatePerformanceIndicator(id: number, payload: Partial<Omit<PerformanceIndicatorRecord, 'id'>>): Observable<PerformanceIndicatorRecord> {
+    return this.http.put<PerformanceIndicatorRecord>(`${environment.assesmentMsApiUrl}/performance-indicators/${id}`, payload);
+  }
+
+  deletePerformanceIndicator(id: number): Observable<void> {
+    return this.http.delete<void>(`${environment.assesmentMsApiUrl}/performance-indicators/${id}`);
+  }
+
+  performanceIndicatorDetails(): Observable<PerformanceIndicatorDetailRecord[]> {
+    return this.http.get<PerformanceIndicatorDetailRecord[]>(`${environment.assesmentMsApiUrl}/performance-indicator-details`);
+  }
+
+  createPerformanceIndicatorDetail(payload: Omit<PerformanceIndicatorDetailRecord, 'id'>): Observable<PerformanceIndicatorDetailRecord> {
+    return this.http.post<PerformanceIndicatorDetailRecord>(`${environment.assesmentMsApiUrl}/performance-indicator-details`, payload);
+  }
+
+  updatePerformanceIndicatorDetail(id: number, payload: Partial<Omit<PerformanceIndicatorDetailRecord, 'id'>>): Observable<PerformanceIndicatorDetailRecord> {
+    return this.http.put<PerformanceIndicatorDetailRecord>(`${environment.assesmentMsApiUrl}/performance-indicator-details/${id}`, payload);
+  }
+
+  performanceEvaluations(): Observable<PerformanceEvaluationRecord[]> {
+    return this.http.get<PerformanceEvaluationRecord[]>(`${environment.assesmentMsApiUrl}/performance-evaluations`);
+  }
+
+  performanceEvaluationDetails(): Observable<PerformanceEvaluationDetailRecord[]> {
+    return this.http.get<PerformanceEvaluationDetailRecord[]>(`${environment.assesmentMsApiUrl}/performance-evaluation-details`);
+  }
+
+  createPerformanceEvaluationDetail(payload: Omit<PerformanceEvaluationDetailRecord, 'id'>): Observable<PerformanceEvaluationDetailRecord> {
+    return this.http.post<PerformanceEvaluationDetailRecord>(`${environment.assesmentMsApiUrl}/performance-evaluation-details`, payload);
+  }
+
+  updatePerformanceEvaluationDetail(id: number, payload: Partial<Omit<PerformanceEvaluationDetailRecord, 'id'>>): Observable<PerformanceEvaluationDetailRecord> {
+    return this.http.put<PerformanceEvaluationDetailRecord>(`${environment.assesmentMsApiUrl}/performance-evaluation-details/${id}`, payload);
   }
 }

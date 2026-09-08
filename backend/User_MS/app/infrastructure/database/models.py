@@ -58,6 +58,9 @@ class CareerModel(Base):
     code: Mapped[str] = mapped_column(String(25), unique=True, nullable=False)
     faculty_id: Mapped[int] = mapped_column(ForeignKey("faculty.id"), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
+    accreditation: Mapped[str | None] = mapped_column(String(255))
+    progress: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(25), default="en-proceso")
 
     faculty: Mapped[FacultyModel] = relationship()
 

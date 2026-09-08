@@ -5,7 +5,7 @@
       <h1>Parametrizacion rubricas</h1>
       <p>Configura los Student Outcomes, identificadores de desempeno y descriptores por nivel de logro.</p>
     </div>
-    <mx-button icon="pi-cloud-upload">Publicar cambios</mx-button>
+    <mx-button icon="pi-cloud-upload" (clicked)="publishChanges()">Publicar cambios</mx-button>
   </div>
 
   <div class="notice">
@@ -31,6 +31,7 @@
       </div>
     </div>
   </mx-card>
+  <p *ngIf="message()" class="message">{{ message() }}</p>
 
   <section class="rubric-table">
     <div class="table-head">

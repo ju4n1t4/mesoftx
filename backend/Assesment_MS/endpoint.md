@@ -86,6 +86,14 @@ Body parcial:
 
 Respuesta `200`: student outcome actualizado.
 
+### DELETE `/api/v1/student-outcomes/{entity_id}`
+
+Path params:
+
+- `entity_id`: id numerico del student outcome.
+
+Respuesta `204`: sin contenido.
+
 ## Performance Indicators
 
 ### GET `/api/v1/performance-indicators`
@@ -121,6 +129,12 @@ Body parcial:
 ```
 
 Respuesta `200`: indicador actualizado.
+
+### DELETE `/api/v1/performance-indicators/{entity_id}`
+
+Elimina el indicador y sus detalles de parametrizacion asociados.
+
+Respuesta `204`: sin contenido.
 
 ## Performance Indicator Details
 
@@ -160,6 +174,10 @@ Body parcial:
 
 Respuesta `200`: detalle actualizado.
 
+### DELETE `/api/v1/performance-indicator-details/{entity_id}`
+
+Respuesta `204`: sin contenido.
+
 ## Performance Evaluations
 
 ### GET `/api/v1/performance-evaluations`
@@ -193,6 +211,10 @@ Body parcial:
 ```
 
 Respuesta `200`: evaluacion actualizada.
+
+### DELETE `/api/v1/performance-evaluations/{entity_id}`
+
+Respuesta `204`: sin contenido.
 
 ## Performance Evaluation Details
 
@@ -230,6 +252,10 @@ Body parcial:
 ```
 
 Respuesta `200`: detalle actualizado.
+
+### DELETE `/api/v1/performance-evaluation-details/{entity_id}`
+
+Respuesta `204`: sin contenido.
 
 ## Assesment Evidence
 

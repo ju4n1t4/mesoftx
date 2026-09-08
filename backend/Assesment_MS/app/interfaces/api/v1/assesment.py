@@ -74,6 +74,14 @@ def update_student_outcome(entity_id: int, payload: StudentOutcomeUpdate, db: Se
         raise map_repository_error(exc) from exc
 
 
+@router.delete("/student-outcomes/{entity_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_student_outcome(entity_id: int, db: Session = Depends(db_session)):
+    try:
+        _service(StudentOutcomeRepository, db).delete(entity_id)
+    except (EntityNotFoundError, InvalidReferenceError) as exc:
+        raise map_repository_error(exc) from exc
+
+
 @router.get("/performance-indicators", response_model=list[PerformanceIndicatorResponse])
 def list_performance_indicators(db: Session = Depends(db_session)):
     return _service(PerformanceIndicatorRepository, db).list()
@@ -91,6 +99,14 @@ def create_performance_indicator(payload: PerformanceIndicatorCreate, db: Sessio
 def update_performance_indicator(entity_id: int, payload: PerformanceIndicatorUpdate, db: Session = Depends(db_session)):
     try:
         return _service(PerformanceIndicatorRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))
+    except (EntityNotFoundError, InvalidReferenceError) as exc:
+        raise map_repository_error(exc) from exc
+
+
+@router.delete("/performance-indicators/{entity_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_performance_indicator(entity_id: int, db: Session = Depends(db_session)):
+    try:
+        _service(PerformanceIndicatorRepository, db).delete(entity_id)
     except (EntityNotFoundError, InvalidReferenceError) as exc:
         raise map_repository_error(exc) from exc
 
@@ -124,6 +140,14 @@ def update_performance_indicator_detail(
         raise map_repository_error(exc) from exc
 
 
+@router.delete("/performance-indicator-details/{entity_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_performance_indicator_detail(entity_id: int, db: Session = Depends(db_session)):
+    try:
+        _service(PerformanceIndicatorDetailRepository, db).delete(entity_id)
+    except (EntityNotFoundError, InvalidReferenceError) as exc:
+        raise map_repository_error(exc) from exc
+
+
 @router.get("/performance-evaluations", response_model=list[PerformanceEvaluationResponse])
 def list_performance_evaluations(db: Session = Depends(db_session)):
     return _service(PerformanceEvaluationRepository, db).list()
@@ -141,6 +165,14 @@ def create_performance_evaluation(payload: PerformanceEvaluationCreate, db: Sess
 def update_performance_evaluation(entity_id: int, payload: PerformanceEvaluationUpdate, db: Session = Depends(db_session)):
     try:
         return _service(PerformanceEvaluationRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))
+    except (EntityNotFoundError, InvalidReferenceError) as exc:
+        raise map_repository_error(exc) from exc
+
+
+@router.delete("/performance-evaluations/{entity_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_performance_evaluation(entity_id: int, db: Session = Depends(db_session)):
+    try:
+        _service(PerformanceEvaluationRepository, db).delete(entity_id)
     except (EntityNotFoundError, InvalidReferenceError) as exc:
         raise map_repository_error(exc) from exc
 
@@ -170,6 +202,14 @@ def update_performance_evaluation_detail(
 ):
     try:
         return _service(PerformanceEvaluationDetailRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))
+    except (EntityNotFoundError, InvalidReferenceError) as exc:
+        raise map_repository_error(exc) from exc
+
+
+@router.delete("/performance-evaluation-details/{entity_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_performance_evaluation_detail(entity_id: int, db: Session = Depends(db_session)):
+    try:
+        _service(PerformanceEvaluationDetailRepository, db).delete(entity_id)
     except (EntityNotFoundError, InvalidReferenceError) as exc:
         raise map_repository_error(exc) from exc
 

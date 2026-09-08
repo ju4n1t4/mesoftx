@@ -30,6 +30,9 @@ class BaseRepositoryPort(Protocol):
     def update(self, entity_id: int, data: dict[str, Any]) -> Any | None:
         ...
 
+    def delete(self, entity_id: int) -> bool:
+        ...
+
 
 class AssesmentEvidenceWithResultsRepositoryPort(BaseRepositoryPort, Protocol):
     def create_with_results(self, evidence_data: dict[str, Any], results_data: list[dict[str, Any]]) -> tuple[Any, list[Any]]:

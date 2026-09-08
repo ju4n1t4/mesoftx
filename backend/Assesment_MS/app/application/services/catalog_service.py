@@ -24,3 +24,8 @@ class CatalogService:
         if not entity:
             raise EntityNotFoundError("Record not found.")
         return entity
+
+    def delete(self, entity_id: int) -> None:
+        deleted = self.repository.delete(entity_id)
+        if not deleted:
+            raise EntityNotFoundError("Record not found.")

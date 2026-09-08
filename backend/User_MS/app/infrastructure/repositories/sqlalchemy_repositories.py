@@ -45,6 +45,14 @@ class SqlAlchemyRepository:
             setattr(entity, key, value)
         return self._commit(entity)
 
+    def delete(self, entity_id: int) -> bool:
+        entity = self.get_by_id(entity_id)
+        if not entity:
+            return False
+        self.db.delete(entity)
+        self.db.commit()
+        return True
+
     def _commit(self, entity: Any) -> Any:
         try:
             self.db.commit()

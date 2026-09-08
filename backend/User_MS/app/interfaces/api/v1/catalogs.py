@@ -175,6 +175,14 @@ def update_career(entity_id: int, payload: CareerUpdate, db: Session = Depends(d
         raise map_repository_error(exc) from exc
 
 
+@router.delete("/careers/{entity_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_career(entity_id: int, db: Session = Depends(db_session)):
+    try:
+        _service(CareerRepository, db).delete(entity_id)
+    except EntityNotFoundError as exc:
+        raise map_repository_error(exc) from exc
+
+
 @router.get("/subjects", response_model=list[SubjectResponse])
 def list_subjects(db: Session = Depends(db_session)):
     return _service(SubjectRepository, db).list()

@@ -31,6 +31,24 @@ from faculty f
 where f.code = 'DEF'
 on conflict (code) do nothing;
 
+insert into career (name, code, faculty_id, description, accreditation, progress, status)
+select 'Ingenieria de Sistemas', 'IS', f.id, 'Programa academico de Ingenieria de Sistemas.', 'Acreditado ABET vigente 2024-2030', 88, 'acreditado'
+from faculty f
+where f.code = 'DEF'
+on conflict (code) do nothing;
+
+insert into career (name, code, faculty_id, description, accreditation, progress, status)
+select 'Ingenieria Industrial', 'II', f.id, 'Programa academico de Ingenieria Industrial.', 'En proceso de acreditacion', 74, 'en-proceso'
+from faculty f
+where f.code = 'DEF'
+on conflict (code) do nothing;
+
+insert into career (name, code, faculty_id, description, accreditation, progress, status)
+select 'Ingenieria Biomedica', 'IB', f.id, 'Programa academico de Ingenieria Biomedica.', 'Acreditado ABET vigente 2023-2029', 81, 'acreditado'
+from faculty f
+where f.code = 'DEF'
+on conflict (code) do nothing;
+
 insert into users (name, surname, code, email, password, role_id, career_id)
 select
     'Admin',

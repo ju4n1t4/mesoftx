@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -41,6 +41,14 @@ class SqlAlchemyRepository:
             setattr(entity, key, value)
         return self._commit(entity)
 
+    def delete(self, entity_id: int) -> bool:
+        entity = self.get_by_id(entity_id)
+        if not entity:
+            return False
+        self.db.delete(entity)
+        self.db.commit()
+        return True
+
     def _commit(self, entity: Any) -> Any:
         try:
             self.db.commit()
@@ -57,6 +65,16 @@ class StudentOutcomeRepository(SqlAlchemyRepository):
 
 class PerformanceIndicatorRepository(SqlAlchemyRepository):
     model = PerformanceIndicatorModel
+
+    def delete(self, entity_id: int) -> bool:
+        entity = self.get_by_id(entity_id)
+        if not entity:
+            return False
+        self.db.execute(delete(PerformanceEvaluationDetailModel).where(PerformanceEvaluationDetailModel.performance_indicator_id == entity_id))
+        self.db.execute(delete(PerformanceIndicatorDetailModel).where(PerformanceIndicatorDetailModel.performance_indicator_id == entity_id))
+        self.db.delete(entity)
+        self.db.commit()
+        return True
 
 
 class PerformanceIndicatorDetailRepository(SqlAlchemyRepository):

@@ -36,8 +36,20 @@ create table if not exists career (
     name varchar(255) not null unique,
     code varchar(25) not null unique,
     faculty_id integer not null,
-    description text
+    description text,
+    accreditation varchar(255),
+    progress integer default 0,
+    status varchar(25) default 'en-proceso'
 );
+
+alter table career
+    add column if not exists accreditation varchar(255);
+
+alter table career
+    add column if not exists progress integer default 0;
+
+alter table career
+    add column if not exists status varchar(25) default 'en-proceso';
 
 create table if not exists subjects (
     id serial primary key,

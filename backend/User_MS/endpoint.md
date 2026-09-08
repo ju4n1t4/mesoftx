@@ -268,6 +268,7 @@ Respuesta: objeto facultad con `id`, `name`, `code`, `description`.
 - `GET /api/v1/careers`: retorna lista de carreras.
 - `POST /api/v1/careers`: crea carrera.
 - `PUT /api/v1/careers/{entity_id}`: actualiza carrera.
+- `DELETE /api/v1/careers/{entity_id}`: elimina carrera.
 
 Body create:
 
@@ -276,11 +277,14 @@ Body create:
   "name": "Ingenieria de Sistemas",
   "code": "IS",
   "faculty_id": 1,
-  "description": "Descripcion de carrera"
+  "description": "Descripcion de carrera",
+  "accreditation": "Acreditado ABET vigente 2024-2030",
+  "progress": 88,
+  "status": "acreditado"
 }
 ```
 
-Respuesta: objeto carrera con `id`, `name`, `code`, `faculty_id`, `description`.
+Respuesta: objeto carrera con `id`, `name`, `code`, `faculty_id`, `description`, `accreditation`, `progress` y `status`.
 
 ### Subjects
 

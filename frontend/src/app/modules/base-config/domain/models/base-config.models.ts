@@ -10,6 +10,19 @@ export interface CareerRecord {
   code: string;
   faculty_id: number;
   description?: string | null;
+  accreditation?: string | null;
+  progress?: number;
+  status?: 'acreditado' | 'en-proceso' | 'evaluacion';
+}
+
+export interface CareerPayload {
+  name: string;
+  code: string;
+  faculty_id: number;
+  description?: string | null;
+  accreditation?: string | null;
+  progress: number;
+  status: 'acreditado' | 'en-proceso' | 'evaluacion';
 }
 
 export interface UserRecord {
@@ -42,6 +55,32 @@ export interface StudentOutcomeRecord {
   description?: string | null;
 }
 
+export interface PerformanceIndicatorRecord {
+  id: number;
+  code: string;
+  name?: string | null;
+}
+
+export interface PerformanceIndicatorDetailRecord {
+  id: number;
+  performance_indicator_id: number;
+  student_outcome_id: number;
+  description: string;
+}
+
+export interface PerformanceEvaluationRecord {
+  id: number;
+  evaluation_value: string;
+}
+
+export interface PerformanceEvaluationDetailRecord {
+  id: number;
+  performance_evaluation_id: number;
+  performance_indicator_id: number;
+  student_outcome_id: number;
+  description: string;
+}
+
 export interface ExternalConnection {
   id: number;
   name: string;
@@ -55,6 +94,8 @@ export interface AcademicProgram {
   id: number;
   name: string;
   code: string;
+  faculty_id: number;
+  description?: string | null;
   accreditation: string;
   progress: number;
   status: 'acreditado' | 'en-proceso' | 'evaluacion';
@@ -62,6 +103,11 @@ export interface AcademicProgram {
 
 export interface RubricIndicator {
   id: number;
+  detail_id?: number;
+  n1_id?: number;
+  n2_id?: number;
+  n3_id?: number;
+  n4_id?: number;
   code: string;
   description: string;
   n1: string;

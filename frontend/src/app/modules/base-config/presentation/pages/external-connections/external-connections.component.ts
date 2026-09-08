@@ -30,6 +30,7 @@ export class ExternalConnectionsComponent {
     { id: 2, name: 'Power BI', type: 'Analytics', endpoint: 'https://api.powerbi.com', owner: 'Acreditacion', status: 'conectado' },
     { id: 3, name: 'SIA - Sistema academico', type: 'API REST', endpoint: 'https://sia.unab.edu.co/api', owner: 'Registro academico', status: 'sincronizando' }
   ]);
+  readonly message = signal('');
   draft: ExternalConnection = { ...EMPTY_CONNECTION };
 
   newConnection(): void {
@@ -50,11 +51,13 @@ export class ExternalConnectionsComponent {
       const nextId = Math.max(0, ...this.connections().map((item) => item.id)) + 1;
       this.connections.update((items) => [...items, { ...this.draft, id: nextId }]);
     }
+    this.message.set('Conexion externa guardada localmente para futura integracion.');
     this.newConnection();
   }
 
   deleteConnection(id: number): void {
     this.connections.update((items) => items.filter((item) => item.id !== id));
+    this.message.set('Conexion externa retirada del espacio local de configuracion.');
   }
 
   toneFor(status: ExternalConnection['status']): 'success' | 'warning' | 'neutral' {
@@ -64,4 +67,5 @@ export class ExternalConnectionsComponent {
   labelFor(status: ExternalConnection['status']): string {
     return status === 'conectado' ? 'Conectado' : status === 'sincronizando' ? 'Sincronizando' : 'Inactivo';
   }
+
 }

@@ -51,11 +51,11 @@ on conflict (code) do nothing;
 
 insert into users (name, surname, code, email, password, role_id, career_id)
 select
-    'Admin',
-    'Admin',
+    'Administrador',
+    'MESOFTX',
     'ADMIN001',
-    'admin@example.com',
-    '$2b$12$CB7VijJO7m0Yf.YQR5qkT.Dc5AinZo75yIJOsjwLLhXpM5vh4sGK2',
+    'admin@mesoftx.local',
+    '$2b$12$lspUEiWC9GKS9cObDsI6xeOkrrz8OsN8zmARnEWzyguZQFgT8cYZO',
     r.id,
     c.id
 from roles r

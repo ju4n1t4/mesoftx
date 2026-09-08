@@ -40,8 +40,8 @@ Body:
 
 ```json
 {
-  "email": "admin@example.com",
-  "password": "admin"
+  "email": "admin@mesoftx.local",
+  "password": "AdminMesoftx2026!"
 }
 ```
 
@@ -89,10 +89,10 @@ Respuesta `200`: lista de usuarios.
 [
   {
     "id": 1,
-    "name": "Admin",
-    "surname": "MesoftX",
-    "code": "ADM001",
-    "email": "admin@example.com",
+    "name": "Administrador",
+    "surname": "MESOFTX",
+    "code": "ADMIN001",
+    "email": "admin@mesoftx.local",
     "active": true,
     "role_id": 1,
     "career_id": 1,

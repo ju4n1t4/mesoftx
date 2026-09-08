@@ -1,0 +1,48 @@
+import { Component, Input } from '@angular/core';
+
+@Component({
+  selector: 'mx-badge',
+  standalone: true,
+  template: '<span class="mx-badge" [attr.data-tone]="tone"><i class="pi pi-circle-fill"></i><ng-content /></span>',
+  styles: [`
+    .mx-badge {
+      align-items: center;
+      background: #f4f5f7;
+      border: 1px solid var(--mx-border);
+      border-radius: 999px;
+      color: var(--mx-muted);
+      display: inline-flex;
+      font-size: 11px;
+      font-weight: 800;
+      gap: 6px;
+      min-height: 24px;
+      padding: 0 10px;
+    }
+    .mx-badge i {
+      font-size: 7px;
+    }
+    .mx-badge[data-tone="success"] {
+      background: #ecfdf3;
+      border-color: #bbf7d0;
+      color: var(--mx-success);
+    }
+    .mx-badge[data-tone="warning"] {
+      background: #fff8db;
+      border-color: #fde68a;
+      color: #a16207;
+    }
+    .mx-badge[data-tone="danger"] {
+      background: #fff1f2;
+      border-color: #fecdd3;
+      color: var(--mx-danger);
+    }
+    .mx-badge[data-tone="secondary"] {
+      background: #f3e8ff;
+      border-color: #ddd6fe;
+      color: var(--mx-secondary);
+    }
+  `]
+})
+export class BadgeComponent {
+  @Input() tone: 'neutral' | 'success' | 'warning' | 'danger' | 'secondary' = 'neutral';
+}

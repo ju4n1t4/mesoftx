@@ -392,7 +392,7 @@ export class RegistrarValoracionComponent implements OnInit {
 
     this.saving.set(true);
     this.saveMsg.set('');
-    this.assesment.createAssesmentEvidenceWithResults(payload).subscribe({
+    this.assesment.createEvidenceWithResults(payload).subscribe({
       next: () => {
         this.saving.set(false);
         this.saveOk.set(true);

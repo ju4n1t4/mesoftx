@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { UserApiService } from '../../../core/services/user-api.service';
 import { AssesmentApiService } from '../../../core/services/assesment-api.service';
 import { AcademicPeriod, User, Role, PerformanceEvaluation, Career } from '../../../core/models/abet.models';
-import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-configuracion',
@@ -269,26 +268,37 @@ export class ConfiguracionComponent implements OnInit {
   constructor(private userApi: UserApiService, private assesment: AssesmentApiService) {}
 
   ngOnInit() {
-    forkJoin({
-      periods: this.userApi.getAcademicPeriods(),
-      users:   this.userApi.getUsers(),
-      roles:   this.userApi.getRoles(),
-      careers: this.userApi.getCareers(),
-      levels:  this.assesment.getPerformanceEvaluations(),
-    }).subscribe({
-      next: (r) => {
-        this.periods.set(r.periods);
-        this.users.set(r.users);
-        this.roles.set(r.roles);
-        this.careers.set(r.careers);
-        this.levels.set(r.levels);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.error.set('No se pudo conectar con el servicio. Verifica que los microservicios estén activos.');
-        this.loading.set(false);
-      },
+    // Carga best-effort. Los catálogos de User_MS (periodos, usuarios, roles,
+    // carreras) requieren JWT y pueden fallar en modo demo; los niveles de logro
+    // vienen de Assesment_MS (sin auth). Cada llamada se resuelve por separado
+    // para que un fallo parcial no bloquee toda la vista.
+    let pending = 5;
+    const done = () => { if (--pending === 0) this.loading.set(false); };
+
+    this.userApi.getAcademicPeriods().subscribe({
+      next: (p) => { this.periods.set(p ?? []); done(); },
+      error: () => { this.showConnHint(); done(); },
     });
+    this.userApi.getUsers().subscribe({
+      next: (u) => { this.users.set(u ?? []); done(); },
+      error: () => { this.showConnHint(); done(); },
+    });
+    this.userApi.getRoles().subscribe({
+      next: (r) => { this.roles.set(r ?? []); done(); },
+      error: () => { this.showConnHint(); done(); },
+    });
+    this.userApi.getCareers().subscribe({
+      next: (c) => { this.careers.set(c ?? []); done(); },
+      error: () => { this.showConnHint(); done(); },
+    });
+    this.assesment.getPerformanceEvaluations().subscribe({
+      next: (lv) => { this.levels.set(lv ?? []); done(); },
+      error: () => { done(); },
+    });
+  }
+
+  private showConnHint() {
+    this.error.set('Algunos catálogos requieren una sesión autenticada. Inicia sesión con tus credenciales para gestionarlos por completo.');
   }
 
   // ── Periodos ──

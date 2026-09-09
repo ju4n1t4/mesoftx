@@ -2,7 +2,6 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { UserApiService } from '../../../core/services/user-api.service';
 import { Career, Faculty } from '../../../core/models/abet.models';
-import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-programas',
@@ -70,26 +69,37 @@ import { forkJoin } from 'rxjs';
   `]
 })
 export class ProgramasComponent implements OnInit {
-  loading = signal(true);
-  error   = signal('');
+  loading  = signal(true);
+  error    = signal('');
+  careers  = signal<Career[]>([]);
+  faculties = signal<Faculty[]>([]);
   programs = signal<(Career & { faculty?: string })[]>([]);
 
   constructor(private userApi: UserApiService) {}
 
   ngOnInit() {
-    forkJoin({
-      careers:   this.userApi.getCareers(),
-      faculties: this.userApi.getFaculties(),
-    }).subscribe({
-      next: (r) => {
-        const facMap = new Map<number, string>(r.faculties.map((f: Faculty) => [f.id, f.name]));
-        this.programs.set(r.careers.map(c => ({ ...c, faculty: facMap.get(c.faculty_id) })));
-        this.loading.set(false);
-      },
-      error: () => {
-        this.error.set('No se pudo conectar con el servicio. Verifica que los microservicios estén activos.');
-        this.loading.set(false);
-      },
+    // Carga best-effort: /careers y /faculty requieren JWT y pueden fallar en
+    // modo demo. Se resuelven por separado para no bloquear toda la vista.
+    let pending = 2;
+    const done = () => { if (--pending === 0) this.rebuild(); };
+
+    this.userApi.getCareers().subscribe({
+      next: (c) => { this.careers.set(c ?? []); done(); },
+      error: () => { this.showConnHint(); done(); },
     });
+    this.userApi.getFaculties().subscribe({
+      next: (f) => { this.faculties.set(f ?? []); done(); },
+      error: () => { this.showConnHint(); done(); },
+    });
+  }
+
+  private rebuild() {
+    const facMap = new Map<number, string>(this.faculties().map(f => [f.id, f.name]));
+    this.programs.set(this.careers().map(c => ({ ...c, faculty: facMap.get(c.faculty_id) })));
+    this.loading.set(false);
+  }
+
+  private showConnHint() {
+    this.error.set('El catálogo de programas requiere una sesión autenticada. Inicia sesión con tus credenciales para verlo.');
   }
 }

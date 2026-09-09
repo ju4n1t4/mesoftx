@@ -1,0 +1,106 @@
+# ─────────────────────────────────────────────────────────────
+#  MESOFTX — .gitignore
+# ─────────────────────────────────────────────────────────────
+
+# ── Sistema operativo ────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── Secretos / variables de entorno ──────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ── Editores / IDE ───────────────────────────────────────────
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+*~
+
+# ═══════════════════════════════════════════════════════════════
+#  FRONTEND — Angular
+# ═══════════════════════════════════════════════════════════════
+frontend/node_modules/
+frontend/dist/
+frontend/tmp/
+frontend/out-tsc/
+frontend/bazel-out/
+frontend/.angular/
+frontend/.angular/cache/
+frontend/.sass-cache/
+frontend/connect.lock/
+frontend/coverage/
+frontend/libpeerconnection.log
+frontend/testem.log
+frontend/typings/
+frontend/.npm/
+frontend/npm-debug.log*
+frontend/yarn-error.log*
+
+# ═══════════════════════════════════════════════════════════════
+#  BACKEND — Python / FastAPI
+# ═══════════════════════════════════════════════════════════════
+# Bytecode y cachés
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Entornos virtuales
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Distribución / empaquetado
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing / cobertura
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# Bases de datos locales
+*.sqlite3
+*.db
+
+# ═══════════════════════════════════════════════════════════════
+#  DEPLOYMENT / DOCKER
+# ═══════════════════════════════════════════════════════════════
+# Volúmenes locales de datos
+deployment/**/data/
+deployment/**/pgdata/
+
+# ── Logs generales ───────────────────────────────────────────
+*.log
+logs/

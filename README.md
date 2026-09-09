@@ -33,7 +33,6 @@ deployment/
   db/                 Imagen de PostgreSQL y scripts de creación e inserción
   backend/            Compose y Dockerfiles de los dos microservicios
 frontend/             Aplicación Angular (código fuente, Dockerfile, nginx.conf)
-documents_Agents/     Documentación técnica: contexto, arquitectura, URLs y despliegue
 ```
 
 ## Requisitos

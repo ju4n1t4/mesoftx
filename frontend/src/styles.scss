@@ -1,0 +1,216 @@
+// ── Design Tokens ─────────────────────────────────────────────────────────
+:root {
+  // Marca
+  --primary:        #FFA502;
+  --primary-dark:   #E08C00;
+  --primary-light:  #FFD580;
+  --accent:         #7C3AED;
+  --accent-light:   #A78BFA;
+
+  // Niveles de logro
+  --n1-color:  #DC2626;
+  --n1-bg:     #FEF2F2;
+  --n2-color:  #EA580C;
+  --n2-bg:     #FFF7ED;
+  --n3-color:  #CA8A04;
+  --n3-bg:     #FEFCE8;
+  --n4-color:  #16A34A;
+  --n4-bg:     #F0FDF4;
+
+  // Badges de estado
+  --badge-open:    #16A34A;
+  --badge-open-bg: #DCFCE7;
+  --badge-pending:    #CA8A04;
+  --badge-pending-bg: #FEF9C3;
+  --badge-expired:    #DC2626;
+  --badge-expired-bg: #FEE2E2;
+  --badge-valid:      #7C3AED;
+  --badge-valid-bg:   #EDE9FE;
+  --badge-draft:      #6B7280;
+  --badge-draft-bg:   #F3F4F6;
+
+  // Neutros e interfaz — tema claro
+  --sidebar-bg:    #16151D;
+  --sidebar-text:  #9AA0AD;
+  --sidebar-hover: #26253A;
+  --sidebar-active-bg: rgba(255,165,2,0.15);
+  --sidebar-active-text: #FFA502;
+
+  --topbar-bg:   #FFFFFF;
+  --page-bg:     #F4F5F7;
+  --surface:     #FFFFFF;
+  --surface-2:   #F9FAFB;
+  --border:      #E7E9EE;
+  --text:        #1A1A2E;
+  --text-muted:  #7A7F8C;
+  --text-light:  #9AA0AD;
+
+  // Dimensiones
+  --sidebar-width:  220px;
+  --topbar-height:  60px;
+  --radius-sm:      6px;
+  --radius-md:      10px;
+  --radius-lg:      16px;
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--page-bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--primary); text-decoration: none; }
+
+// ── Chips de nivel de logro ───────────────────────────────────────────────
+.level-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  border: 1px solid transparent;
+  &.n1 { background: var(--n1-bg); color: var(--n1-color); border-color: #FECACA; }
+  &.n2 { background: var(--n2-bg); color: var(--n2-color); border-color: #FED7AA; }
+  &.n3 { background: var(--n3-bg); color: var(--n3-color); border-color: #FDE68A; }
+  &.n4 { background: var(--n4-bg); color: var(--n4-color); border-color: #BBF7D0; }
+}
+
+// ── Badges de estado ──────────────────────────────────────────────────────
+.status-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  &.open    { background: var(--badge-open-bg);    color: var(--badge-open); }
+  &.pending { background: var(--badge-pending-bg); color: var(--badge-pending); }
+  &.expired { background: var(--badge-expired-bg); color: var(--badge-expired); }
+  &.valid   { background: var(--badge-valid-bg);   color: var(--badge-valid); }
+  &.draft   { background: var(--badge-draft-bg);   color: var(--badge-draft); }
+}
+
+// ── Botones ───────────────────────────────────────────────────────────────
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 20px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600;
+  border: none; cursor: pointer; transition: background 0.15s, opacity 0.15s; text-decoration: none;
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+.btn-primary  { background: var(--primary); color: #1A1A2E; }
+.btn-primary:hover  { background: var(--primary-dark); color: #1A1A2E; }
+.btn-accent   { background: var(--accent); color: #fff; }
+.btn-accent:hover   { background: #6d28d9; }
+.btn-outline  { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+.btn-outline:hover  { border-color: var(--text-muted); color: var(--text); }
+.btn-danger   { background: transparent; border: 1px solid #FECACA; color: var(--n1-color); }
+.btn-danger:hover   { background: var(--n1-bg); }
+.btn-sm { padding: 6px 14px; font-size: 13px; }
+.btn-lg { padding: 12px 28px; font-size: 15px; }
+.btn-full { width: 100%; }
+
+// ── Tarjetas ──────────────────────────────────────────────────────────────
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 20px;
+}
+
+// ── Inputs ────────────────────────────────────────────────────────────────
+.form-control {
+  width: 100%; padding: 10px 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 14px; color: var(--text); font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  &:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,165,2,0.12); }
+  &::placeholder { color: var(--text-light); }
+}
+.form-label {
+  display: block; font-size: 13px; font-weight: 600;
+  color: var(--text); margin-bottom: 6px;
+}
+
+// ── Tabla ─────────────────────────────────────────────────────────────────
+.data-table {
+  width: 100%; border-collapse: collapse;
+  thead th {
+    padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-muted); background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    font-size: 14px; color: var(--text);
+  }
+  tbody tr:hover td { background: #F9FAFB; }
+  tbody tr:last-child td { border-bottom: none; }
+}
+
+// ── Page layout helpers ────────────────────────────────────────────────────
+.page-header {
+  margin-bottom: 24px;
+  h1 { font-size: 22px; font-weight: 700; color: var(--text); }
+  p  { color: var(--text-muted); margin-top: 4px; font-size: 13px; line-height: 1.6; }
+}
+.content-area { padding: 28px; }
+.stats-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px; margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 20px;
+  .stat-value { font-size: 28px; font-weight: 800; color: var(--text); }
+  .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px;
+    text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-sub   { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+}
+
+// ── SO pill selector ──────────────────────────────────────────────────────
+.so-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.so-tab {
+  padding: 6px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-muted);
+  cursor: pointer; transition: all 0.15s;
+  &:hover { border-color: var(--primary); color: var(--primary); }
+  &.active { background: var(--primary); border-color: var(--primary); color: #1A1A2E; }
+}
+
+// ── Rubric table ──────────────────────────────────────────────────────────
+.rubric-table {
+  width: 100%; border-collapse: collapse;
+  .col-id     { width: 200px; }
+  .col-level  { min-width: 180px; }
+  thead th {
+    padding: 10px 16px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    border-bottom: 2px solid var(--border); text-align: left;
+  }
+  thead th.n1 { color: var(--n1-color); }
+  thead th.n2 { color: var(--n2-color); }
+  thead th.n3 { color: var(--n3-color); }
+  thead th.n4 { color: var(--n4-color); }
+  tbody td {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    vertical-align: top; font-size: 13px; line-height: 1.6;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  .id-cell { font-weight: 700; color: var(--text); }
+  .id-desc { font-size: 12px; color: var(--text-muted); font-weight: 400; margin-top: 2px; }
+}
+.rubric-cell {
+  padding: 10px; border-radius: var(--radius-sm); border: 2px solid transparent;
+  cursor: pointer; transition: all 0.15s; font-size: 13px; line-height: 1.55;
+  background: var(--surface-2);
+  &:hover { background: var(--surface); border-color: var(--border); }
+  &.selected-n1 { background: var(--n1-bg); border-color: var(--n1-color); }
+  &.selected-n2 { background: var(--n2-bg); border-color: var(--n2-color); }
+  &.selected-n3 { background: var(--n3-bg); border-color: var(--n3-color); }
+  &.selected-n4 { background: var(--n4-bg); border-color: var(--n4-color); }
+}
+
+// ── PrimeNG overrides (mínimos) ───────────────────────────────────────────
+.p-toast .p-toast-message { font-family: 'Inter', sans-serif !important; border-radius: var(--radius-md) !important; }
+.p-dialog { border-radius: var(--radius-lg) !important; }
+.p-dialog-header { border-bottom: 1px solid var(--border) !important; padding: 20px 24px !important; }
+.p-dialog-content { padding: 20px 24px !important; }

@@ -58,6 +58,8 @@ class CareerModel(Base):
     code: Mapped[str] = mapped_column(String(25), unique=True, nullable=False)
     faculty_id: Mapped[int] = mapped_column(ForeignKey("faculty.id"), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
+    accredited: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    accreditation_end_year: Mapped[int | None] = mapped_column(Integer)
 
     faculty: Mapped[FacultyModel] = relationship()
 
@@ -97,7 +99,11 @@ class UserModel(Base):
     password: Mapped[str | None] = mapped_column(String(255))
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=False)
-    career_id: Mapped[int] = mapped_column(ForeignKey("career.id"), nullable=False)
+    # Borrado en cascada: si se elimina el programa académico (career), el usuario
+    # asociado se elimina automáticamente y pierde el acceso al sistema.
+    career_id: Mapped[int] = mapped_column(
+        ForeignKey("career.id", ondelete="CASCADE"), nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.current_timestamp())
 
     role: Mapped[RoleModel] = relationship()

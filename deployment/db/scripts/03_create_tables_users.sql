@@ -36,7 +36,9 @@ create table if not exists career (
     name varchar(255) not null unique,
     code varchar(25) not null unique,
     faculty_id integer not null,
-    description text
+    description text,
+    accredited boolean not null default false,
+    accreditation_end_year integer
 );
 
 create table if not exists subjects (
@@ -79,13 +81,16 @@ alter table users
     add constraint fk_user_role
     foreign key (role_id) references roles(id);
     
+-- Borrado en cascada: al eliminar un programa academico (career) se eliminan
+-- automaticamente los usuarios asociados, retirandoles el acceso al sistema.
 alter table users
     add constraint fk_user_career
-    foreign key (career_id) references career(id);
+    foreign key (career_id) references career(id) on delete cascade;
 
+-- Al eliminar el usuario se limpian tambien sus asignaciones de materias.
 alter table users_subjects
     add constraint fk_users_subject_user
-    foreign key (user_id) references users(id);
+    foreign key (user_id) references users(id) on delete cascade;
 
 alter table users_subjects
     add constraint fk_users_subject_subject

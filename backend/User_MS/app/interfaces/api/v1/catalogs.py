@@ -160,6 +160,14 @@ def list_careers(db: Session = Depends(db_session)):
     return _service(CareerRepository, db).list()
 
 
+@router.get("/careers/{entity_id}", response_model=CareerResponse)
+def get_career(entity_id: int, db: Session = Depends(db_session)):
+    try:
+        return _service(CareerRepository, db).get(entity_id)
+    except EntityNotFoundError as exc:
+        raise map_repository_error(exc) from exc
+
+
 @router.post("/careers", response_model=CareerResponse, status_code=status.HTTP_201_CREATED)
 def create_career(payload: CareerCreate, db: Session = Depends(db_session)):
     try:

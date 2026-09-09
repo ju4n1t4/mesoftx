@@ -109,6 +109,8 @@ class CareerCreate(BaseModel):
     code: str = Field(..., max_length=25)
     faculty_id: int = Field(..., gt=0)
     description: str | None = None
+    accredited: bool = False
+    accreditation_end_year: int | None = Field(default=None, ge=1900, le=2200)
 
 
 class CareerUpdate(BaseModel):
@@ -116,6 +118,8 @@ class CareerUpdate(BaseModel):
     code: str | None = Field(default=None, max_length=25)
     faculty_id: int | None = Field(default=None, gt=0)
     description: str | None = None
+    accredited: bool | None = None
+    accreditation_end_year: int | None = Field(default=None, ge=1900, le=2200)
 
 
 class CareerResponse(CareerCreate):

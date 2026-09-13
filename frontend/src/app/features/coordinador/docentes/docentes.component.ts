@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserApiService } from '../../../core/services/user-api.service';
 import { User, Role, Career, UserCreate } from '../../../core/models/abet.models';
-import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-docentes',
@@ -229,22 +228,29 @@ export class DocentesComponent implements OnInit {
   constructor(private userApi: UserApiService) {}
 
   ngOnInit() {
-    forkJoin({
-      users:   this.userApi.getUsers(),
-      roles:   this.userApi.getRoles(),
-      careers: this.userApi.getCareers(),
-    }).subscribe({
-      next: (r) => {
-        this.users.set(r.users);
-        this.roles.set(r.roles);
-        this.careers.set(r.careers);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.error.set('No se pudo conectar con el servicio. Verifica que los microservicios estén activos.');
-        this.loading.set(false);
-      },
+    // Carga best-effort: los endpoints de User_MS requieren JWT, por lo que en
+    // modo demo pueden fallar. Cada llamada se resuelve por separado para que
+    // un fallo parcial no bloquee toda la vista.
+    let pending = 3;
+    const done = () => { if (--pending === 0) this.loading.set(false); };
+    let anyFail = false;
+
+    this.userApi.getUsers().subscribe({
+      next: (u) => { this.users.set(u ?? []); done(); },
+      error: () => { anyFail = true; this.showConnHint(); done(); },
     });
+    this.userApi.getRoles().subscribe({
+      next: (r) => { this.roles.set(r ?? []); done(); },
+      error: () => { anyFail = true; this.showConnHint(); done(); },
+    });
+    this.userApi.getCareers().subscribe({
+      next: (c) => { this.careers.set(c ?? []); done(); },
+      error: () => { anyFail = true; this.showConnHint(); done(); },
+    });
+  }
+
+  private showConnHint() {
+    this.error.set('Algunos catálogos requieren una sesión autenticada. Inicia sesión con tus credenciales para ver y gestionar usuarios.');
   }
 
   private emptyForm(): UserCreate {

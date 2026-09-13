@@ -8,7 +8,12 @@ class Settings(BaseSettings):
     app_name: str = "Assesment_MS"
     app_env: str = "local"
     api_v1_prefix: str = "/api/v1"
+
     database_url: str = Field(..., min_length=1)
+
+    jwt_secret_key: str = Field(..., min_length=32)
+    jwt_algorithm: str = "HS256"
+
     cors_origins: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

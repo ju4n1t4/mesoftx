@@ -3,7 +3,8 @@ from typing import Any
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.interfaces.api.v1.dependencies import CurrentUser, get_current_user
+from app.core.roles import Role
+from app.interfaces.api.v1.dependencies import CurrentUser, get_current_user, require_roles
 
 from app.application.services.catalog_service import CatalogService
 from app.application.services.evidence_service import EvidenceService
@@ -49,6 +50,12 @@ from app.interfaces.api.v1.schemas import (
 
 router = APIRouter(tags=["Assesment"])
 
+# La parametrización de la rúbrica ABET (student outcomes, indicadores, niveles y
+# sus detalles) es una función administrativa: solo Admin y Coordinador pueden
+# crear o modificarla. El Docente queda excluido de estas operaciones y únicamente
+# registra evidencias y resultados de valoración.
+require_parametrization = require_roles(Role.ADMIN, Role.COORDINADOR)
+
 
 def _service(repository_class: type[Any], db: Session) -> CatalogService:
     return CatalogService(repository_class(db))
@@ -63,7 +70,7 @@ def list_student_outcomes(db: Session = Depends(db_session)):
 def create_student_outcome(
     payload: StudentOutcomeCreate,
     db: Session = Depends(db_session),
-    _: CurrentUser = Depends(get_current_user),
+    _: CurrentUser = Depends(require_parametrization),
 ):
     try:
         return _service(StudentOutcomeRepository, db).create(payload.model_dump())
@@ -76,7 +83,7 @@ def update_student_outcome(
     entity_id: int,
     payload: StudentOutcomeUpdate,
     db: Session = Depends(db_session),
-    _: CurrentUser = Depends(get_current_user),
+    _: CurrentUser = Depends(require_parametrization),
 ):
     try:
         return _service(StudentOutcomeRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))
@@ -93,7 +100,7 @@ def list_performance_indicators(db: Session = Depends(db_session)):
 def create_performance_indicator(
     payload: PerformanceIndicatorCreate,
     db: Session = Depends(db_session),
-    _: CurrentUser = Depends(get_current_user),
+    _: CurrentUser = Depends(require_parametrization),
 ):
     try:
         return _service(PerformanceIndicatorRepository, db).create(payload.model_dump())
@@ -106,7 +113,7 @@ def update_performance_indicator(
     entity_id: int,
     payload: PerformanceIndicatorUpdate,
     db: Session = Depends(db_session),
-    _: CurrentUser = Depends(get_current_user),
+    _: CurrentUser = Depends(require_parametrization),
 ):
     try:
         return _service(PerformanceIndicatorRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))
@@ -127,7 +134,7 @@ def list_performance_indicator_details(db: Session = Depends(db_session)):
 def create_performance_indicator_detail(
     payload: PerformanceIndicatorDetailCreate,
     db: Session = Depends(db_session),
-    _: CurrentUser = Depends(get_current_user),
+    _: CurrentUser = Depends(require_parametrization),
 ):
     try:
         return _service(PerformanceIndicatorDetailRepository, db).create(payload.model_dump())
@@ -140,7 +147,7 @@ def update_performance_indicator_detail(
     entity_id: int,
     payload: PerformanceIndicatorDetailUpdate,
     db: Session = Depends(db_session),
-    _: CurrentUser = Depends(get_current_user),
+    _: CurrentUser = Depends(require_parametrization),
 ):
     try:
         return _service(PerformanceIndicatorDetailRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))
@@ -157,7 +164,7 @@ def list_performance_evaluations(db: Session = Depends(db_session)):
 def create_performance_evaluation(
     payload: PerformanceEvaluationCreate,
     db: Session = Depends(db_session),
-    _: CurrentUser = Depends(get_current_user),
+    _: CurrentUser = Depends(require_parametrization),
 ):
     try:
         return _service(PerformanceEvaluationRepository, db).create(payload.model_dump())
@@ -170,7 +177,7 @@ def update_performance_evaluation(
     entity_id: int,
     payload: PerformanceEvaluationUpdate,
     db: Session = Depends(db_session),
-    _: CurrentUser = Depends(get_current_user),
+    _: CurrentUser = Depends(require_parametrization),
 ):
     try:
         return _service(PerformanceEvaluationRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))
@@ -191,7 +198,7 @@ def list_performance_evaluation_details(db: Session = Depends(db_session)):
 def create_performance_evaluation_detail(
     payload: PerformanceEvaluationDetailCreate,
     db: Session = Depends(db_session),
-    _: CurrentUser = Depends(get_current_user),
+    _: CurrentUser = Depends(require_parametrization),
 ):
     try:
         return _service(PerformanceEvaluationDetailRepository, db).create(payload.model_dump())
@@ -204,7 +211,7 @@ def update_performance_evaluation_detail(
     entity_id: int,
     payload: PerformanceEvaluationDetailUpdate,
     db: Session = Depends(db_session),
-    _: CurrentUser = Depends(get_current_user),
+    _: CurrentUser = Depends(require_parametrization),
 ):
     try:
         return _service(PerformanceEvaluationDetailRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))

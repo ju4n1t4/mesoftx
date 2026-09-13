@@ -74,6 +74,8 @@ export const routes: Routes = [
       },
       {
         path: 'programas',
+        canActivate: [roleGuard],
+        data: { roles: ['Coordinador'] },
         loadComponent: () => import('./features/coordinador/programas/programas.component').then(m => m.ProgramasComponent),
       },
       {
@@ -103,6 +105,10 @@ export const routes: Routes = [
       {
         path: 'configuracion',
         loadComponent: () => import('./features/coordinador/configuracion/configuracion.component').then(m => m.ConfiguracionComponent),
+      },
+      {
+        path: 'asignacion',
+        loadComponent: () => import('./features/coordinador/asignacion/asignacion.component').then(m => m.AsignacionComponent),
       },
     ],
   },

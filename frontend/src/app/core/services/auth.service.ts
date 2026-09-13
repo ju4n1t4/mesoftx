@@ -61,32 +61,42 @@ export class AuthService {
     );
   }
 
-  // ── Acceso rápido con usuarios institucionales ──
+  // ── Acceso rápido con usuarios institucionales reales de la BD ──
   loginAsDocente(): void {
-    this.login('docente@unab.edu.co', ACCESS_PASSWORD).subscribe({
+    this.login('jramirez@unab.edu.co', ACCESS_PASSWORD).subscribe({
       error: () => this._fallbackSession('Docente'),
     });
   }
 
   loginAsCoordinador(): void {
-    this.login('coordinador@unab.edu.co', ACCESS_PASSWORD).subscribe({
+    this.login('orueda741@unab.edu.co', ACCESS_PASSWORD).subscribe({
       error: () => this._fallbackSession('Coordinador'),
     });
   }
 
-  // Sesión de respaldo si el backend no responde (solo navegación de UI).
-  private _fallbackSession(role: 'Docente' | 'Coordinador'): void {
-    const isDocente = role === 'Docente';
-    this._setUser({
-      id: isDocente ? 99 : 98,
-      name: role, surname: '',
-      email: isDocente ? 'docente@unab.edu.co' : 'coordinador@unab.edu.co',
-      code: isDocente ? 'DOC-DEMO' : 'COO-DEMO',
-      role_id: isDocente ? 3 : 2, role,
-      career_id: 1, subject_ids: isDocente ? [1, 2] : [], active: true,
+  loginAsAdmin(): void {
+    this.login('admin@example.com', ACCESS_PASSWORD).subscribe({
+      error: () => this._fallbackSession('Admin'),
     });
-    localStorage.setItem(TOKEN_KEY, isDocente ? 'demo-token-docente' : 'demo-token-coordinador');
-    this.router.navigate([isDocente ? '/docente/inicio' : '/coordinador']);
+  }
+
+  // Sesión de respaldo si el backend no responde (solo navegación de UI).
+  private _fallbackSession(role: 'Docente' | 'Coordinador' | 'Admin'): void {
+    const meta = {
+      Docente:     { id: 99, email: 'jramirez@unab.edu.co',  code: 'DOC-DEMO', role_id: 3, token: 'demo-token-docente',     subject_ids: [1, 2], route: '/docente/inicio' },
+      Coordinador: { id: 98, email: 'orueda741@unab.edu.co', code: 'COO-DEMO', role_id: 2, token: 'demo-token-coordinador', subject_ids: [] as number[], route: '/coordinador' },
+      Admin:       { id: 97, email: 'admin@example.com',     code: 'ADM-DEMO', role_id: 1, token: 'demo-token-admin',       subject_ids: [] as number[], route: '/coordinador/configuracion' },
+    }[role];
+
+    this._setUser({
+      id: meta.id,
+      name: role, surname: '',
+      email: meta.email, code: meta.code,
+      role_id: meta.role_id, role,
+      career_id: 1, subject_ids: meta.subject_ids, active: true,
+    });
+    localStorage.setItem(TOKEN_KEY, meta.token);
+    this.router.navigate([meta.route]);
   }
 
   logout(): void {
@@ -100,7 +110,7 @@ export class AuthService {
   getToken(): string | null { return localStorage.getItem(TOKEN_KEY); }
   isDemo(): boolean {
     const t = this.getToken();
-    return t === 'demo-token-docente' || t === 'demo-token-coordinador';
+    return t === 'demo-token-docente' || t === 'demo-token-coordinador' || t === 'demo-token-admin';
   }
 
   // ── Helpers ──
@@ -117,6 +127,7 @@ export class AuthService {
   }
   private _redirectByRole(role: string): void {
     if (role === 'Docente') this.router.navigate(['/docente/inicio']);
+    else if (role === 'Admin') this.router.navigate(['/coordinador/configuracion']);
     else this.router.navigate(['/coordinador']);
   }
 }

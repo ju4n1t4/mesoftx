@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserApiService } from '../../../core/services/user-api.service';
@@ -110,7 +110,7 @@ import { AcademicPeriod, User, Role, PerformanceEvaluation, Career } from '../..
               </select>
               <select class="uf-input uf-select" [(ngModel)]="newUserRoleId">
                 <option [ngValue]="null">Rol</option>
-                <option *ngFor="let r of roles()" [ngValue]="r.id">{{ r.name }}</option>
+                <option *ngFor="let r of assignableRoles()" [ngValue]="r.id">{{ r.name }}</option>
               </select>
               <button class="uf-save" (click)="addUser()" [disabled]="savingUser()">
                 <i class="pi pi-spin pi-spinner" *ngIf="savingUser()"></i>
@@ -249,6 +249,10 @@ export class ConfiguracionComponent implements OnInit {
   users   = signal<User[]>([]);
   roles   = signal<Role[]>([]);
   careers = signal<Career[]>([]);
+
+  // Los docentes son del proceso ABET y los gestiona el coordinador desde su
+  // vista "Docentes". Aquí (gestión general) el rol Docente no es asignable.
+  assignableRoles = computed(() => this.roles().filter(r => r.name.toLowerCase() !== 'docente'));
 
   // Estados de formularios
   showPeriodForm = signal(false);

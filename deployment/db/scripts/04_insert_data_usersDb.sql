@@ -37,14 +37,14 @@ where f.code = 'DEF'
 on conflict (code) do nothing;
 
 -- Usuario administrador inicial
--- email: admin@example.com   contraseña: 123
+-- email: admin@example.com   contraseña: Mesoftx2026!
 insert into users (name, surname, code, email, password, role_id, career_id)
 select
     'Admin',
     'Admin',
     'ADMIN001',
     'admin@example.com',
-    '$2b$12$BtON9Df4igMqeqFEimgqHu8.4755G6U7GFLpm7mn5aKi8TQQk48NS',
+    '$2b$12$Sb0jddLEM0RVPuhvXvnHmOHx3VpkADweYVBTrw1OmftRWTV.H7gF6',
     r.id,
     c.id
 from roles r
@@ -54,18 +54,35 @@ where r.name = 'Admin'
 on conflict (email) do nothing;
 
 -- Usuario coordinador inicial
--- email: orueda741@unab.edu.co   contraseña: 123
+-- email: orueda741@unab.edu.co   contraseña: Mesoftx2026!
 insert into users (name, surname, code, email, password, role_id, career_id)
 select
     'Óscar',
     'Rueda',
     'COORD001',
     'orueda741@unab.edu.co',
-    '$2b$12$BtON9Df4igMqeqFEimgqHu8.4755G6U7GFLpm7mn5aKi8TQQk48NS',
+    '$2b$12$Sb0jddLEM0RVPuhvXvnHmOHx3VpkADweYVBTrw1OmftRWTV.H7gF6',
     r.id,
     c.id
 from roles r
 cross join career c
 where r.name = 'Coordinador'
+  and c.code = 'DEF-CAR'
+on conflict (email) do nothing;
+
+-- Usuario docente inicial (proceso ABET, gestionado por el coordinador)
+-- email: jramirez@unab.edu.co   contraseña: Mesoftx2026!
+insert into users (name, surname, code, email, password, role_id, career_id)
+select
+    'Juliana',
+    'Ramírez',
+    'DOC001',
+    'jramirez@unab.edu.co',
+    '$2b$12$Sb0jddLEM0RVPuhvXvnHmOHx3VpkADweYVBTrw1OmftRWTV.H7gF6',
+    r.id,
+    c.id
+from roles r
+cross join career c
+where r.name = 'Docente'
   and c.code = 'DEF-CAR'
 on conflict (email) do nothing;

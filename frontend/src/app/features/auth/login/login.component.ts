@@ -101,6 +101,9 @@ import { AuthService } from '../../../core/services/auth.service';
               <button class="btn-demo accent" (click)="demoCoordinador()">
                 <i class="pi pi-shield"></i> Entrar como Coordinador
               </button>
+              <button class="btn-demo admin" (click)="demoAdmin()">
+                <i class="pi pi-cog"></i> Entrar como Administrador
+              </button>
             </div>
           </div>
         </div>
@@ -244,6 +247,8 @@ import { AuthService } from '../../../core/services/auth.service';
     .demo-divider::before, .demo-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
     .demo-divider span { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
     .demo-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn-demo.admin { grid-column: span 2; border-color: rgba(255,165,2,0.4); color: var(--primary); }
+    .btn-demo.admin:hover { background: rgba(255,165,2,0.06); }
     .btn-demo {
       padding: 10px 14px; border-radius: var(--radius-sm);
       border: 1px solid var(--border); background: #fff; color: var(--text);
@@ -290,4 +295,5 @@ export class LoginComponent {
   loginWithGoogle() { alert('Integración Google Workspace pendiente de configuración OAuth.'); }
   demoDocente()     { this.auth.loginAsDocente(); }
   demoCoordinador() { this.auth.loginAsCoordinador(); }
+  demoAdmin()       { this.auth.loginAsAdmin(); }
 }

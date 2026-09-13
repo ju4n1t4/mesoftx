@@ -98,10 +98,8 @@ import { User, Role, Career, UserCreate } from '../../../core/models/abet.models
               </div>
               <div class="form-field">
                 <label>Rol</label>
-                <select [(ngModel)]="form.role_id" class="fc">
-                  <option [ngValue]="0" disabled>Selecciona un rol</option>
-                  <option *ngFor="let r of roles()" [ngValue]="r.id">{{ r.name }}</option>
-                </select>
+                <input class="fc fc-locked" value="Docente" readonly />
+                <span class="field-hint">Los usuarios creados aquí se registran siempre con el rol Docente.</span>
               </div>
               <!-- ⭐ Campo Programa -->
               <div class="form-field span-2">
@@ -191,6 +189,7 @@ import { User, Role, Career, UserCreate } from '../../../core/models/abet.models
       font-size: 14px; color: var(--text); font-family: inherit; background: #fff;
     }
     .fc:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,165,2,0.12); }
+    .fc-locked { background: var(--surface-2); color: var(--text-muted); cursor: not-allowed; font-weight: 600; }
     .field-hint { font-size: 12px; color: var(--text-muted); }
     .form-error {
       display: flex; align-items: center; gap: 8px; margin-top: 16px;
@@ -260,8 +259,10 @@ export class DocentesComponent implements OnInit {
   openForm() {
     this.form = this.emptyForm();
     // Preselecciona el rol "Docente" si existe
+    // El rol siempre es Docente: es el único tipo de usuario que gestiona el
+    // coordinador. Se resuelve desde el catálogo o, en su defecto, el id 3.
     const docente = this.roles().find(r => r.name.toLowerCase() === 'docente');
-    if (docente) this.form.role_id = docente.id;
+    this.form.role_id = docente?.id ?? 3;
     this.formError.set('');
     this.showForm.set(true);
   }

@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
@@ -35,7 +35,7 @@ interface NavItem { label: string; icon: string; route: string; }
         <div class="sidebar-section-label">PANEL PRINCIPAL</div>
 
         <nav class="sidebar-nav">
-          <a *ngFor="let item of navItems"
+          <a *ngFor="let item of navItems()"
              [routerLink]="item.route"
              routerLinkActive="active"
              class="nav-item">
@@ -167,14 +167,25 @@ interface NavItem { label: string; icon: string; route: string; }
 })
 export class CoordinadorLayoutComponent {
 
-  navItems: NavItem[] = [
-    { label: 'Dashboard',        icon: 'pi-home',         route: '/coordinador/dashboard'        },
-    { label: 'Programas',        icon: 'pi-building',     route: '/coordinador/programas'        },
-    { label: 'Docentes',         icon: 'pi-users',        route: '/coordinador/docentes'         },
-    { label: 'Student Outcomes', icon: 'pi-list',         route: '/coordinador/student-outcomes' },
-    { label: 'Valoraciones',     icon: 'pi-check-square', route: '/coordinador/valoraciones'     },
-    { label: 'Configuración',    icon: 'pi-cog',          route: '/coordinador/configuracion'    },
-  ];
+  // El ítem de gestión de personas se muestra como "Usuarios" para el perfil
+  // administrador y como "Docentes" para el resto (coordinador). Los ítems
+  // "Dashboard", "Programas", "Student Outcomes" y "Valoraciones" solo se
+  // muestran al coordinador, no al administrador.
+  navItems = computed<NavItem[]>(() => {
+    const isAdmin = this.auth.role() === 'Admin';
+    return [
+      ...(isAdmin ? [] : [{ label: 'Dashboard', icon: 'pi-home', route: '/coordinador/dashboard' }]),
+      { label: isAdmin ? 'Usuarios' : 'Docentes', icon: 'pi-users', route: '/coordinador/docentes' },
+      ...(isAdmin ? [] : [{ label: 'Programas', icon: 'pi-building', route: '/coordinador/programas' }]),
+      ...(isAdmin ? [] : [{ label: 'Student Outcomes', icon: 'pi-list', route: '/coordinador/student-outcomes' }]),
+      ...(isAdmin ? [] : [{ label: 'Valoraciones', icon: 'pi-check-square', route: '/coordinador/valoraciones' }]),
+      // El administrador gestiona la asignación de accesos por perfil; el
+      // coordinador administra los parámetros generales de la plataforma.
+      ...(isAdmin
+        ? [{ label: 'Asignación', icon: 'pi-shield', route: '/coordinador/asignacion' }]
+        : [{ label: 'Configuración', icon: 'pi-cog', route: '/coordinador/configuracion' }]),
+    ];
+  });
 
   constructor(private auth: AuthService) {}
   fullName() { return `Prof. ${this.auth.user()?.name ?? ''} ${this.auth.user()?.surname ?? ''}`.trim(); }

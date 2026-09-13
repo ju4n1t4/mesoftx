@@ -104,3 +104,6 @@ deployment/**/pgdata/
 # ── Logs generales ───────────────────────────────────────────
 *.log
 logs/
+
+# ── Documentos de trabajo / seguimiento (no versionar) ───────
+frontend/PLAN_FRONTEND.md

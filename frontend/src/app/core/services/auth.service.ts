@@ -83,7 +83,7 @@ export class AuthService {
   }
 
   loginAsAdmin(): void {
-    this.login('admin@example.com', ACCESS_PASSWORD).subscribe({
+    this.login('admin@unab.edu.co', ACCESS_PASSWORD).subscribe({
       error: () => this._fallbackSession('Administrativo'),
     });
   }
@@ -94,7 +94,7 @@ export class AuthService {
       Profesor:       { id: 99, email: 'jramirez@unab.edu.co',  document_number: 'DOC-DEMO', role_id: 3, token: 'demo-token-profesor',    program_id: 'ISI' as string | null, route: '/profesor/mis-cursos' },
       Coordinador:    { id: 98, email: 'orueda741@unab.edu.co', document_number: 'COO-DEMO', role_id: 2, token: 'demo-token-coordinador', program_id: null as string | null, route: '/coordinador' },
       Auditor:        { id: 96, email: 'auditor@unab.edu.co',   document_number: 'AUD-DEMO', role_id: 4, token: 'demo-token-auditor',     program_id: null as string | null, route: '/auditor' },
-      Administrativo: { id: 97, email: 'admin@example.com',     document_number: 'ADM-DEMO', role_id: 1, token: 'demo-token-admin',       program_id: null as string | null, route: '/admin' },
+      Administrativo: { id: 97, email: 'admin@unab.edu.co',     document_number: 'ADM-DEMO', role_id: 1, token: 'demo-token-admin',       program_id: null as string | null, route: '/admin' },
     }[role];
 
     this._setUser({

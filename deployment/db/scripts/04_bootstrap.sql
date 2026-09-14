@@ -45,6 +45,7 @@ WHERE r.name = 'Administrativo'
 -- ---------------------------------------------------------------
 INSERT INTO users (document_number, name, email, password,
                    role_id, program_id, created_by)
+-- password: bcrypt de 'Mesoftx2026!' (contraseña inicial documentada en COMO_EJECUTAR.md)
 SELECT '1000000000', 'Administrador', 'admin@unab.edu.co',
-       '$2b$12$ks10v5zZPoljvvUEcramRugGIB1Px3n34LlcxeHynvQzQNb9qBEFm', r.id, NULL, NULL   -- created_by NULL: a él no lo creó nadie
+       '$2b$12$WsoimVRQt5PwhyQstNE5puHWjiliLurOLkfGoiQz.2ZAP.ekRGyOq', r.id, NULL, NULL   -- created_by NULL: a él no lo creó nadie
 FROM roles r WHERE r.name = 'Administrativo';

@@ -21,41 +21,53 @@ export const routes: Routes = [
     loadComponent: () => import('./features/publico/publico.component').then(m => m.PublicoComponent),
   },
 
-  // ── Módulo Docente ─────────────────────────────────────────────────────
+  // ── Módulo Profesor ────────────────────────────────────────────────────
   {
-    path: 'docente',
-    loadComponent: () => import('./layout/docente-layout/docente-layout.component').then(m => m.DocenteLayoutComponent),
+    path: 'profesor',
+    loadComponent: () => import('./layout/profesor-layout/profesor-layout.component').then(m => m.ProfesorLayoutComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['Profesor', 'Administrativo'] },
+    data: { roles: ['Profesor'] },
     children: [
-      { path: '', redirectTo: 'inicio', pathMatch: 'full' },
+      { path: '', redirectTo: 'mis-cursos', pathMatch: 'full' },
+      {
+        path: 'mis-cursos',
+        loadComponent: () => import('./features/profesor/mis-cursos/mis-cursos.component').then(m => m.MisCursosComponent),
+      },
+      {
+        path: 'estudiantes/:nrc',
+        loadComponent: () => import('./features/profesor/estudiantes/estudiantes.component').then(m => m.EstudiantesComponent),
+      },
+      {
+        path: 'valorar',
+        loadComponent: () => import('./features/profesor/valorar/valorar.component').then(m => m.ValorarComponent),
+      },
       {
         path: 'inicio',
-        loadComponent: () => import('./features/docente/inicio-acreditacion/inicio-acreditacion.component').then(m => m.InicioAcreditacionComponent),
+        loadComponent: () => import('./features/profesor/inicio-acreditacion/inicio-acreditacion.component').then(m => m.InicioAcreditacionComponent),
       },
       {
         path: 'dashboard',
-        loadComponent: () => import('./features/docente/dashboard/docente-dashboard.component').then(m => m.DocenteDashboardComponent),
+        loadComponent: () => import('./features/profesor/dashboard/profesor-dashboard.component').then(m => m.ProfesorDashboardComponent),
       },
       {
         path: 'valoraciones',
-        loadComponent: () => import('./features/docente/valoraciones/registrar/registrar-valoracion.component').then(m => m.RegistrarValoracionComponent),
+        loadComponent: () => import('./features/profesor/valoraciones/registrar/registrar-valoracion.component').then(m => m.RegistrarValoracionComponent),
       },
       {
         path: 'valoraciones/registrar',
-        loadComponent: () => import('./features/docente/valoraciones/registrar/registrar-valoracion.component').then(m => m.RegistrarValoracionComponent),
+        loadComponent: () => import('./features/profesor/valoraciones/registrar/registrar-valoracion.component').then(m => m.RegistrarValoracionComponent),
       },
       {
         path: 'mis-estudiantes',
-        loadComponent: () => import('./features/docente/mis-estudiantes/mis-estudiantes.component').then(m => m.MisEstudiantesComponent),
+        loadComponent: () => import('./features/profesor/mis-estudiantes/mis-estudiantes.component').then(m => m.MisEstudiantesComponent),
       },
       {
         path: 'indicadores',
-        loadComponent: () => import('./features/docente/indicadores/indicadores.component').then(m => m.IndicadoresComponent),
+        loadComponent: () => import('./features/profesor/indicadores/indicadores.component').then(m => m.IndicadoresComponent),
       },
       {
         path: 'soporte',
-        loadComponent: () => import('./features/docente/soporte/soporte.component').then(m => m.SoporteComponent),
+        loadComponent: () => import('./features/profesor/soporte/soporte.component').then(m => m.SoporteComponent),
       },
     ],
   },
@@ -65,7 +77,7 @@ export const routes: Routes = [
     path: 'coordinador',
     loadComponent: () => import('./layout/coordinador-layout/coordinador-layout.component').then(m => m.CoordinadorLayoutComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['Coordinador', 'Administrativo'] },
+    data: { roles: ['Coordinador'] },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
@@ -77,6 +89,21 @@ export const routes: Routes = [
         canActivate: [roleGuard],
         data: { roles: ['Coordinador'] },
         loadComponent: () => import('./features/coordinador/programas/programas.component').then(m => m.ProgramasComponent),
+      },
+      {
+        path: 'materias',
+        data: { roles: ['Coordinador', 'Administrativo'] },
+        loadComponent: () => import('./features/coordinador/materias/materias.component').then(m => m.MateriasComponent),
+      },
+      {
+        path: 'asignacion-materias',
+        data: { roles: ['Coordinador', 'Administrativo'] },
+        loadComponent: () => import('./features/coordinador/asignacion-materias/asignacion-materias.component').then(m => m.AsignacionMateriasComponent),
+      },
+      {
+        path: 'programacion',
+        data: { roles: ['Coordinador', 'Administrativo'] },
+        loadComponent: () => import('./features/coordinador/programacion/programacion.component').then(m => m.ProgramacionComponent),
       },
       {
         path: 'docentes',
@@ -110,6 +137,31 @@ export const routes: Routes = [
         path: 'asignacion',
         loadComponent: () => import('./features/coordinador/asignacion/asignacion.component').then(m => m.AsignacionComponent),
       },
+    ],
+  },
+
+  // ── Módulo Administrativo ──────────────────────────────────────────────
+  {
+    path: 'admin',
+    loadComponent: () => import('./layout/admin-layout/admin-layout.component').then(m => m.AdminLayoutComponent),
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['Administrativo'] },
+    children: [
+      { path: '', redirectTo: 'perfiles', pathMatch: 'full' },
+      { path: 'perfiles', loadComponent: () => import('./features/admin/perfiles/perfiles.component').then(m => m.PerfilesComponent) },
+      { path: 'usuarios', loadComponent: () => import('./features/admin/usuarios/usuarios.component').then(m => m.UsuariosComponent) },
+    ],
+  },
+
+  // ── Módulo Auditor ─────────────────────────────────────────────────────
+  {
+    path: 'auditor',
+    loadComponent: () => import('./layout/auditor-layout/auditor-layout.component').then(m => m.AuditorLayoutComponent),
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['Auditor'] },
+    children: [
+      { path: '', redirectTo: 'indicadores', pathMatch: 'full' },
+      { path: 'indicadores', loadComponent: () => import('./features/auditor/indicadores/auditor-indicadores.component').then(m => m.AuditorIndicadoresComponent) },
     ],
   },
 

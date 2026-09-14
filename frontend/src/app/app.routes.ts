@@ -106,6 +106,16 @@ export const routes: Routes = [
         loadComponent: () => import('./features/coordinador/programacion/programacion.component').then(m => m.ProgramacionComponent),
       },
       {
+        path: 'avance',
+        data: { roles: ['Coordinador', 'Administrativo'] },
+        loadComponent: () => import('./features/coordinador/avance/avance.component').then(m => m.AvanceComponent),
+      },
+      {
+        path: 'indicadores',
+        data: { roles: ['Coordinador', 'Administrativo'] },
+        loadComponent: () => import('./features/coordinador/indicadores/indicadores.component').then(m => m.CoordIndicadoresComponent),
+      },
+      {
         path: 'profesores',
         loadComponent: () => import('./features/coordinador/profesores/profesores.component').then(m => m.ProfesoresComponent),
       },

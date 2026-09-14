@@ -179,6 +179,8 @@ export class CoordinadorLayoutComponent {
     { label: 'Asignar NRC',       icon: 'pi-sitemap',      route: '/coordinador/asignacion-materias' },
     { label: 'Student Outcomes',  icon: 'pi-list',         route: '/coordinador/student-outcomes' },
     { label: 'Programación',      icon: 'pi-calendar',     route: '/coordinador/programacion' },
+    { label: 'Avance de valoración', icon: 'pi-chart-line', route: '/coordinador/avance' },
+    { label: 'Indicadores',       icon: 'pi-chart-bar',    route: '/coordinador/indicadores' },
     { label: 'Resultados rúbricas', icon: 'pi-check-square', route: '/coordinador/valoraciones' },
   ];
 

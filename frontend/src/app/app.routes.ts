@@ -80,27 +80,27 @@ export const routes: Routes = [
       },
       {
         path: 'materias',
-        data: { roles: ['Coordinador', 'Administrativo'] },
+        data: { roles: ['Coordinador'] },
         loadComponent: () => import('./features/coordinador/materias/materias.component').then(m => m.MateriasComponent),
       },
       {
         path: 'asignacion-materias',
-        data: { roles: ['Coordinador', 'Administrativo'] },
+        data: { roles: ['Coordinador'] },
         loadComponent: () => import('./features/coordinador/asignacion-materias/asignacion-materias.component').then(m => m.AsignacionMateriasComponent),
       },
       {
         path: 'programacion',
-        data: { roles: ['Coordinador', 'Administrativo'] },
+        data: { roles: ['Coordinador'] },
         loadComponent: () => import('./features/coordinador/programacion/programacion.component').then(m => m.ProgramacionComponent),
       },
       {
         path: 'avance',
-        data: { roles: ['Coordinador', 'Administrativo'] },
+        data: { roles: ['Coordinador'] },
         loadComponent: () => import('./features/coordinador/avance/avance.component').then(m => m.AvanceComponent),
       },
       {
         path: 'indicadores',
-        data: { roles: ['Coordinador', 'Administrativo'] },
+        data: { roles: ['Coordinador'] },
         loadComponent: () => import('./features/coordinador/indicadores/indicadores.component').then(m => m.CoordIndicadoresComponent),
       },
       {

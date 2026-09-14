@@ -1,9 +1,11 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, status
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.application.services.catalog_service import CatalogService
+from app.infrastructure.clients.assesment_ms_client import AssesmentMsClient
 from app.infrastructure.repositories.sqlalchemy_repositories import (
     CollegeRepository,
     EntityAlreadyExistsError,
@@ -73,7 +75,6 @@ def delete_role(entity_id: int, db: Session = Depends(db_session), _=Depends(req
     repo = RoleRepository(db)
     count = repo.count_users(entity_id)
     if count > 0:
-        from fastapi import HTTPException
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"El perfil tiene {count} usuarios asignados")
     if not repo.delete(entity_id):
         raise map_repository_error(EntityNotFoundError("Role not found."))
@@ -215,11 +216,27 @@ def update_subject(nrc: int, payload: SubjectUpdate, db: Session = Depends(db_se
 
 
 @router.delete("/subjects/{nrc}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_subject(nrc: int, db: Session = Depends(db_session), _=Depends(require_permission("SUBJECT_CRUD"))):
-    # NOTA (paso 12): el borrado cruzado de rúbricas/schedule_subjects de este NRC
-    # queda pendiente de cablear con AssesmentMsClient. Ver reporte del Bloque D.
-    if not SubjectRepository(db).delete(nrc):
+async def delete_subject(nrc: int, db: Session = Depends(db_session), _=Depends(require_permission("SUBJECT_CRUD"))):
+    """Borra una materia (NRC). Antes borra en Assesment_MS sus rúbricas/evidencias
+    y sus schedule_subjects; 409 si hay periodos cerrados; 503 si no responde."""
+    repo = SubjectRepository(db)
+    if not repo.get_by_id(nrc):
         raise map_repository_error(EntityNotFoundError("Subject not found."))
+    client = AssesmentMsClient()
+    try:
+        ok, closed = await client.delete_rubrics(subjects_id=nrc)
+        if not ok:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Tiene valoraciones en periodos cerrados: {', '.join(closed)}",
+            )
+        await client.delete_schedule_subjects(nrc)
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Servicio de valoraciones no disponible; no se borró nada",
+        ) from exc
+    repo.delete(nrc)
     return None
 
 

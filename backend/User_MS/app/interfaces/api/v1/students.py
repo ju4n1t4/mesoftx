@@ -107,3 +107,31 @@ def update_student(
         return student
     except EntityNotFoundError as exc:
         raise map_repository_error(exc) from exc
+
+
+@router.delete("/students/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_student(
+    student_id: int,
+    db: Session = Depends(db_session),
+    _=Depends(require_permission("TEACHER_CRUD")),
+):
+    """Borra un estudiante. Antes borra en Assesment_MS sus rúbricas y evidencias;
+    409 si hay periodos cerrados; 503 si el servicio no responde (paso 12)."""
+    repo = StudentRepository(db)
+    if not repo.get_by_id(student_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found.")
+    client = AssesmentMsClient()
+    try:
+        ok, closed = await client.delete_rubrics(student_id=student_id)
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Servicio de valoraciones no disponible; no se borró nada",
+        ) from exc
+    if not ok:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Tiene valoraciones en periodos cerrados: {', '.join(closed)}",
+        )
+    repo.delete(student_id)
+    return None

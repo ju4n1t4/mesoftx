@@ -258,14 +258,15 @@ import { UserApiService } from '../../../core/services/user-api.service';
     }
     .demo-divider::before, .demo-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
     .demo-divider span { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
-    .demo-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .btn-demo.admin { grid-column: span 2; border-color: rgba(255,165,2,0.4); color: var(--primary); }
+    .demo-btns { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 10px; }
+    .btn-demo.admin { border-color: rgba(255,165,2,0.4); color: var(--primary); }
     .btn-demo.admin:hover { background: rgba(255,165,2,0.06); }
     .btn-demo {
       padding: 10px 14px; border-radius: var(--radius-sm);
       border: 1px solid var(--border); background: #fff; color: var(--text);
       font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
       display: flex; align-items: center; justify-content: center; gap: 7px;
+      text-align: center; white-space: nowrap; min-height: 44px;
       transition: all 0.15s;
     }
     .btn-demo:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }

@@ -11,17 +11,17 @@ class UserMsClient:
 
     async def user_exists(self, user_id: int) -> bool:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{self.base_url}/api/v1/users/{user_id}", headers=self.headers)
+            resp = await client.get(f"{self.base_url}/api/v1/internal/users/{user_id}", headers=self.headers)
             return resp.status_code == 200
 
     async def subject_exists(self, nrc: int) -> bool:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{self.base_url}/api/v1/subjects/{nrc}", headers=self.headers)
+            resp = await client.get(f"{self.base_url}/api/v1/internal/subjects/{nrc}", headers=self.headers)
             return resp.status_code == 200
 
     async def period_exists(self, period_id: int) -> bool:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{self.base_url}/api/v1/periods/{period_id}", headers=self.headers)
+            resp = await client.get(f"{self.base_url}/api/v1/internal/periods/{period_id}", headers=self.headers)
             return resp.status_code == 200
 
     async def student_exists(self, student_id: int) -> bool:

@@ -46,7 +46,7 @@ import { of } from 'rxjs';
       <!-- Mis cursos activos -->
       <div class="section-header">
         <h2>Mis cursos activos</h2>
-        <a routerLink="/profesor/valoraciones" class="ver-todos">Ver todos →</a>
+        <a routerLink="/profesor/mis-cursos" class="ver-todos">Ver todos →</a>
       </div>
 
       <div class="state-box" *ngIf="loading()">
@@ -71,7 +71,7 @@ import { of } from 'rxjs';
             <span class="cc-code">{{ c.code }}</span>
           </div>
           <div class="cc-name">{{ c.name }}</div>
-          <a [routerLink]="['/profesor/valoraciones/registrar']" class="cc-link">
+          <a [routerLink]="['/profesor/valorar']" class="cc-link">
             Registrar valoración →
           </a>
         </div>

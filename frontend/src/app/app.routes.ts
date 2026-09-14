@@ -50,18 +50,6 @@ export const routes: Routes = [
         loadComponent: () => import('./features/profesor/dashboard/profesor-dashboard.component').then(m => m.ProfesorDashboardComponent),
       },
       {
-        path: 'valoraciones',
-        loadComponent: () => import('./features/profesor/valoraciones/registrar/registrar-valoracion.component').then(m => m.RegistrarValoracionComponent),
-      },
-      {
-        path: 'valoraciones/registrar',
-        loadComponent: () => import('./features/profesor/valoraciones/registrar/registrar-valoracion.component').then(m => m.RegistrarValoracionComponent),
-      },
-      {
-        path: 'mis-estudiantes',
-        loadComponent: () => import('./features/profesor/mis-estudiantes/mis-estudiantes.component').then(m => m.MisEstudiantesComponent),
-      },
-      {
         path: 'indicadores',
         loadComponent: () => import('./features/profesor/indicadores/indicadores.component').then(m => m.IndicadoresComponent),
       },

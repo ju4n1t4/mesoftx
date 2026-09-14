@@ -117,6 +117,24 @@ class SoScheduleRepository(SqlAlchemyRepository):
     def list_current(self) -> list[SoScheduleModel]:
         return list(self.db.scalars(select(SoScheduleModel).where(SoScheduleModel.status == "EN_CURSO")).all())
 
+    def _scope_by_nrcs(self, stmt, nrcs: list[int] | None):
+        if nrcs is None:
+            return stmt
+        sub = select(ScheduleSubjectModel.schedule_id).where(ScheduleSubjectModel.subjects_id.in_(nrcs))
+        return stmt.where(SoScheduleModel.id.in_(sub))
+
+    def list_all_scoped(self, nrcs: list[int] | None = None) -> list[SoScheduleModel]:
+        stmt = self._scope_by_nrcs(select(SoScheduleModel), nrcs)
+        return list(self.db.scalars(stmt).all())
+
+    def list_by_period_scoped(self, period_id: int, nrcs: list[int] | None = None) -> list[SoScheduleModel]:
+        stmt = self._scope_by_nrcs(select(SoScheduleModel).where(SoScheduleModel.period_id == period_id), nrcs)
+        return list(self.db.scalars(stmt).all())
+
+    def list_current_scoped(self, nrcs: list[int] | None = None) -> list[SoScheduleModel]:
+        stmt = self._scope_by_nrcs(select(SoScheduleModel).where(SoScheduleModel.status == "EN_CURSO"), nrcs)
+        return list(self.db.scalars(stmt).all())
+
     def has_rubrics(self, schedule_id: int) -> bool:
         row = self.db.scalar(select(RubricModel.id).where(RubricModel.schedule_id == schedule_id))
         return row is not None
@@ -137,12 +155,20 @@ class SoScheduleRepository(SqlAlchemyRepository):
 class RubricRepository(SqlAlchemyRepository):
     model = RubricModel
 
-    def list_by_period(self, period_id: int) -> list[RubricModel]:
+    def list_by_period(self, period_id: int, nrcs: list[int] | None = None) -> list[RubricModel]:
         stmt = (
             select(RubricModel)
             .join(SoScheduleModel, SoScheduleModel.id == RubricModel.schedule_id)
             .where(SoScheduleModel.period_id == period_id)
         )
+        if nrcs is not None:
+            stmt = stmt.where(RubricModel.subjects_id.in_(nrcs))
+        return list(self.db.scalars(stmt).all())
+
+    def list_scoped(self, nrcs: list[int] | None = None) -> list[RubricModel]:
+        stmt = select(RubricModel)
+        if nrcs is not None:
+            stmt = stmt.where(RubricModel.subjects_id.in_(nrcs))
         return list(self.db.scalars(stmt).all())
 
     # ── Borrado interno cruzado (idempotente) ───────────────

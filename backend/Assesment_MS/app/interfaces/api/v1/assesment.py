@@ -58,6 +58,18 @@ def _service(repository_class: type[Any], db: Session) -> CatalogService:
     return CatalogService(repository_class(db))
 
 
+async def _teacher_nrcs_or_none(user: CurrentUser) -> list[int] | None:
+    """Alcance (paso 13): si el usuario es Profesor (único con program_id), devuelve
+    la lista de sus NRC para filtrar; si es Coordinador/Auditor devuelve None (sin
+    filtro). Los NRC se piden a User_MS en una sola llamada."""
+    if user.program_id is None:
+        return None
+    try:
+        return await UserMsClient().teacher_subjects(user.user_id)
+    except httpx.HTTPError as exc:
+        raise _SERVICE_DOWN from exc
+
+
 # ── Student Outcomes — SO_CRUD ──────────────────────────────
 @router.get("/so", response_model=list[StudentOutcomeResponse])
 def list_so(db: Session = Depends(db_session), _: CurrentUser = Depends(require_permission("SO_CRUD"))):
@@ -183,18 +195,26 @@ def delete_level(level_id: str, db: Session = Depends(db_session), _: CurrentUse
 
 # ── Programación de SO — SO_SCHEDULE_MANAGE ─────────────────
 @router.get("/so-schedule", response_model=list[SoScheduleResponse])
-def list_so_schedule(
+async def list_so_schedule(
     period_id: int | None = None,
     db: Session = Depends(db_session),
-    _: CurrentUser = Depends(require_permission("SO_TO_ASSESS_VIEW")),
+    user: CurrentUser = Depends(require_permission("SO_TO_ASSESS_VIEW")),
 ):
+    nrcs = await _teacher_nrcs_or_none(user)
+    if nrcs is not None and not nrcs:
+        return []
     repo = SoScheduleRepository(db)
-    return repo.list_by_period(period_id) if period_id is not None else repo.list_all()
+    if period_id is not None:
+        return repo.list_by_period_scoped(period_id, nrcs)
+    return repo.list_all_scoped(nrcs)
 
 
 @router.get("/so-schedule/current", response_model=list[SoScheduleResponse])
-def list_current_schedule(db: Session = Depends(db_session), _: CurrentUser = Depends(require_permission("SO_TO_ASSESS_VIEW"))):
-    return SoScheduleRepository(db).list_current()
+async def list_current_schedule(db: Session = Depends(db_session), user: CurrentUser = Depends(require_permission("SO_TO_ASSESS_VIEW"))):
+    nrcs = await _teacher_nrcs_or_none(user)
+    if nrcs is not None and not nrcs:
+        return []
+    return SoScheduleRepository(db).list_current_scoped(nrcs)
 
 
 @router.post("/so-schedule", response_model=SoScheduleResponse, status_code=status.HTTP_201_CREATED)
@@ -315,13 +335,18 @@ async def my_assessments(db: Session = Depends(db_session), current_user: Curren
 
 # ── Rúbrica — RUBRIC_FILL / RUBRIC_VIEW ─────────────────────
 @router.get("/rubric", response_model=list[RubricResponse])
-def list_rubric(
+async def list_rubric(
     period_id: int | None = None,
     db: Session = Depends(db_session),
-    _: CurrentUser = Depends(require_permission("RUBRIC_VIEW")),
+    user: CurrentUser = Depends(require_permission("RUBRIC_VIEW")),
 ):
+    nrcs = await _teacher_nrcs_or_none(user)
+    if nrcs is not None and not nrcs:
+        return []
     repo = RubricRepository(db)
-    return repo.list_by_period(period_id) if period_id is not None else repo.list_all()
+    if period_id is not None:
+        return repo.list_by_period(period_id, nrcs)
+    return repo.list_scoped(nrcs)
 
 
 @router.post("/rubric", response_model=RubricResponse, status_code=status.HTTP_201_CREATED)

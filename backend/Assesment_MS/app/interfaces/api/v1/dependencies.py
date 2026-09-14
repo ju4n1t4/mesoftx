@@ -73,3 +73,11 @@ def require_service_token(x_service_token: str | None = Header(default=None)) ->
     """Valida el secreto compartido entre microservicios (paso 12)."""
     if x_service_token != settings.service_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token de servicio inválido")
+
+
+def scope_filter(current_user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+    """Devuelve el usuario para aplicar alcance (paso 13). El Profesor (único con
+    program_id) se filtra por sus NRC; Coordinador/Auditor ven todo. Los NRC del
+    profesor se piden a User_MS en el endpoint, no aquí, para no acoplar la
+    dependencia a una llamada de red."""
+    return current_user

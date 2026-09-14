@@ -1,6 +1,8 @@
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.infrastructure.clients.assesment_ms_client import AssesmentMsClient
 from app.infrastructure.repositories.sqlalchemy_repositories import (
     EntityNotFoundError,
     EnrollmentRepository,
@@ -8,7 +10,7 @@ from app.infrastructure.repositories.sqlalchemy_repositories import (
     SubjectRepository,
     TeacherSubjectRepository,
 )
-from app.interfaces.api.v1.dependencies import db_session, require_permission
+from app.interfaces.api.v1.dependencies import Scope, db_session, require_permission, scope_filter
 from app.interfaces.api.v1.error_handlers import map_repository_error
 from app.interfaces.api.v1.schemas import (
     StudentResponse,
@@ -65,13 +67,17 @@ def upload_students(
 def list_subject_students(
     nrc: int,
     db: Session = Depends(db_session),
-    current_user=Depends(require_permission("MY_COURSES_VIEW")),
+    scope: Scope = Depends(scope_filter),
 ):
-    # El profesor solo ve estudiantes de sus NRC; coordinador/auditor ven todo.
-    perms = getattr(current_user, "permissions", [])
-    if "TEACHER_CRUD" not in perms and "RUBRIC_VIEW" not in perms:
-        if not TeacherSubjectRepository(db).has_subject(current_user.id, nrc):
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found.")
+    # Lo consulta el Profesor (MY_COURSES_VIEW, alcance a sus NRC) y también el
+    # Coordinador/Auditor que supervisan todos los cursos (TEACHER_CRUD/RUBRIC_VIEW).
+    allowed = {"MY_COURSES_VIEW", "TEACHER_CRUD", "RUBRIC_VIEW"}
+    if not (allowed & set(scope.permissions)):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permiso para ver estudiantes del curso")
+    # Alcance (paso 13): el Profesor solo ve sus NRC. Un NRC ajeno responde 404
+    # (no debe saber siquiera que existe). Coordinador/Auditor ven todo.
+    if scope.is_teacher and not TeacherSubjectRepository(db).has_subject(scope.user_id, nrc):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found.")
     return StudentRepository(db).list_by_subject(nrc)
 
 
@@ -82,6 +88,7 @@ def search_students(
     db: Session = Depends(db_session),
     _=Depends(require_permission("TEACHER_CRUD")),
 ):
+    # Solo el coordinador (TEACHER_CRUD) llega aquí; sin filtro de alcance.
     return StudentRepository(db).search(document, name)
 
 

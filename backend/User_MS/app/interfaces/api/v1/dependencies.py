@@ -58,3 +58,23 @@ def require_service_token(x_service_token: str | None = Header(default=None)):
     """Valida el secreto compartido entre microservicios (paso 12)."""
     if x_service_token != settings.service_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token de servicio inválido")
+
+
+class Scope:
+    """Alcance de datos (paso 13). El Profesor es el único con program_id: ve solo
+    su programa y sus NRC. Coordinador/Auditor/Administrativo no tienen program_id
+    y ven todo (sin filtro)."""
+
+    def __init__(self, user):
+        self.user_id = user.id
+        self.program_id = getattr(user, "program_id", None)
+        self.permissions = getattr(user, "permissions", [])
+
+    @property
+    def is_teacher(self) -> bool:
+        # Solo el Profesor pertenece a un programa académico.
+        return self.program_id is not None
+
+
+def scope_filter(current_user=Depends(get_current_user)) -> Scope:
+    return Scope(current_user)

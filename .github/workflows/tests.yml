@@ -1,0 +1,73 @@
+name: DB structure tests
+
+# Verifica en cada push y PR que los 4 scripts SQL crean el modelo v13
+# correcto: levanta PostgreSQL 16, ejecuta los scripts en orden y corre
+# backend/tests/verify_db_structure.py. El workflow falla si no da 91 passed.
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify-db:
+    runs-on: ubuntu-latest
+
+    # PostgreSQL 16 como en producción (deployment/db usa postgres:16-alpine).
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      USERS_DB_URL: postgresql://postgres:postgres@localhost:5432/users_db
+      ASSESMENT_DB_URL: postgresql://postgres:postgres@localhost:5432/assesment_mesoftx_db
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar cliente de PostgreSQL (psql)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      # Los scripts usan meta-comandos de psql (\connect, \gexec), por eso se
+      # ejecutan con psql y no con un cliente SQL genérico. Orden fijo 01->04.
+      # ON_ERROR_STOP=1: si un script falla, el paso (y el workflow) falla.
+      - name: Ejecutar los 4 scripts SQL en orden
+        run: |
+          cd deployment/db/scripts
+          for f in 01_create_db.sql 02_create_tables_users.sql 03_create_tables_assesment.sql 04_bootstrap.sql; do
+            echo "==> $f"
+            psql -v ON_ERROR_STOP=1 -d postgres -f "$f"
+          done
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependencias de test
+        run: pip install pytest psycopg2-binary
+
+      # pytest devuelve != 0 si algún test falla, lo que ya haría fallar el job.
+      # Además se exige explícitamente el conteo: debe ser 91 passed.
+      - name: Correr verify_db_structure.py (exige 91 passed)
+        run: |
+          cd backend
+          pytest tests/verify_db_structure.py -v | tee pytest_output.txt
+          grep -qE "(^| )91 passed" pytest_output.txt \
+            || (echo "ERROR: se esperaban 91 tests passed y no se cumplió." && exit 1)

@@ -18,20 +18,19 @@ class UserService:
         return self.user_repository.list_all()
 
     def create(self, data: dict[str, Any]) -> Any:
-        subject_ids = data.pop("subject_ids", [])
-        data["email"] = data["email"].lower()
+        if data.get("email"):
+            data["email"] = data["email"].lower()
         data["password"] = hash_password(data["password"])
         data["active"] = True
-        return self.user_repository.create_user(data, subject_ids)
+        return self.user_repository.create_user(data)
 
     def update(self, user_id: int, data: dict[str, Any]) -> Any:
-        subject_ids = data.pop("subject_ids", None)
         if "email" in data and data["email"]:
             data["email"] = data["email"].lower()
         if "password" in data and data["password"]:
             data["password"] = hash_password(data["password"])
 
-        user = self.user_repository.update_user(user_id, data, subject_ids)
+        user = self.user_repository.update_user(user_id, data)
         if not user:
             raise EntityNotFoundError("User not found.")
         return user

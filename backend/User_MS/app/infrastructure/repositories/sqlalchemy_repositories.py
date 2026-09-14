@@ -5,15 +5,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.infrastructure.database.models import (
-    AcademicPeriodModel,
-    CareerModel,
-    FacultyModel,
     PeriodModel,
     RoleModel,
     SubjectModel,
     UserModel,
-    UserSubjectModel,
-    YearModel,
 )
 
 ModelT = TypeVar("ModelT")
@@ -33,22 +28,24 @@ class EntityNotFoundError(RepositoryError):
 
 class SqlAlchemyRepository:
     model: type[Any]
+    order_by_column: str = "id"
 
     def __init__(self, db: Session):
         self.db = db
 
-    def get_by_id(self, entity_id: int) -> Any | None:
+    def get_by_id(self, entity_id: Any) -> Any | None:
         return self.db.get(self.model, entity_id)
 
     def list_all(self) -> list[Any]:
-        return list(self.db.scalars(select(self.model).order_by(self.model.id)).all())
+        order_column = getattr(self.model, self.order_by_column)
+        return list(self.db.scalars(select(self.model).order_by(order_column)).all())
 
     def create(self, data: dict[str, Any]) -> Any:
         entity = self.model(**data)
         self.db.add(entity)
         return self._commit(entity)
 
-    def update(self, entity_id: int, data: dict[str, Any]) -> Any | None:
+    def update(self, entity_id: Any, data: dict[str, Any]) -> Any | None:
         entity = self.get_by_id(entity_id)
         if not entity:
             return None
@@ -70,28 +67,13 @@ class RoleRepository(SqlAlchemyRepository):
     model = RoleModel
 
 
-class YearRepository(SqlAlchemyRepository):
-    model = YearModel
-
-
 class PeriodRepository(SqlAlchemyRepository):
     model = PeriodModel
 
 
-class AcademicPeriodRepository(SqlAlchemyRepository):
-    model = AcademicPeriodModel
-
-
-class FacultyRepository(SqlAlchemyRepository):
-    model = FacultyModel
-
-
-class CareerRepository(SqlAlchemyRepository):
-    model = CareerModel
-
-
 class SubjectRepository(SqlAlchemyRepository):
     model = SubjectModel
+    order_by_column = "nrc"
 
 
 class UserRepository(SqlAlchemyRepository):
@@ -100,20 +82,17 @@ class UserRepository(SqlAlchemyRepository):
     def get_by_email(self, email: str) -> UserModel | None:
         return self.db.scalar(select(UserModel).where(UserModel.email == email.lower()))
 
-    def create_user(self, data: dict[str, Any], subject_ids: list[int]) -> UserModel:
+    def create_user(self, data: dict[str, Any]) -> UserModel:
         entity = UserModel(**data)
-        entity.user_subjects = [UserSubjectModel(subject_id=subject_id) for subject_id in subject_ids]
         self.db.add(entity)
         return self._commit(entity)
 
-    def update_user(self, entity_id: int, data: dict[str, Any], subject_ids: list[int] | None) -> UserModel | None:
+    def update_user(self, entity_id: int, data: dict[str, Any]) -> UserModel | None:
         entity = self.get_by_id(entity_id)
         if not entity:
             return None
         for key, value in data.items():
             setattr(entity, key, value)
-        if subject_ids is not None:
-            entity.user_subjects = [UserSubjectModel(subject_id=subject_id) for subject_id in subject_ids]
         return self._commit(entity)
 
     def set_active(self, entity_id: int, active: bool) -> UserModel | None:

@@ -203,6 +203,36 @@ class TeacherSubjectRepository(SqlAlchemyRepository):
         )
         return list(self.db.scalars(stmt).all())
 
+    def assignments_for_user(self, user_id: int) -> list[dict]:
+        """Asignaciones del profesor con el id de la asignación + datos de la materia.
+        Permite listar y borrar por id (CRUD de la asignación en la UI)."""
+        stmt = (
+            select(
+                TeacherSubjectModel.id,
+                TeacherSubjectModel.user_id,
+                SubjectModel.nrc,
+                SubjectModel.materia_curso,
+                SubjectModel.name,
+                SubjectModel.periods_id,
+                SubjectModel.program_id,
+            )
+            .join(SubjectModel, SubjectModel.nrc == TeacherSubjectModel.subjects_id)
+            .where(TeacherSubjectModel.user_id == user_id)
+            .order_by(SubjectModel.nrc)
+        )
+        return [
+            {
+                "id": row.id,
+                "user_id": row.user_id,
+                "subjects_id": row.nrc,
+                "materia_curso": row.materia_curso,
+                "name": row.name,
+                "periods_id": row.periods_id,
+                "program_id": row.program_id,
+            }
+            for row in self.db.execute(stmt).all()
+        ]
+
     def pending_subjects_for_user(self, user_id: int) -> list[SubjectModel]:
         """NRC asignados al profesor sin ningún estudiante cargado (paso 13)."""
         enrolled = select(StudentSubjectModel.subjects_id).where(

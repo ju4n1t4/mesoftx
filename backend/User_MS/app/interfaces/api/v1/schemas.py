@@ -193,6 +193,17 @@ class TeacherSubjectResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class TeacherSubjectDetail(BaseModel):
+    """Asignación + datos de la materia, para listar y poder borrar por id (CRUD UI)."""
+    id: int                # id de la asignación (teacher_subjects.id) -> para DELETE
+    user_id: int
+    subjects_id: int       # = nrc
+    materia_curso: str
+    name: str
+    periods_id: int
+    program_id: str
+
+
 # ── Estudiantes ─────────────────────────────────────────────
 class StudentResponse(BaseModel):
     id: int

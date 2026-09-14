@@ -250,6 +250,20 @@ def delete_so_schedule(schedule_id: int, db: Session = Depends(db_session), _: C
     return None
 
 
+@router.get("/so-schedule/{schedule_id}/subjects", response_model=list[int])
+def get_schedule_subjects(
+    schedule_id: int,
+    db: Session = Depends(db_session),
+    _: CurrentUser = Depends(require_permission("SO_TO_ASSESS_VIEW")),
+):
+    """NRC asignados a una programación. Lo usa la UI para precargar el diálogo
+    de NRC y para contar cuántos NRC valoran cada SO."""
+    repo = SoScheduleRepository(db)
+    if not repo.get_by_id(schedule_id):
+        raise map_repository_error(EntityNotFoundError("Schedule not found."))
+    return repo.nrcs_for_schedule(schedule_id)
+
+
 @router.put("/so-schedule/{schedule_id}/subjects", response_model=SoScheduleResponse)
 async def set_schedule_subjects(
     schedule_id: int,

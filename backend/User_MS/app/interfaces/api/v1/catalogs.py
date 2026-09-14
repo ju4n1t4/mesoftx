@@ -38,6 +38,7 @@ from app.interfaces.api.v1.schemas import (
     SubjectResponse,
     SubjectUpdate,
     TeacherSubjectCreate,
+    TeacherSubjectDetail,
     TeacherSubjectResponse,
 )
 
@@ -253,3 +254,19 @@ def assign_teacher_subject(
         return TeacherSubjectRepository(db).create(data)
     except EntityAlreadyExistsError as exc:
         raise map_repository_error(exc) from exc
+
+
+@router.get("/teacher-subjects", response_model=list[TeacherSubjectDetail])
+def list_teacher_subjects(user_id: int, db: Session = Depends(db_session), _=Depends(require_permission("SUBJECT_CRUD"))):
+    """Asignaciones de un profesor: id de la asignación + datos de la materia,
+    para listar y poder borrar por id (CRUD de la asignación)."""
+    return TeacherSubjectRepository(db).assignments_for_user(user_id)
+
+
+@router.delete("/teacher-subjects/{assignment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_teacher_subject(assignment_id: int, db: Session = Depends(db_session), _=Depends(require_permission("SUBJECT_CRUD"))):
+    """Quita una asignación NRC-profesor. Borrado local (fila en teacher_subjects);
+    no afecta al profesor ni a la materia, así que no hay borrado cruzado."""
+    if not TeacherSubjectRepository(db).delete(assignment_id):
+        raise map_repository_error(EntityNotFoundError("Assignment not found."))
+    return None

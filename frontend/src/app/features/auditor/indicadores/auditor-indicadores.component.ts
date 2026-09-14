@@ -12,7 +12,8 @@ import { MessageService } from 'primeng/api';
 
 import { UserApiService } from '../../../core/services/user-api.service';
 import { AssesmentApiService } from '../../../core/services/assesment-api.service';
-import { Period, ChartLevelItem, Rubric } from '../../../core/models/abet.models';
+import { Period, Rubric } from '../../../core/models/abet.models';
+import { IndicatorsChartComponent } from '../../../shared/indicators-chart/indicators-chart.component';
 
 @Component({
   selector: 'app-auditor-indicadores',
@@ -20,6 +21,7 @@ import { Period, ChartLevelItem, Rubric } from '../../../core/models/abet.models
   imports: [
     CommonModule, ReactiveFormsModule,
     TableModule, SelectModule, ToastModule, ProgressSpinnerModule, MessageModule,
+    IndicatorsChartComponent,
   ],
   providers: [MessageService],
   template: `
@@ -44,17 +46,10 @@ import { Period, ChartLevelItem, Rubric } from '../../../core/models/abet.models
       </div>
 
       <ng-container *ngIf="periodCtrl.value != null && !loading()">
-        <!-- Gráfica de indicadores: distribución por nivel, ordenada por rank -->
+        <!-- Gráfica de indicadores: componente compartido con el coordinador -->
         <div class="card">
           <h2>Distribución por nivel de desempeño</h2>
-          <div class="empty" *ngIf="chart().length === 0">Sin valoraciones en este periodo.</div>
-          <div class="bars" *ngIf="chart().length > 0">
-            <div class="bar-row" *ngFor="let c of chart()">
-              <span class="bar-label">{{ c.performance_id }} · nivel {{ c.rank }}</span>
-              <div class="bar-track"><div class="bar-fill" [style.width.%]="pct(c.total)"></div></div>
-              <span class="bar-total">{{ c.total }}</span>
-            </div>
-          </div>
+          <app-indicators-chart [periodId]="periodCtrl.value"></app-indicators-chart>
         </div>
 
         <!-- Resultados de rúbricas -->
@@ -81,21 +76,13 @@ import { Period, ChartLevelItem, Rubric } from '../../../core/models/abet.models
     .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 16px; }
     .card h2 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
     .empty { color: var(--text-muted); font-size: 14px; }
-    .bars { display: flex; flex-direction: column; gap: 10px; }
-    .bar-row { display: flex; align-items: center; gap: 12px; }
-    .bar-label { width: 160px; font-size: 12px; color: var(--text); }
-    .bar-track { flex: 1; height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
-    .bar-fill { height: 100%; background: var(--accent); border-radius: 5px; }
-    .bar-total { width: 40px; text-align: right; font-size: 13px; font-weight: 700; }
     .empty-cell { text-align: center; color: var(--text-muted); padding: 20px; }
   `],
 })
 export class AuditorIndicadoresComponent implements OnInit {
   loading = signal(false);
   private periods = signal<Period[]>([]);
-  chart = signal<ChartLevelItem[]>([]);
   rubrics = signal<Rubric[]>([]);
-  private maxTotal = signal(1);
 
   periodCtrl = new FormControl<number | null>(null);
   periodOptions = () => this.periods().map(p => ({ label: p.code, value: p.id }));
@@ -112,25 +99,14 @@ export class AuditorIndicadoresComponent implements OnInit {
   }
 
   private load(periodId: number | null): void {
-    if (periodId == null) { this.chart.set([]); this.rubrics.set([]); return; }
+    if (periodId == null) { this.rubrics.set([]); return; }
     this.loading.set(true);
-    // Gráfica ordenada por rank (viene ordenada del backend; reforzamos).
-    this.assesment.getIndicatorsChart(periodId).subscribe({
-      next: res => {
-        const items = [...(res.items ?? [])].sort((a, b) =>
-          a.performance_id.localeCompare(b.performance_id) || a.rank - b.rank);
-        this.chart.set(items);
-        this.maxTotal.set(Math.max(1, ...items.map(i => i.total)));
-      },
-      error: e => this.showError(e),
-    });
+    // La gráfica la carga el componente compartido; aquí solo las rúbricas.
     this.assesment.getRubrics({ period_id: periodId }).subscribe({
       next: r => { this.rubrics.set(r ?? []); this.loading.set(false); },
       error: e => { this.showError(e); this.loading.set(false); },
     });
   }
-
-  pct(total: number): number { return Math.round((total / this.maxTotal()) * 100); }
 
   private showError(err: HttpErrorResponse): void {
     let detail: string;

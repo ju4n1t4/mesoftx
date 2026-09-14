@@ -1,6 +1,6 @@
 from typing import Any, TypeVar
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -91,9 +91,16 @@ class RoleRepository(SqlAlchemyRepository):
         role = self.get_by_id(role_id)
         if not role:
             return None
-        role.role_permissions = [
+        # Reemplazo del set de permisos. Hay que BORRAR las filas anteriores y
+        # forzar el flush ANTES de insertar las nuevas: si no, el ORM inserta
+        # antes de borrar en el mismo flush y viola uq_role_permission cuando el
+        # rol ya tenía permisos (p. ej. al reasignar). La restricción es correcta
+        # y se conserva; lo que se ordena es el flush dentro de la transacción.
+        self.db.execute(delete(RolePermissionModel).where(RolePermissionModel.role_id == role_id))
+        self.db.flush()
+        self.db.add_all(
             RolePermissionModel(role_id=role_id, permission_id=pid) for pid in permission_ids
-        ]
+        )
         return self._commit(role)
 
     def codes_for_role(self, role_id: int) -> list[str] | None:
@@ -133,6 +140,15 @@ class SubjectRepository(SqlAlchemyRepository):
                 select(SubjectModel).where(SubjectModel.program_id == program_id).order_by(SubjectModel.nrc)
             ).all()
         )
+
+    def programs_for_nrcs(self, nrcs: list[int]) -> dict[int, str]:
+        """nrc -> program_id, en UNA sola consulta (batch para dashboards)."""
+        if not nrcs:
+            return {}
+        rows = self.db.execute(
+            select(SubjectModel.nrc, SubjectModel.program_id).where(SubjectModel.nrc.in_(nrcs))
+        ).all()
+        return {int(nrc): str(program_id) for nrc, program_id in rows}
 
 
 class UserRepository(SqlAlchemyRepository):
@@ -199,6 +215,21 @@ class TeacherSubjectRepository(SqlAlchemyRepository):
             select(TeacherSubjectModel.subjects_id).where(TeacherSubjectModel.user_id == user_id)
         ).all()
         return list(rows)
+
+    def teachers_for_nrcs(self, nrcs: list[int]) -> dict[int, list[int]]:
+        """nrc -> lista de user_id de los profesores que lo dictan, en UNA sola
+        consulta (batch para el dashboard de avance por profesor)."""
+        if not nrcs:
+            return {}
+        rows = self.db.execute(
+            select(TeacherSubjectModel.subjects_id, TeacherSubjectModel.user_id).where(
+                TeacherSubjectModel.subjects_id.in_(nrcs)
+            )
+        ).all()
+        result: dict[int, list[int]] = {nrc: [] for nrc in nrcs}
+        for nrc, user_id in rows:
+            result[int(nrc)].append(int(user_id))
+        return result
 
     def subjects_for_user(self, user_id: int) -> list[SubjectModel]:
         stmt = (

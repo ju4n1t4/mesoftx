@@ -69,3 +69,16 @@ def teacher_subjects(user_id: int, db: Session = Depends(db_session)) -> list[in
 @router.post("/internal/subjects/students/count")
 def subjects_students_count(payload: SubjectsCountRequest, db: Session = Depends(db_session)) -> dict[int, int]:
     return EnrollmentRepository(db).counts_for_nrcs(payload.nrcs)
+
+
+@router.post("/internal/subjects/teachers")
+def subjects_teachers(payload: SubjectsCountRequest, db: Session = Depends(db_session)) -> dict[int, list[int]]:
+    """nrc -> [user_id, ...] de los profesores que lo dictan. Batch para el
+    dashboard de avance por profesor (Assesment_MS)."""
+    return TeacherSubjectRepository(db).teachers_for_nrcs(payload.nrcs)
+
+
+@router.post("/internal/subjects/programs")
+def subjects_programs(payload: SubjectsCountRequest, db: Session = Depends(db_session)) -> dict[int, str]:
+    """nrc -> program_id. Batch para el dashboard de avance por programa."""
+    return SubjectRepository(db).programs_for_nrcs(payload.nrcs)

@@ -264,6 +264,22 @@ class DashboardRepository:
         )
         return [(int(a), int(b), int(c)) for a, b, c in self.db.execute(stmt).all()]
 
+    def expected_rows_by_so(self, period_id: int) -> list[tuple[str, int, int]]:
+        """(so_id, subjects_id, indicadores_del_so) por schedule_subject del periodo.
+        Igual que expected_rows pero devolviendo el so_id de la programación."""
+        indic = (
+            select(func.count())
+            .select_from(PerformanceModel)
+            .where(PerformanceModel.so_id == SoScheduleModel.so_id)
+            .scalar_subquery()
+        )
+        stmt = (
+            select(SoScheduleModel.so_id, ScheduleSubjectModel.subjects_id, indic)
+            .join(SoScheduleModel, SoScheduleModel.id == ScheduleSubjectModel.schedule_id)
+            .where(SoScheduleModel.period_id == period_id)
+        )
+        return [(str(a), int(b), int(c)) for a, b, c in self.db.execute(stmt).all()]
+
     def progress_by_so(self, period_id: int) -> list[tuple[str, int]]:
         stmt = (
             select(SoScheduleModel.so_id, func.count(RubricModel.id))
@@ -273,6 +289,17 @@ class DashboardRepository:
             .group_by(SoScheduleModel.so_id)
         )
         return [(str(a), int(b)) for a, b in self.db.execute(stmt).all()]
+
+    def progress_by_subject(self, period_id: int) -> list[tuple[int, int]]:
+        """(subjects_id, rúbricas registradas) del periodo. La capa de endpoint
+        agrupa por el program_id de cada NRC (que resuelve User_MS)."""
+        stmt = (
+            select(RubricModel.subjects_id, func.count(RubricModel.id))
+            .join(SoScheduleModel, SoScheduleModel.id == RubricModel.schedule_id)
+            .where(SoScheduleModel.period_id == period_id)
+            .group_by(RubricModel.subjects_id)
+        )
+        return [(int(a), int(b)) for a, b in self.db.execute(stmt).all()]
 
     def progress_by_teacher(self, period_id: int) -> list[tuple[int, int]]:
         stmt = (

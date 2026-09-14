@@ -123,10 +123,6 @@ export const routes: Routes = [
         path: 'configuracion',
         loadComponent: () => import('./features/coordinador/configuracion/configuracion.component').then(m => m.ConfiguracionComponent),
       },
-      {
-        path: 'asignacion',
-        loadComponent: () => import('./features/coordinador/asignacion/asignacion.component').then(m => m.AsignacionComponent),
-      },
     ],
   },
 

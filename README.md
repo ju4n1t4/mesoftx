@@ -2,8 +2,13 @@
 
 Plataforma web de apoyo al proceso de acreditación ABET en la Universidad Autónoma de
 Bucaramanga (UNAB). Permite registrar la valoración de los resultados de aprendizaje
-(*student outcomes*) por parte de los docentes, consolidar los indicadores de desempeño
+(*student outcomes*) por parte de los profesores, consolidar los indicadores de desempeño
 y consultar los resultados agregados desde la Coordinación de Acreditación.
+
+El sistema trabaja con cuatro roles: **Profesor** (llena rúbricas y carga estudiantes de
+sus cursos), **Coordinador** (gestiona programas, materias, profesores y la programación
+de los *student outcomes*), **Administrativo** (crea usuarios y perfiles, y asigna
+permisos) y **Auditor** (consulta indicadores y resultados en modo solo lectura).
 
 Desarrollada como Trabajo de Fin de Máster (Máster en Desarrollo de Software, UNIR).
 
@@ -129,30 +134,52 @@ Documentación interactiva generada por FastAPI:
 | Grupo | Rutas |
 |---|---|
 | Autenticación | `POST /api/v1/auth/login` |
-| Usuarios | `GET`, `POST`, `PUT` sobre `/api/v1/users`, más `PATCH /{id}/activate` y `/{id}/deactivate` |
-| Catálogos | `/api/v1/catalogs/roles`, `/years`, `/periods`, `/academic-periods`, `/faculty`, `/careers`, `/subjects` |
+| Usuarios | `GET`/`POST`/`PUT` sobre `/api/v1/users`, más `PATCH /{id}/activate` y `/{id}/deactivate` |
+| Roles y permisos | `/api/v1/roles`, `/api/v1/permissions`, `GET`/`PUT` `/api/v1/roles/{id}/permissions` |
+| Catálogos | `/api/v1/colleges`, `/programs`, `/periods`, `/subjects` |
+| Profesor | `/api/v1/me/subjects`, `/api/v1/me/subjects/pending` |
+| Estudiantes | `/api/v1/subjects/{nrc}/students`, asignación profesor-materia (`/teacher-subjects`) |
+| Público (temporal) | `GET /api/v1/public/roles` |
 
-Todos los endpoints exigen `Authorization: Bearer <token>`, salvo `/health` y el login.
-Las contraseñas se almacenan con bcrypt.
+Todos los endpoints exigen `Authorization: Bearer <token>`, salvo `/health`, el login y
+el endpoint público temporal de roles. La autorización se controla por permisos asociados
+al rol del usuario. Las contraseñas se almacenan con bcrypt.
 
 ### Assesment_MS
 
 | Grupo | Rutas |
 |---|---|
-| Resultados de aprendizaje | `/api/v1/student-outcomes` |
-| Indicadores de desempeño | `/api/v1/performance-indicators` y `/performance-indicator-details` |
-| Valoraciones | `/api/v1/performance-evaluations` y `/performance-evaluation-details` |
-| Evidencias | `/api/v1/assesment-evidence` |
-| Resultados consolidados | `/api/v1/assesment-results` |
+| Student outcomes | `GET`/`POST`/`PUT`/`DELETE` `/api/v1/so` |
+| Indicadores y niveles | `/api/v1/performance`, `/api/v1/performance/{id}/levels`, `/api/v1/level` |
+| Programación de SO | `/api/v1/so-schedule`, `/so-schedule/{id}/subjects`, `PATCH /so-schedule/{id}/status` |
+| Valoración | `GET /api/v1/me/assessments`, `GET`/`POST`/`PUT` `/api/v1/rubric` |
+| Evidencias (futura) | `POST /api/v1/evidence` |
+| Dashboards e indicadores | `/api/v1/dashboard/program`, `/dashboard/so`, `/dashboard/teacher`, `/indicators/chart` |
 
-## Modelo de datos
+Igual que User_MS, los endpoints exigen token JWT y se autorizan por permiso. La
+comunicación interna entre microservicios usa un token de servicio (`/internal/...`).
 
-`users_db`: `roles`, `years`, `periods`, `academic_periods`, `faculty`, `career`,
-`subjects`, `users`, `users_subjects`.
+## Modelo de datos (v13)
 
-`assesment_mesoftx_db`: `student_outcomes`, `performance_indicators`,
-`performance_indicator_details`, `performance_evaluations`,
-`performance_evaluation_details`, `assesment_evidence`, `assesment_results`.
+El esquema se reparte en **dos bases** con **18 tablas** en total. Los estudiantes no son
+usuarios: viven en su propia tabla (`students`), no inician sesión ni tienen contraseña.
+
+`users_db` (11 tablas): `college`, `program`, `periods`, `roles`, `permissions`,
+`role_permissions`, `users`, `students`, `subjects`, `students_subjects`,
+`teacher_subjects`.
+
+`assesment_mesoftx_db` (7 tablas): `so` (student outcome), `performance` (indicador),
+`level` (nivel de la rúbrica), `so_schedule` (programación de un SO en un periodo),
+`schedule_subjects` (NRC medidos por esa programación), `rubric` (valoración registrada)
+y `evidence`.
+
+La **programación de student outcomes** (`so_schedule`) sigue una máquina de estados:
+`PLANIFICADO` → `EN_CURSO` → `CERRADO`. El coordinador abre la valoración (a `EN_CURSO`),
+la cierra (a `CERRADO`) o la reabre; los profesores solo pueden valorar mientras está en
+`EN_CURSO`. Un SO no puede volver a `PLANIFICADO` si ya tiene rúbricas registradas.
+
+Las referencias entre servicios (por ejemplo `so.college_id` → `users_db.college.id`) se
+resuelven por identificador, sin duplicar datos entre bases.
 
 ## Frontend
 
@@ -164,21 +191,27 @@ ruta). El interceptor `jwt.interceptor.ts` adjunta el token a cada petición sal
 |---|---|---|
 | Landing | `/` | pública |
 | Consulta pública de resultados | `/publico` | pública |
-| Docente | `/docente` | Docente, Admin |
-| Coordinador | `/coordinador` | Coordinador, Admin |
+| Profesor | `/profesor` | Profesor, Administrativo |
+| Coordinador | `/coordinador` | Coordinador, Administrativo |
+| Administrativo | `/admin` | Administrativo |
+| Auditor | `/auditor` | Auditor |
 
-El módulo docente cubre inicio de acreditación, registro de valoraciones, indicadores,
-estudiantes asignados y soporte. El de coordinación cubre programas, docentes, periodos,
-resultados de aprendizaje, valoraciones, informes, auditoría y configuración.
+El módulo del profesor cubre sus cursos asignados, la carga de estudiantes por NRC, los
+student outcomes que le toca valorar y el llenado de la rúbrica. El de coordinación cubre
+programas, profesores, materias, asignación de materias, resultados de aprendizaje,
+programación de SO, dashboards de avance e indicadores. El módulo administrativo gestiona
+perfiles, permisos y usuarios; el de auditoría muestra las gráficas de indicadores y los
+resultados de rúbricas en solo lectura.
 
 ## Estado actual y limitaciones conocidas
 
-- `Assesment_MS` no exige autenticación JWT; es una decisión de alcance de esta versión
-  y debe resolverse antes de cualquier uso real, ya que expone datos de valoración.
+- `GET /api/v1/public/roles` y los botones de acceso demo del login son temporales para
+  la defensa. Deben retirarse cuando se exija usuario para todo el acceso.
 - El frontend no forma parte de `deployment/`: se construye con su propio `Dockerfile`.
-  El bloque `location /api/` de `nginx.conf` apunta a un único backend en el puerto 8000
-  y no corresponde a la separación actual en dos microservicios.
-- El esquema se crea mediante scripts SQL; no hay migraciones versionadas.
+  El bloque `location /api/` de `nginx.conf` debe apuntar a ambos microservicios en un
+  proxy inverso real.
+- El esquema se crea mediante scripts SQL; no hay migraciones versionadas. Para recrearlo
+  desde cero hay que eliminar el volumen `mesoftx_postgres_data`.
 
 ## Autoría
 

@@ -41,8 +41,8 @@ docker info
 
 ## 2. Levantar la base de datos
 
-Crea la red `mesoftx-network`, arranca PostgreSQL y carga las tablas y los
-usuarios iniciales.
+Crea la red `mesoftx-network`, arranca PostgreSQL 16 y carga las tablas y el
+usuario inicial.
 
 ```bash
 cd /Users/julianaramirezarenas/Documents/UNIR/TFM/mesoftx/deployment/db
@@ -57,6 +57,24 @@ docker ps --filter name=mesoftx-db
 
 > Los datos quedan en el volumen `mesoftx_postgres_data` y no se pierden al
 > apagar los contenedores.
+
+### Qué cargan los scripts SQL
+
+En el **primer** arranque (volumen vacío), PostgreSQL ejecuta en orden los 4
+scripts de `deployment/db/scripts/`:
+
+| Script | Qué hace |
+|---|---|
+| `01_create_db.sql` | Crea las dos bases: `users_db` y `assesment_mesoftx_db` |
+| `02_create_tables_users.sql` | Crea las 11 tablas de `users_db` (college, program, periods, roles, permissions, role_permissions, users, students, subjects, students_subjects, teacher_subjects) |
+| `03_create_tables_assesment.sql` | Crea las 7 tablas de `assesment_mesoftx_db` (so, performance, level, so_schedule, schedule_subjects, rubric, evidence) |
+| `04_bootstrap.sql` | Inserta los 18 permisos, el rol `Administrativo` y el usuario administrador (`admin@unab.edu.co`, contraseña `Mesoftx2026!`) |
+
+Para volver a ejecutarlos desde cero hay que borrar el volumen:
+
+```bash
+docker compose down -v && docker compose up -d --build
+```
 
 ---
 
@@ -104,11 +122,11 @@ Abre **http://localhost:4200** cuando aparezca "Watch mode enabled".
 ## 5. Cómo entrar a la aplicación
 
 ### Opción A — Botones de acceso rápido (recomendado para la defensa)
-En el login, los botones "Entrar como Docente" / "Entrar como Coordinador"
-inician sesión automáticamente contra el backend con los usuarios reales de la
-base de datos (no hay que escribir credenciales). Al hacer login real se obtiene
-un token JWT válido, por lo que **todas las vistas cargan datos reales**,
-incluidas las del coordinador que requieren autenticación.
+En el login, los botones "Entrar como Profesor" / "Entrar como Coordinador" /
+"Entrar como Auditor" / "Entrar como Administrador" inician sesión contra el
+backend (no hay que escribir credenciales). Cada botón se habilita solo si ese
+perfil ya existe en la base de datos. Al hacer login real se obtiene un token
+JWT válido, por lo que **todas las vistas cargan datos reales**.
 
 ### Opción B — Inicio de sesión manual (mismo resultado, escribiendo credenciales)
 Todos los usuarios comparten la misma contraseña inicial:
@@ -131,6 +149,36 @@ Todos los usuarios comparten la misma contraseña inicial:
 > usuarios, carreras, evidencias y valoraciones) se crean desde la propia
 > aplicación con el perfil de coordinador. Al arrancar limpio, las vistas de
 > métricas aparecen vacías hasta que se parametriza y se registran valoraciones.
+
+---
+
+## 5b. Verificar la estructura de la base de datos (opcional)
+
+`backend/tests/verify_db_structure.py` comprueba que la base recién creada
+tiene el modelo v13 correcto: las 18 tablas, los 18 permisos, el rol y el
+usuario administrador, y que no quedan tablas del modelo antiguo. Se ejecuta
+contra la base ya levantada (paso 2) y **debe dar 91 passed**.
+
+```bash
+cd /Users/julianaramirezarenas/Documents/UNIR/TFM/mesoftx/backend
+
+# dependencias (una sola vez)
+pip install pytest psycopg2-binary
+
+# apunta a las dos bases (puerto local 5432)
+export USERS_DB_URL="postgresql://postgres:postgres@localhost:5432/users_db"
+export ASSESMENT_DB_URL="postgresql://postgres:postgres@localhost:5432/assesment_mesoftx_db"
+
+pytest tests/verify_db_structure.py -v
+```
+
+Los tests que insertan datos lo hacen dentro de una transacción que se revierte
+al terminar: la base queda igual que antes. Si algún test falla, el error está
+en los scripts SQL, no en el test (ese archivo no se modifica).
+
+> Este mismo chequeo corre automáticamente en CI: ver
+> `.github/workflows/tests.yml`. Cada push y cada PR levanta PostgreSQL 16,
+> ejecuta los 4 scripts y corre estos tests; el workflow falla si no da 91.
 
 ---
 

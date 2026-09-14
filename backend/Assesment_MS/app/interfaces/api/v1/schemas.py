@@ -7,136 +7,182 @@ class ErrorResponse(BaseModel):
     detail: str
 
 
+# ── Student Outcome ─────────────────────────────────────────
 class StudentOutcomeCreate(BaseModel):
-    code: str = Field(..., max_length=255)
-    description: str | None = None
+    id: str = Field(..., max_length=5)
+    description: str = Field(..., max_length=255)
+    college_id: str = Field(..., max_length=3)
 
 
 class StudentOutcomeUpdate(BaseModel):
-    code: str | None = Field(default=None, max_length=255)
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=255)
+    college_id: str | None = Field(default=None, max_length=3)
 
 
 class StudentOutcomeResponse(StudentOutcomeCreate):
-    id: int
     model_config = ConfigDict(from_attributes=True)
 
 
-class PerformanceIndicatorCreate(BaseModel):
-    code: str = Field(..., max_length=255)
-    name: str | None = None
+# ── Indicador de desempeño ──────────────────────────────────
+class PerformanceCreate(BaseModel):
+    id: str = Field(..., max_length=3)
+    description: str = Field(..., max_length=255)
+    so_id: str = Field(..., max_length=5)
 
 
-class PerformanceIndicatorUpdate(BaseModel):
-    code: str | None = Field(default=None, max_length=255)
-    name: str | None = None
+class PerformanceUpdate(BaseModel):
+    description: str | None = Field(default=None, max_length=255)
+    so_id: str | None = Field(default=None, max_length=5)
 
 
-class PerformanceIndicatorResponse(PerformanceIndicatorCreate):
-    id: int
+class PerformanceResponse(PerformanceCreate):
     model_config = ConfigDict(from_attributes=True)
 
 
-class PerformanceIndicatorDetailCreate(BaseModel):
-    performance_indicator_id: int = Field(..., gt=0)
-    student_outcome_id: int = Field(..., gt=0)
-    description: str = Field(..., min_length=1)
+# ── Nivel ───────────────────────────────────────────────────
+class LevelCreate(BaseModel):
+    id: str = Field(..., max_length=100)
+    description: str = Field(..., max_length=255)
+    rank: int = Field(..., ge=1, le=4)
+    performance_id: str = Field(..., max_length=3)
 
 
-class PerformanceIndicatorDetailUpdate(BaseModel):
-    performance_indicator_id: int | None = Field(default=None, gt=0)
-    student_outcome_id: int | None = Field(default=None, gt=0)
-    description: str | None = Field(default=None, min_length=1)
+class LevelUpdate(BaseModel):
+    description: str | None = Field(default=None, max_length=255)
+    rank: int | None = Field(default=None, ge=1, le=4)
 
 
-class PerformanceIndicatorDetailResponse(PerformanceIndicatorDetailCreate):
-    id: int
+class LevelResponse(LevelCreate):
     model_config = ConfigDict(from_attributes=True)
 
 
-class PerformanceEvaluationCreate(BaseModel):
-    evaluation_value: str = Field(..., max_length=255)
+# ── Programación de SO ──────────────────────────────────────
+class SoScheduleCreate(BaseModel):
+    so_id: str = Field(..., max_length=5)
+    period_id: int = Field(..., gt=0)
+    status: str = Field(default="PLANIFICADO", max_length=20)
 
 
-class PerformanceEvaluationUpdate(BaseModel):
-    evaluation_value: str | None = Field(default=None, max_length=255)
+class SoScheduleUpdate(BaseModel):
+    period_id: int | None = Field(default=None, gt=0)
+    status: str | None = Field(default=None, max_length=20)
 
 
-class PerformanceEvaluationResponse(PerformanceEvaluationCreate):
+class SoScheduleResponse(BaseModel):
     id: int
+    so_id: str
+    period_id: int
+    coordinator_user_id: int
+    status: str
+    created_at: datetime | None = None
+    updated_by: int | None = None
+    updated_at: datetime | None = None
     model_config = ConfigDict(from_attributes=True)
 
 
-class PerformanceEvaluationDetailCreate(BaseModel):
-    performance_evaluation_id: int = Field(..., gt=0)
-    performance_indicator_id: int = Field(..., gt=0)
-    student_outcome_id: int = Field(..., gt=0)
-    description: str = Field(..., min_length=1)
+class ScheduleSubjectsUpdate(BaseModel):
+    nrcs: list[int] = Field(default_factory=list)
 
 
-class PerformanceEvaluationDetailUpdate(BaseModel):
-    performance_evaluation_id: int | None = Field(default=None, gt=0)
-    performance_indicator_id: int | None = Field(default=None, gt=0)
-    student_outcome_id: int | None = Field(default=None, gt=0)
-    description: str | None = Field(default=None, min_length=1)
+class ScheduleStatusUpdate(BaseModel):
+    status: str = Field(..., max_length=20)
 
 
-class PerformanceEvaluationDetailResponse(PerformanceEvaluationDetailCreate):
+class AssessmentToDoResponse(BaseModel):
+    schedule_id: int
+    so_id: str
+    description: str
+    nrc: int
+    period_id: int
+
+
+# ── Rúbrica ─────────────────────────────────────────────────
+class RubricCreate(BaseModel):
+    schedule_id: int = Field(..., gt=0)
+    student_id: int = Field(..., gt=0)
+    subjects_id: int = Field(..., gt=0)
+    performance_id: str = Field(..., max_length=3)
+    level_id: str = Field(..., max_length=100)
+    evidence_id: int | None = Field(default=None, gt=0)
+
+
+class RubricUpdate(BaseModel):
+    performance_id: str | None = Field(default=None, max_length=3)
+    level_id: str | None = Field(default=None, max_length=100)
+    evidence_id: int | None = Field(default=None, gt=0)
+
+
+class RubricResponse(BaseModel):
     id: int
-    model_config = ConfigDict(from_attributes=True)
-
-
-class AssesmentEvidenceCreate(BaseModel):
-    evidence_name_doc: str = Field(..., min_length=1)
-    student_code: str = Field(..., max_length=25)
-    student_outcome_id: int = Field(..., gt=0)
-
-
-class AssesmentEvidenceUpdate(BaseModel):
-    evidence_name_doc: str | None = Field(default=None, min_length=1)
-    student_code: str | None = Field(default=None, max_length=25)
-    student_outcome_id: int | None = Field(default=None, gt=0)
-
-
-class AssesmentEvidenceResponse(AssesmentEvidenceCreate):
-    id: int
+    schedule_id: int
+    evaluator_user_id: int
+    student_id: int
+    subjects_id: int
+    performance_id: str
+    level_id: str
+    evidence_id: int | None = None
     created_at: datetime | None = None
     model_config = ConfigDict(from_attributes=True)
 
 
-class AssesmentResultCreate(BaseModel):
-    subject_code: str = Field(..., max_length=25)
-    assesment_evidence_id: int = Field(..., gt=0)
-    student_outcome_id: int = Field(..., gt=0)
-    performance_evaluation_detail_id: int = Field(..., gt=0)
+# ── Evidencia (futura) ──────────────────────────────────────
+class EvidenceCreate(BaseModel):
+    schedule_id: int = Field(..., gt=0)
+    subjects_id: int = Field(..., gt=0)
+    student_id: int = Field(..., gt=0)
+    name: str = Field(..., max_length=255)
+    file_url: str = Field(..., max_length=500)
+    mime_type: str | None = Field(default=None, max_length=100)
 
 
-class AssesmentResultUpdate(BaseModel):
-    subject_code: str | None = Field(default=None, max_length=25)
-    assesment_evidence_id: int | None = Field(default=None, gt=0)
-    student_outcome_id: int | None = Field(default=None, gt=0)
-    performance_evaluation_detail_id: int | None = Field(default=None, gt=0)
-
-
-class AssesmentResultResponse(AssesmentResultCreate):
+class EvidenceResponse(BaseModel):
     id: int
+    schedule_id: int
+    subjects_id: int
+    student_id: int
+    name: str
+    file_url: str
+    mime_type: str | None = None
+    uploaded_by: int
     created_at: datetime | None = None
     model_config = ConfigDict(from_attributes=True)
 
 
-class AssesmentResultNestedCreate(BaseModel):
-    subject_code: str = Field(..., max_length=25)
-    student_outcome_id: int = Field(..., gt=0)
-    performance_evaluation_detail_id: int = Field(..., gt=0)
+# ── Dashboards ──────────────────────────────────────────────
+class DashboardProgramResponse(BaseModel):
+    period_id: int
+    expected: int
+    done: int
 
 
-class AssesmentEvidenceWithResultsCreate(BaseModel):
-    evidence_name_doc: str = Field(..., min_length=1)
-    student_code: str = Field(..., max_length=25)
-    student_outcome_id: int = Field(..., gt=0)
-    results: list[AssesmentResultNestedCreate] = Field(..., min_length=1)
+class SoProgressItem(BaseModel):
+    so_id: str
+    done: int
 
 
-class AssesmentEvidenceWithResultsResponse(BaseModel):
-    evidence: AssesmentEvidenceResponse
-    results: list[AssesmentResultResponse]
+class DashboardSoResponse(BaseModel):
+    period_id: int
+    expected: int
+    items: list[SoProgressItem]
+
+
+class TeacherProgressItem(BaseModel):
+    evaluator_user_id: int
+    done: int
+
+
+class DashboardTeacherResponse(BaseModel):
+    period_id: int
+    items: list[TeacherProgressItem]
+
+
+class ChartLevelItem(BaseModel):
+    performance_id: str
+    rank: int
+    level_id: str
+    total: int
+
+
+class IndicatorsChartResponse(BaseModel):
+    period_id: int
+    items: list[ChartLevelItem]

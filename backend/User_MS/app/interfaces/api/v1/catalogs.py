@@ -1,67 +1,62 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, status
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.application.services.catalog_service import AcademicPeriodService, CatalogService
+from app.application.services.catalog_service import CatalogService
+from app.infrastructure.clients.assesment_ms_client import AssesmentMsClient
 from app.infrastructure.repositories.sqlalchemy_repositories import (
-    AcademicPeriodRepository,
-    CareerRepository,
+    CollegeRepository,
     EntityAlreadyExistsError,
     EntityNotFoundError,
-    FacultyRepository,
     PeriodRepository,
+    PermissionRepository,
+    ProgramRepository,
     RoleRepository,
     SubjectRepository,
-    YearRepository,
+    TeacherSubjectRepository,
 )
-from app.core.roles import Role
-from app.interfaces.api.v1.dependencies import db_session, get_current_user, require_roles
+from app.interfaces.api.v1.dependencies import db_session, get_current_user, require_permission
 from app.interfaces.api.v1.error_handlers import map_repository_error
 from app.interfaces.api.v1.schemas import (
-    AcademicPeriodCreate,
-    AcademicPeriodResponse,
-    AcademicPeriodUpdate,
-    CareerCreate,
-    CareerResponse,
-    CareerUpdate,
-    FacultyCreate,
-    FacultyResponse,
-    FacultyUpdate,
+    CollegeCreate,
+    CollegeResponse,
+    CollegeUpdate,
     PeriodCreate,
     PeriodResponse,
     PeriodUpdate,
+    PermissionResponse,
+    ProgramCreate,
+    ProgramResponse,
+    ProgramUpdate,
     RoleCreate,
+    RolePermissionsUpdate,
     RoleResponse,
     RoleUpdate,
     SubjectCreate,
     SubjectResponse,
     SubjectUpdate,
-    YearCreate,
-    YearResponse,
-    YearUpdate,
+    TeacherSubjectCreate,
+    TeacherSubjectDetail,
+    TeacherSubjectResponse,
 )
 
 router = APIRouter(tags=["Catalogs"], dependencies=[Depends(get_current_user)])
-
-# La consulta de catálogos (GET) queda disponible para cualquier usuario
-# autenticado, ya que el frontend los usa para poblar selectores. La creación y
-# edición (POST/PUT) es parametrización: solo Admin y Coordinador. El Docente no
-# puede modificar catálogos; su trabajo se limita a registrar valoraciones.
-require_parametrizador = require_roles(Role.ADMIN, Role.COORDINADOR)
 
 
 def _service(repository_class: type[Any], db: Session) -> CatalogService:
     return CatalogService(repository_class(db))
 
 
+# ── Perfiles (roles) — admin: USER_CRUD ─────────────────────
 @router.get("/roles", response_model=list[RoleResponse])
-def list_roles(db: Session = Depends(db_session)):
+def list_roles(db: Session = Depends(db_session), _=Depends(require_permission("USER_CRUD"))):
     return _service(RoleRepository, db).list()
 
 
 @router.post("/roles", response_model=RoleResponse, status_code=status.HTTP_201_CREATED)
-def create_role(payload: RoleCreate, db: Session = Depends(db_session), _=Depends(require_parametrizador)):
+def create_role(payload: RoleCreate, db: Session = Depends(db_session), _=Depends(require_permission("USER_CRUD"))):
     try:
         return _service(RoleRepository, db).create(payload.model_dump())
     except EntityAlreadyExistsError as exc:
@@ -69,41 +64,107 @@ def create_role(payload: RoleCreate, db: Session = Depends(db_session), _=Depend
 
 
 @router.put("/roles/{entity_id}", response_model=RoleResponse)
-def update_role(entity_id: int, payload: RoleUpdate, db: Session = Depends(db_session), _=Depends(require_parametrizador)):
+def update_role(entity_id: int, payload: RoleUpdate, db: Session = Depends(db_session), _=Depends(require_permission("USER_CRUD"))):
     try:
         return _service(RoleRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))
     except (EntityAlreadyExistsError, EntityNotFoundError) as exc:
         raise map_repository_error(exc) from exc
 
 
-@router.get("/years", response_model=list[YearResponse])
-def list_years(db: Session = Depends(db_session)):
-    return _service(YearRepository, db).list()
+@router.delete("/roles/{entity_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_role(entity_id: int, db: Session = Depends(db_session), _=Depends(require_permission("USER_CRUD"))):
+    repo = RoleRepository(db)
+    count = repo.count_users(entity_id)
+    if count > 0:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"El perfil tiene {count} usuarios asignados")
+    if not repo.delete(entity_id):
+        raise map_repository_error(EntityNotFoundError("Role not found."))
+    return None
 
 
-@router.post("/years", response_model=YearResponse, status_code=status.HTTP_201_CREATED)
-def create_year(payload: YearCreate, db: Session = Depends(db_session), _=Depends(require_parametrizador)):
+@router.get("/permissions", response_model=list[PermissionResponse])
+def list_permissions(db: Session = Depends(db_session), _=Depends(require_permission("USER_CRUD"))):
+    return _service(PermissionRepository, db).list()
+
+
+@router.put("/roles/{entity_id}/permissions", response_model=RoleResponse)
+def set_role_permissions(
+    entity_id: int,
+    payload: RolePermissionsUpdate,
+    db: Session = Depends(db_session),
+    _=Depends(require_permission("PERMISSION_ASSIGN")),
+):
+    perm_ids = PermissionRepository(db).ids_for_codes(payload.permission_codes)
+    role = RoleRepository(db).set_permissions(entity_id, perm_ids)
+    if not role:
+        raise map_repository_error(EntityNotFoundError("Role not found."))
+    return role
+
+
+# ── Facultades / Programas / Periodos — PROGRAM_CRUD ────────
+@router.get("/colleges", response_model=list[CollegeResponse])
+def list_colleges(db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
+    return _service(CollegeRepository, db).list()
+
+
+@router.post("/colleges", response_model=CollegeResponse, status_code=status.HTTP_201_CREATED)
+def create_college(payload: CollegeCreate, db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
     try:
-        return _service(YearRepository, db).create(payload.model_dump())
+        return _service(CollegeRepository, db).create(payload.model_dump())
     except EntityAlreadyExistsError as exc:
         raise map_repository_error(exc) from exc
 
 
-@router.put("/years/{entity_id}", response_model=YearResponse)
-def update_year(entity_id: int, payload: YearUpdate, db: Session = Depends(db_session), _=Depends(require_parametrizador)):
+@router.put("/colleges/{entity_id}", response_model=CollegeResponse)
+def update_college(entity_id: str, payload: CollegeUpdate, db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
     try:
-        return _service(YearRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))
+        return _service(CollegeRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))
     except (EntityAlreadyExistsError, EntityNotFoundError) as exc:
         raise map_repository_error(exc) from exc
 
 
+@router.delete("/colleges/{entity_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_college(entity_id: str, db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
+    if not CollegeRepository(db).delete(entity_id):
+        raise map_repository_error(EntityNotFoundError("College not found."))
+    return None
+
+
+@router.get("/programs", response_model=list[ProgramResponse])
+def list_programs(db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
+    return _service(ProgramRepository, db).list()
+
+
+@router.post("/programs", response_model=ProgramResponse, status_code=status.HTTP_201_CREATED)
+def create_program(payload: ProgramCreate, db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
+    try:
+        return _service(ProgramRepository, db).create(payload.model_dump())
+    except EntityAlreadyExistsError as exc:
+        raise map_repository_error(exc) from exc
+
+
+@router.put("/programs/{entity_id}", response_model=ProgramResponse)
+def update_program(entity_id: str, payload: ProgramUpdate, db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
+    try:
+        return _service(ProgramRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))
+    except (EntityAlreadyExistsError, EntityNotFoundError) as exc:
+        raise map_repository_error(exc) from exc
+
+
+@router.delete("/programs/{entity_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_program(entity_id: str, db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
+    if not ProgramRepository(db).delete(entity_id):
+        raise map_repository_error(EntityNotFoundError("Program not found."))
+    return None
+
+
 @router.get("/periods", response_model=list[PeriodResponse])
-def list_periods(db: Session = Depends(db_session)):
+def list_periods(db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
     return _service(PeriodRepository, db).list()
 
 
 @router.post("/periods", response_model=PeriodResponse, status_code=status.HTTP_201_CREATED)
-def create_period(payload: PeriodCreate, db: Session = Depends(db_session), _=Depends(require_parametrizador)):
+def create_period(payload: PeriodCreate, db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
     try:
         return _service(PeriodRepository, db).create(payload.model_dump())
     except EntityAlreadyExistsError as exc:
@@ -111,102 +172,101 @@ def create_period(payload: PeriodCreate, db: Session = Depends(db_session), _=De
 
 
 @router.put("/periods/{entity_id}", response_model=PeriodResponse)
-def update_period(entity_id: int, payload: PeriodUpdate, db: Session = Depends(db_session), _=Depends(require_parametrizador)):
+def update_period(entity_id: int, payload: PeriodUpdate, db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
     try:
         return _service(PeriodRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))
     except (EntityAlreadyExistsError, EntityNotFoundError) as exc:
         raise map_repository_error(exc) from exc
 
 
-@router.get("/academic-periods", response_model=list[AcademicPeriodResponse])
-def list_academic_periods(db: Session = Depends(db_session)):
-    return _service(AcademicPeriodRepository, db).list()
+@router.delete("/periods/{entity_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_period(entity_id: int, db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
+    if not PeriodRepository(db).delete(entity_id):
+        raise map_repository_error(EntityNotFoundError("Period not found."))
+    return None
 
 
-@router.post("/academic-periods", response_model=AcademicPeriodResponse, status_code=status.HTTP_201_CREATED)
-def create_academic_period(payload: AcademicPeriodCreate, db: Session = Depends(db_session), _=Depends(require_parametrizador)):
+# ── Materias — SUBJECT_CRUD ─────────────────────────────────
+@router.get("/subjects", response_model=list[SubjectResponse])
+def list_subjects(db: Session = Depends(db_session), _=Depends(require_permission("SUBJECT_CRUD"))):
+    return _service(SubjectRepository, db).list()
+
+
+@router.get("/subjects/{nrc}", response_model=SubjectResponse)
+def get_subject(nrc: int, db: Session = Depends(db_session), _=Depends(require_permission("SUBJECT_CRUD"))):
     try:
-        service = AcademicPeriodService(AcademicPeriodRepository(db), PeriodRepository(db), YearRepository(db))
-        return service.create(payload.model_dump())
-    except (EntityAlreadyExistsError, EntityNotFoundError) as exc:
-        raise map_repository_error(exc) from exc
-
-
-@router.put("/academic-periods/{entity_id}", response_model=AcademicPeriodResponse)
-def update_academic_period(entity_id: int, payload: AcademicPeriodUpdate, db: Session = Depends(db_session), _=Depends(require_parametrizador)):
-    try:
-        service = AcademicPeriodService(AcademicPeriodRepository(db), PeriodRepository(db), YearRepository(db))
-        return service.update(entity_id, payload.model_dump(exclude_unset=True))
-    except (EntityAlreadyExistsError, EntityNotFoundError) as exc:
-        raise map_repository_error(exc) from exc
-
-
-@router.get("/faculty", response_model=list[FacultyResponse])
-def list_faculty(db: Session = Depends(db_session)):
-    return _service(FacultyRepository, db).list()
-
-
-@router.post("/faculty", response_model=FacultyResponse, status_code=status.HTTP_201_CREATED)
-def create_faculty(payload: FacultyCreate, db: Session = Depends(db_session), _=Depends(require_parametrizador)):
-    try:
-        return _service(FacultyRepository, db).create(payload.model_dump())
-    except EntityAlreadyExistsError as exc:
-        raise map_repository_error(exc) from exc
-
-
-@router.put("/faculty/{entity_id}", response_model=FacultyResponse)
-def update_faculty(entity_id: int, payload: FacultyUpdate, db: Session = Depends(db_session), _=Depends(require_parametrizador)):
-    try:
-        return _service(FacultyRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))
-    except (EntityAlreadyExistsError, EntityNotFoundError) as exc:
-        raise map_repository_error(exc) from exc
-
-
-@router.get("/careers", response_model=list[CareerResponse])
-def list_careers(db: Session = Depends(db_session)):
-    return _service(CareerRepository, db).list()
-
-
-@router.get("/careers/{entity_id}", response_model=CareerResponse)
-def get_career(entity_id: int, db: Session = Depends(db_session)):
-    try:
-        return _service(CareerRepository, db).get(entity_id)
+        return _service(SubjectRepository, db).get(nrc)
     except EntityNotFoundError as exc:
         raise map_repository_error(exc) from exc
 
 
-@router.post("/careers", response_model=CareerResponse, status_code=status.HTTP_201_CREATED)
-def create_career(payload: CareerCreate, db: Session = Depends(db_session), _=Depends(require_parametrizador)):
-    try:
-        return _service(CareerRepository, db).create(payload.model_dump())
-    except EntityAlreadyExistsError as exc:
-        raise map_repository_error(exc) from exc
-
-
-@router.put("/careers/{entity_id}", response_model=CareerResponse)
-def update_career(entity_id: int, payload: CareerUpdate, db: Session = Depends(db_session), _=Depends(require_parametrizador)):
-    try:
-        return _service(CareerRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))
-    except (EntityAlreadyExistsError, EntityNotFoundError) as exc:
-        raise map_repository_error(exc) from exc
-
-
-@router.get("/subjects", response_model=list[SubjectResponse])
-def list_subjects(db: Session = Depends(db_session)):
-    return _service(SubjectRepository, db).list()
-
-
 @router.post("/subjects", response_model=SubjectResponse, status_code=status.HTTP_201_CREATED)
-def create_subject(payload: SubjectCreate, db: Session = Depends(db_session), _=Depends(require_parametrizador)):
+def create_subject(payload: SubjectCreate, db: Session = Depends(db_session), _=Depends(require_permission("SUBJECT_CRUD"))):
     try:
         return _service(SubjectRepository, db).create(payload.model_dump())
     except EntityAlreadyExistsError as exc:
         raise map_repository_error(exc) from exc
 
 
-@router.put("/subjects/{entity_id}", response_model=SubjectResponse)
-def update_subject(entity_id: int, payload: SubjectUpdate, db: Session = Depends(db_session), _=Depends(require_parametrizador)):
+@router.put("/subjects/{nrc}", response_model=SubjectResponse)
+def update_subject(nrc: int, payload: SubjectUpdate, db: Session = Depends(db_session), _=Depends(require_permission("SUBJECT_CRUD"))):
     try:
-        return _service(SubjectRepository, db).update(entity_id, payload.model_dump(exclude_unset=True))
+        return _service(SubjectRepository, db).update(nrc, payload.model_dump(exclude_unset=True))
     except (EntityAlreadyExistsError, EntityNotFoundError) as exc:
         raise map_repository_error(exc) from exc
+
+
+@router.delete("/subjects/{nrc}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_subject(nrc: int, db: Session = Depends(db_session), _=Depends(require_permission("SUBJECT_CRUD"))):
+    """Borra una materia (NRC). Antes borra en Assesment_MS sus rúbricas/evidencias
+    y sus schedule_subjects; 409 si hay periodos cerrados; 503 si no responde."""
+    repo = SubjectRepository(db)
+    if not repo.get_by_id(nrc):
+        raise map_repository_error(EntityNotFoundError("Subject not found."))
+    client = AssesmentMsClient()
+    try:
+        ok, closed = await client.delete_rubrics(subjects_id=nrc)
+        if not ok:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Tiene valoraciones en periodos cerrados: {', '.join(closed)}",
+            )
+        await client.delete_schedule_subjects(nrc)
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Servicio de valoraciones no disponible; no se borró nada",
+        ) from exc
+    repo.delete(nrc)
+    return None
+
+
+# ── Asignar NRC a profesor — SUBJECT_CRUD ───────────────────
+@router.post("/teacher-subjects", response_model=TeacherSubjectResponse, status_code=status.HTTP_201_CREATED)
+def assign_teacher_subject(
+    payload: TeacherSubjectCreate,
+    db: Session = Depends(db_session),
+    current_user=Depends(require_permission("SUBJECT_CRUD")),
+):
+    data = payload.model_dump()
+    data["assigned_by"] = current_user.id
+    try:
+        return TeacherSubjectRepository(db).create(data)
+    except EntityAlreadyExistsError as exc:
+        raise map_repository_error(exc) from exc
+
+
+@router.get("/teacher-subjects", response_model=list[TeacherSubjectDetail])
+def list_teacher_subjects(user_id: int, db: Session = Depends(db_session), _=Depends(require_permission("SUBJECT_CRUD"))):
+    """Asignaciones de un profesor: id de la asignación + datos de la materia,
+    para listar y poder borrar por id (CRUD de la asignación)."""
+    return TeacherSubjectRepository(db).assignments_for_user(user_id)
+
+
+@router.delete("/teacher-subjects/{assignment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_teacher_subject(assignment_id: int, db: Session = Depends(db_session), _=Depends(require_permission("SUBJECT_CRUD"))):
+    """Quita una asignación NRC-profesor. Borrado local (fila en teacher_subjects);
+    no afecta al profesor ni a la materia, así que no hay borrado cruzado."""
+    if not TeacherSubjectRepository(db).delete(assignment_id):
+        raise map_repository_error(EntityNotFoundError("Assignment not found."))
+    return None

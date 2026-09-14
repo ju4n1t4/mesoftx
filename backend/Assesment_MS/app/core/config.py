@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     jwt_secret_key: str = Field(..., min_length=32)
     jwt_algorithm: str = "HS256"
 
+    # Comunicación entre microservicios (paso 12).
+    user_ms_url: str = "http://user-ms:8001"
+    service_token: str = Field(..., min_length=1)
+
     cors_origins: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

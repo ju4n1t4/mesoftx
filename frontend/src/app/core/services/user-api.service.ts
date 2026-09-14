@@ -1,14 +1,15 @@
 /**
  * UserApiService — consume el microservicio User_MS (:8001/api/v1).
  * Todos los endpoints (salvo /auth/login) requieren JWT; el interceptor lo añade.
+ * Renombrado al modelo v13 (paso 16): careers→/programs, faculty→/colleges.
  */
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  User, UserCreate, Role, Career, Subject, Faculty,
-  Year, Period, AcademicPeriod,
+  User, UserCreate, Role, Permission, Program, Subject, College, Period,
+  TeacherSubject, TeacherSubjectDetail, Student, StudentUploadRow, StudentUploadResult,
 } from '../models/abet.models';
 
 @Injectable({ providedIn: 'root' })
@@ -28,28 +29,55 @@ export class UserApiService {
 
   // ── Roles ─────────────────────────────────────────────────
   getRoles(): Observable<Role[]> { return this.http.get<Role[]>(`${this.base}/roles`); }
+  createRole(body: { name: string; description?: string }): Observable<Role> { return this.http.post<Role>(`${this.base}/roles`, body); }
+  updateRole(id: number, body: { name?: string; description?: string }): Observable<Role> { return this.http.put<Role>(`${this.base}/roles/${id}`, body); }
+  deleteRole(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/roles/${id}`); }
+  setRolePermissions(id: number, codes: string[]): Observable<Role> {
+    return this.http.put<Role>(`${this.base}/roles/${id}/permissions`, { permission_codes: codes });
+  }
 
-  // ── Carreras ──────────────────────────────────────────────
-  getCareers(): Observable<Career[]>      { return this.http.get<Career[]>(`${this.base}/careers`); }
-  getCareer(id: number): Observable<Career> { return this.http.get<Career>(`${this.base}/careers/${id}`); }
+  // ── Permisos ──────────────────────────────────────────────
+  getPermissions(): Observable<Permission[]> { return this.http.get<Permission[]>(`${this.base}/permissions`); }
 
-  // ── Asignaturas ───────────────────────────────────────────
+  // ── Público (temporal, para la defensa): perfiles existentes, sin token ──
+  getPublicRoles(): Observable<Pick<Role, 'id' | 'name'>[]> {
+    return this.http.get<Pick<Role, 'id' | 'name'>[]>(`${this.base}/public/roles`);
+  }
+
+  // ── Programas (antes carreras) ────────────────────────────
+  getPrograms(): Observable<Program[]>          { return this.http.get<Program[]>(`${this.base}/programs`); }
+  getProgram(id: string): Observable<Program>   { return this.http.get<Program>(`${this.base}/programs/${id}`); }
+
+  // ── Materias (NRC) ────────────────────────────────────────
   getSubjects(): Observable<Subject[]> { return this.http.get<Subject[]>(`${this.base}/subjects`); }
+  getSubject(nrc: number): Observable<Subject> { return this.http.get<Subject>(`${this.base}/subjects/${nrc}`); }
+  createSubject(body: Subject): Observable<Subject> { return this.http.post<Subject>(`${this.base}/subjects`, body); }
+  updateSubject(nrc: number, body: Partial<Subject>): Observable<Subject> { return this.http.put<Subject>(`${this.base}/subjects/${nrc}`, body); }
+  deleteSubject(nrc: number): Observable<void> { return this.http.delete<void>(`${this.base}/subjects/${nrc}`); }
 
-  // ── Facultades (endpoint singular en el backend) ──────────
-  getFaculties(): Observable<Faculty[]> { return this.http.get<Faculty[]>(`${this.base}/faculty`); }
+  // ── Asignación profesor-materia ───────────────────────────
+  assignTeacherSubject(body: { user_id: number; subjects_id: number }): Observable<TeacherSubject> {
+    return this.http.post<TeacherSubject>(`${this.base}/teacher-subjects`, body);
+  }
+  getTeacherSubjects(userId: number): Observable<TeacherSubjectDetail[]> {
+    return this.http.get<TeacherSubjectDetail[]>(`${this.base}/teacher-subjects`, { params: { user_id: String(userId) } });
+  }
+  deleteTeacherSubject(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/teacher-subjects/${id}`); }
 
-  // ── Años ──────────────────────────────────────────────────
-  getYears(): Observable<Year[]> { return this.http.get<Year[]>(`${this.base}/years`); }
-  createYear(y: { year: number }): Observable<Year> { return this.http.post<Year>(`${this.base}/years`, y); }
+  // ── Profesor: mis cursos ──────────────────────────────────
+  getMySubjects(): Observable<Subject[]> { return this.http.get<Subject[]>(`${this.base}/me/subjects`); }
+  getMyPendingSubjects(): Observable<Subject[]> { return this.http.get<Subject[]>(`${this.base}/me/subjects/pending`); }
+
+  // ── Estudiantes ───────────────────────────────────────────
+  uploadStudents(nrc: number, rows: StudentUploadRow[]): Observable<StudentUploadResult> {
+    return this.http.post<StudentUploadResult>(`${this.base}/subjects/${nrc}/students`, { students: rows });
+  }
+  getSubjectStudents(nrc: number): Observable<Student[]> { return this.http.get<Student[]>(`${this.base}/subjects/${nrc}/students`); }
+
+  // ── Facultades (antes faculty) ────────────────────────────
+  getColleges(): Observable<College[]> { return this.http.get<College[]>(`${this.base}/colleges`); }
 
   // ── Periodos ──────────────────────────────────────────────
   getPeriods(): Observable<Period[]> { return this.http.get<Period[]>(`${this.base}/periods`); }
-  createPeriod(p: { period: string }): Observable<Period> { return this.http.post<Period>(`${this.base}/periods`, p); }
-
-  // ── Periodos académicos ───────────────────────────────────
-  getAcademicPeriods(): Observable<AcademicPeriod[]> { return this.http.get<AcademicPeriod[]>(`${this.base}/academic-periods`); }
-  createAcademicPeriod(ap: Omit<AcademicPeriod, 'id'>): Observable<AcademicPeriod> {
-    return this.http.post<AcademicPeriod>(`${this.base}/academic-periods`, ap);
-  }
+  createPeriod(p: { code: string }): Observable<Period> { return this.http.post<Period>(`${this.base}/periods`, p); }
 }

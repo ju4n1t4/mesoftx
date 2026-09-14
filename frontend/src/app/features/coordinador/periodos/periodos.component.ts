@@ -1,9 +1,11 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
 import { UserApiService } from '../../../core/services/user-api.service';
-import { AcademicPeriod, Year, Period } from '../../../core/models/abet.models';
+// TODO fase 2: esta pantalla usaba Year/AcademicPeriod (modelo viejo) y los endpoints
+// getYears/createYear/getAcademicPeriods/createAcademicPeriod, eliminados en modelo v13.
+// Migrar a Period v13 (id, code). Solo se importa Period.
+import { Period } from '../../../core/models/abet.models';
 
 interface PeriodRow { code: string; name: string; semester: string; year: string; }
 
@@ -117,7 +119,7 @@ export class PeriodosComponent implements OnInit {
 
   newYear = ''; newPeriod = '';
 
-  private years: Year[] = [];
+  // TODO fase 2: Year[] eliminado en modelo v13; se conserva solo la lista de Period v13.
   private periodList: Period[] = [];
 
   constructor(private users: UserApiService) {}
@@ -126,15 +128,12 @@ export class PeriodosComponent implements OnInit {
 
   private load(): void {
     this.loading.set(true);
-    forkJoin({
-      academic: this.users.getAcademicPeriods(),
-      years: this.users.getYears(),
-      periods: this.users.getPeriods(),
-    }).subscribe({
-      next: ({ academic, years, periods }) => {
-        this.years = years ?? [];
+    // TODO fase 2: getAcademicPeriods()/getYears() eliminados en modelo v13.
+    // Se carga únicamente getPeriods() (Period con id/code).
+    this.users.getPeriods().subscribe({
+      next: (periods) => {
         this.periodList = periods ?? [];
-        this.periods.set(this.mapRows(academic ?? []));
+        this.periods.set(this.mapRows(this.periodList));
         this.loading.set(false);
       },
       error: () => {
@@ -144,18 +143,13 @@ export class PeriodosComponent implements OnInit {
     });
   }
 
-  private mapRows(academic: AcademicPeriod[]): PeriodRow[] {
-    return academic.map(ap => {
-      const yr = this.years.find(y => y.id === ap.year_id)?.year;
-      const pr = this.periodList.find(p => p.id === ap.period_id)?.period;
-      const yearStr = yr != null ? String(yr) : '';
-      const periodStr = pr ?? '';
-      return {
-        code: ap.code || `${yearStr}${periodStr}`,
-        name: ap.name || `${yearStr}-${periodStr}`,
-        semester: periodStr,
-        year: yearStr,
-      };
+  private mapRows(periods: Period[]): PeriodRow[] {
+    // TODO fase 2: Period v13 solo tiene code; año/semestre se derivan del code.
+    return periods.map(p => {
+      const code = p.code ?? '';
+      const yearStr = code.slice(0, 4);
+      const periodStr = code.slice(4);
+      return { code, name: code, semester: periodStr, year: yearStr };
     });
   }
 
@@ -168,30 +162,20 @@ export class PeriodosComponent implements OnInit {
     }
     this.saving.set(true);
     const period = this.newPeriod.trim();
-    const ensureYear = this.years.find(y => y.year === yearNum);
-    const ensurePeriod = this.periodList.find(p => p.period === period);
-
-    const yearId$ = ensureYear
-      ? Promise.resolve(ensureYear)
-      : this.users.createYear({ year: yearNum }).toPromise();
-    const periodId$ = ensurePeriod
-      ? Promise.resolve(ensurePeriod)
-      : this.users.createPeriod({ period }).toPromise();
-
-    Promise.all([yearId$, periodId$]).then(([y, p]) => {
-      const yId = (y as Year)?.id;
-      const pId = (p as Period)?.id;
-      if (yId == null || pId == null) throw new Error('missing ids');
-      const code = `${yearNum}${period}`;
-      return this.users.createAcademicPeriod({ name: code, code, year_id: yId, period_id: pId }).toPromise();
-    }).then(() => {
-      this.newYear = ''; this.newPeriod = '';
-      this.showForm.set(false);
-      this.saving.set(false);
-      this.load();
-    }).catch(() => {
-      this.saving.set(false);
-      this.formError.set('No se pudo crear el período. Revisa los datos e intenta de nuevo.');
+    // TODO fase 2: createYear()/createAcademicPeriod() eliminados en modelo v13.
+    // El nuevo createPeriod({ code }) crea el Period directamente con el código año+semestre.
+    const code = `${yearNum}${period}`;
+    this.users.createPeriod({ code }).subscribe({
+      next: () => {
+        this.newYear = ''; this.newPeriod = '';
+        this.showForm.set(false);
+        this.saving.set(false);
+        this.load();
+      },
+      error: () => {
+        this.saving.set(false);
+        this.formError.set('No se pudo crear el período. Revisa los datos e intenta de nuevo.');
+      },
     });
   }
 }

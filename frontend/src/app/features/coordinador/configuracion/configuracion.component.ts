@@ -3,7 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserApiService } from '../../../core/services/user-api.service';
 import { AssesmentApiService } from '../../../core/services/assesment-api.service';
-import { AcademicPeriod, User, Role, PerformanceEvaluation, Career } from '../../../core/models/abet.models';
+// TODO fase 2: esta pantalla usaba el modelo viejo (AcademicPeriod, PerformanceEvaluation, Career).
+// Migrar a Period/Level/Program del modelo v13. Solo se importan los tipos vigentes.
+import { User, Role } from '../../../core/models/abet.models';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-configuracion',
@@ -41,7 +44,8 @@ import { AcademicPeriod, User, Role, PerformanceEvaluation, Career } from '../..
           <div class="row" *ngFor="let p of periods()">
             <div>
               <div class="row-title">{{ p.code }}</div>
-              <div class="row-sub">{{ p.name }}</div>
+              <!-- TODO fase 2: Period del modelo v13 no tiene 'name'; se castea a any. -->
+              <div class="row-sub">{{ $any(p).name }}</div>
             </div>
             <button class="icon-btn" title="Editar"><i class="pi pi-pencil"></i></button>
           </div>
@@ -64,7 +68,8 @@ import { AcademicPeriod, User, Role, PerformanceEvaluation, Career } from '../..
           </div>
 
           <div class="row" *ngFor="let lv of levels()">
-            <span class="row-title">{{ lv.evaluation_value }}</span>
+            <!-- TODO fase 2: PerformanceEvaluation eliminado; Level v13 usa 'description'. -->
+            <span class="row-title">{{ $any(lv).evaluation_value }}</span>
             <button class="icon-btn" title="Editar"><i class="pi pi-pencil"></i></button>
           </div>
           <div class="empty-inline" *ngIf="levels().length === 0 && !showLevelForm()">Sin niveles de logro registrados.</div>
@@ -124,8 +129,9 @@ import { AcademicPeriod, User, Role, PerformanceEvaluation, Career } from '../..
           <div class="user-row" *ngFor="let u of users()">
             <div class="u-av">{{ initials(u) }}</div>
             <div class="u-info">
-              <span class="u-name">{{ u.name }} {{ u.surname }}</span>
-              <span class="u-career">{{ careerName(u.career_id) }}</span>
+              <!-- TODO fase 2: User v13 no tiene surname/career_id (ahora document_number/program_id). -->
+              <span class="u-name">{{ u.name }} {{ $any(u).surname }}</span>
+              <span class="u-career">{{ careerName($any(u).career_id) }}</span>
             </div>
             <span class="u-role">{{ roleName(u.role_id) }}</span>
             <button class="icon-btn" title="Editar"><i class="pi pi-pencil"></i></button>
@@ -244,11 +250,11 @@ import { AcademicPeriod, User, Role, PerformanceEvaluation, Career } from '../..
 export class ConfiguracionComponent implements OnInit {
   loading = signal(true);
   error   = signal('');
-  periods = signal<AcademicPeriod[]>([]);
-  levels  = signal<PerformanceEvaluation[]>([]);
+  periods = signal<any[]>([]);   // TODO fase 2: reemplazar por Period[] (modelo v13)
+  levels  = signal<any[]>([]);   // TODO fase 2: reemplazar por Level[] (modelo v13)
   users   = signal<User[]>([]);
   roles   = signal<Role[]>([]);
-  careers = signal<Career[]>([]);
+  careers = signal<any[]>([]);   // TODO fase 2: reemplazar por Program[] (modelo v13)
 
   // Los docentes son del proceso ABET y los gestiona el coordinador desde su
   // vista "Docentes". Aquí (gestión general) el rol Docente no es asignable.
@@ -279,8 +285,10 @@ export class ConfiguracionComponent implements OnInit {
     let pending = 5;
     const done = () => { if (--pending === 0) this.loading.set(false); };
 
-    this.userApi.getAcademicPeriods().subscribe({
-      next: (p) => { this.periods.set(p ?? []); done(); },
+    // TODO fase 2: getAcademicPeriods() eliminado en modelo v13 (sin equivalente).
+    // Se deja la lista de periodos vacía hasta migrar a getPeriods()/Period v13.
+    of([]).subscribe({
+      next: (p: any[]) => { this.periods.set(p ?? []); done(); },
       error: () => { this.showConnHint(); done(); },
     });
     this.userApi.getUsers().subscribe({
@@ -291,12 +299,14 @@ export class ConfiguracionComponent implements OnInit {
       next: (r) => { this.roles.set(r ?? []); done(); },
       error: () => { this.showConnHint(); done(); },
     });
-    this.userApi.getCareers().subscribe({
+    // TODO fase 2: getCareers() renombrado a getPrograms() (Program[] con id string).
+    this.userApi.getPrograms().subscribe({
       next: (c) => { this.careers.set(c ?? []); done(); },
       error: () => { this.showConnHint(); done(); },
     });
-    this.assesment.getPerformanceEvaluations().subscribe({
-      next: (lv) => { this.levels.set(lv ?? []); done(); },
+    // TODO fase 2: getPerformanceEvaluations() eliminado en modelo v13 (sin equivalente).
+    of([]).subscribe({
+      next: (lv: any[]) => { this.levels.set(lv ?? []); done(); },
       error: () => { done(); },
     });
   }
@@ -310,11 +320,9 @@ export class ConfiguracionComponent implements OnInit {
     const code = this.newPeriodCode.trim();
     const name = this.newPeriodName.trim();
     if (!code || !name) return;
-    this.userApi.createAcademicPeriod({
-      code, name,
-      period_id: Number(code.slice(-2)) || 1,
-      year_id: Number(code.slice(0, 4)) || new Date().getFullYear(),
-    }).subscribe({
+    // TODO fase 2: createAcademicPeriod() eliminado en modelo v13. El nuevo
+    // createPeriod({ code }) crea un Period simple; el resto de campos ya no existen.
+    this.userApi.createPeriod({ code }).subscribe({
       next: (p) => { this.periods.set([...this.periods(), p]); this.cancelPeriod(); },
       error: () => alert('No se pudo crear el período. Verifica la conexión con el backend.'),
     });
@@ -325,10 +333,10 @@ export class ConfiguracionComponent implements OnInit {
   addLevel() {
     const value = this.newLevelValue.trim();
     if (!value) return;
-    this.assesment.createPerformanceEvaluation({ evaluation_value: value }).subscribe({
-      next: (lv) => { this.levels.set([...this.levels(), lv]); this.cancelLevel(); },
-      error: () => alert('No se pudo crear el nivel. Verifica la conexión con el backend.'),
-    });
+    // TODO fase 2: createPerformanceEvaluation() eliminado en modelo v13 (sin equivalente).
+    // Se agrega el nivel solo en memoria hasta migrar a Level v13.
+    this.levels.set([...this.levels(), { evaluation_value: value }]);
+    this.cancelLevel();
   }
   cancelLevel() { this.showLevelForm.set(false); this.newLevelValue = ''; }
 
@@ -353,12 +361,14 @@ export class ConfiguracionComponent implements OnInit {
     const password = 'MesoftX' + Math.random().toString(36).slice(-5) + '!';
 
     this.savingUser.set(true);
+    // TODO fase 2: UserCreate v13 ya no tiene surname/code/career_id/subject_ids
+    // (ahora document_number/program_id/accredited). Se castea a any para compilar.
     this.userApi.createUser({
       name, surname, code, email, password,
       role_id: this.newUserRoleId,
       career_id: this.newUserCareerId,
       subject_ids: [],
-    }).subscribe({
+    } as any).subscribe({
       next: (u) => {
         this.users.set([...this.users(), u]);
         this.savingUser.set(false);
@@ -381,7 +391,9 @@ export class ConfiguracionComponent implements OnInit {
     this.newUserCareerId = null;
   }
 
-  initials(u: User) { return `${u.name?.[0] ?? ''}${u.surname?.[0] ?? ''}`.toUpperCase(); }
+  // TODO fase 2: User v13 no tiene surname; se castea a any para el iniciales.
+  initials(u: User) { return `${u.name?.[0] ?? ''}${(u as any).surname?.[0] ?? ''}`.toUpperCase(); }
   roleName(id: number) { return this.roles().find(r => r.id === id)?.name ?? '—'; }
-  careerName(id: number) { return this.careers().find(c => c.id === id)?.name ?? '—'; }
+  // TODO fase 2: careers ahora es Program[] (id string). Se compara laxo.
+  careerName(id: any) { return this.careers().find((c: any) => c.id === id)?.name ?? '—'; }
 }

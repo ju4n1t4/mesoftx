@@ -1,6 +1,6 @@
 from collections.abc import Generator
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -35,18 +35,46 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             detail="Inactive or missing user.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    # Permisos efectivos del usuario, tomados de su rol (fuente de verdad en BD).
+    user.permissions = [rp.permission.code for rp in user.role.role_permissions]
     return user
 
 
-def require_roles(*allowed_role_ids: int):
-    """Autoriza la petición solo si el usuario autenticado tiene uno de los roles indicados."""
+def require_permission(code: str):
+    """Autoriza solo si el usuario autenticado tiene el permiso indicado (paso 15)."""
 
-    def _dependency(current_user=Depends(get_current_user)):
-        if current_user.role_id not in allowed_role_ids:
+    def checker(current_user=Depends(get_current_user)):
+        if code not in getattr(current_user, "permissions", []):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions for this operation.",
+                detail=f"Falta el permiso {code}",
             )
         return current_user
 
-    return _dependency
+    return checker
+
+
+def require_service_token(x_service_token: str | None = Header(default=None)):
+    """Valida el secreto compartido entre microservicios (paso 12)."""
+    if x_service_token != settings.service_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token de servicio inválido")
+
+
+class Scope:
+    """Alcance de datos (paso 13). El Profesor es el único con program_id: ve solo
+    su programa y sus NRC. Coordinador/Auditor/Administrativo no tienen program_id
+    y ven todo (sin filtro)."""
+
+    def __init__(self, user):
+        self.user_id = user.id
+        self.program_id = getattr(user, "program_id", None)
+        self.permissions = getattr(user, "permissions", [])
+
+    @property
+    def is_teacher(self) -> bool:
+        # Solo el Profesor pertenece a un programa académico.
+        return self.program_id is not None
+
+
+def scope_filter(current_user=Depends(get_current_user)) -> Scope:
+    return Scope(current_user)

@@ -13,6 +13,8 @@ services:
       JWT_SECRET_KEY: ${USER_MS_JWT_SECRET_KEY:-change-this-jwt-secret-with-at-least-32-chars}
       JWT_ALGORITHM: HS256
       JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${USER_MS_JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      ASSESMENT_MS_URL: ${ASSESMENT_MS_URL:-http://assesment-ms:8002}
+      SERVICE_TOKEN: ${SERVICE_TOKEN:?SERVICE_TOKEN es obligatorio; defínelo en deployment/backend/.env}
       CORS_ORIGINS: ${USER_MS_CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
     ports:
       - "${USER_MS_PORT:-8001}:8001"
@@ -31,6 +33,12 @@ services:
       dockerfile: deployment/backend/Assesment_MS/Dockerfile
     container_name: assesment-ms
     restart: unless-stopped
+    # Assesment_MS depende de User_MS (paso 16.2): no arranca hasta que User_MS
+    # responda /health. La base de datos (mesoftx-db) vive en deployment/db y
+    # comparte la red externa mesoftx-network; debe estar healthy antes (ver nota).
+    depends_on:
+      user-ms:
+        condition: service_healthy
     environment:
       APP_NAME: Assesment_MS
       APP_ENV: container
@@ -38,6 +46,8 @@ services:
       DATABASE_URL: ${ASSESMENT_MS_DATABASE_URL:-postgresql+psycopg2://postgres:postgres@mesoftx-db:5432/assesment_mesoftx_db}
       JWT_SECRET_KEY: ${USER_MS_JWT_SECRET_KEY:-change-this-jwt-secret-with-at-least-32-chars}
       JWT_ALGORITHM: HS256
+      USER_MS_URL: ${USER_MS_URL:-http://user-ms:8001}
+      SERVICE_TOKEN: ${SERVICE_TOKEN:?SERVICE_TOKEN es obligatorio; defínelo en deployment/backend/.env}
       CORS_ORIGINS: ${ASSESMENT_MS_CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
     ports:
       - "${ASSESMENT_MS_PORT:-8002}:8002"

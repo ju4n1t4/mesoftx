@@ -1,85 +1,152 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import (
+    CheckConstraint, DateTime, ForeignKey, ForeignKeyConstraint, Integer,
+    SmallInteger, String, UniqueConstraint, func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.database.session import Base
 
 
 class StudentOutcomeModel(Base):
-    __tablename__ = "student_outcomes"
+    __tablename__ = "so"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    code: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
-    description: Mapped[str | None] = mapped_column(Text)
-
-
-class PerformanceIndicatorModel(Base):
-    __tablename__ = "performance_indicators"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    code: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
-    name: Mapped[str | None] = mapped_column(Text)
+    id: Mapped[str] = mapped_column(String(5), primary_key=True)
+    description: Mapped[str] = mapped_column(String(255), nullable=False)
+    college_id: Mapped[str] = mapped_column(String(3), nullable=False)  # cross-service
 
 
-class PerformanceIndicatorDetailModel(Base):
-    __tablename__ = "performance_indicator_details"
+class PerformanceModel(Base):
+    __tablename__ = "performance"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    performance_indicator_id: Mapped[int] = mapped_column(ForeignKey("performance_indicators.id"), nullable=False)
-    student_outcome_id: Mapped[int] = mapped_column(ForeignKey("student_outcomes.id"), nullable=False)
-    description: Mapped[str] = mapped_column(Text, nullable=False)
-
-    performance_indicator: Mapped[PerformanceIndicatorModel] = relationship()
-    student_outcome: Mapped[StudentOutcomeModel] = relationship()
-
-
-class PerformanceEvaluationModel(Base):
-    __tablename__ = "performance_evaluations"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    evaluation_value: Mapped[str] = mapped_column(String(255), nullable=False)
-
-
-class PerformanceEvaluationDetailModel(Base):
-    __tablename__ = "performance_evaluation_details"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    performance_evaluation_id: Mapped[int] = mapped_column(ForeignKey("performance_evaluations.id"), nullable=False)
-    performance_indicator_id: Mapped[int] = mapped_column(ForeignKey("performance_indicators.id"), nullable=False)
-    student_outcome_id: Mapped[int] = mapped_column(ForeignKey("student_outcomes.id"), nullable=False)
-    description: Mapped[str] = mapped_column(Text, nullable=False)
-
-    performance_evaluation: Mapped[PerformanceEvaluationModel] = relationship()
-    performance_indicator: Mapped[PerformanceIndicatorModel] = relationship()
-    student_outcome: Mapped[StudentOutcomeModel] = relationship()
-
-
-class AssesmentEvidenceModel(Base):
-    __tablename__ = "assesment_evidence"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    evidence_name_doc: Mapped[str] = mapped_column(Text, nullable=False)
-    student_code: Mapped[str] = mapped_column(String(25), nullable=False)
-    student_outcome_id: Mapped[int] = mapped_column(ForeignKey("student_outcomes.id"), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.current_timestamp())
-
-    student_outcome: Mapped[StudentOutcomeModel] = relationship()
-
-
-class AssesmentResultModel(Base):
-    __tablename__ = "assesment_results"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    subject_code: Mapped[str] = mapped_column(String(25), nullable=False)
-    assesment_evidence_id: Mapped[int] = mapped_column(ForeignKey("assesment_evidence.id"), nullable=False)
-    student_outcome_id: Mapped[int] = mapped_column(ForeignKey("student_outcomes.id"), nullable=False)
-    performance_evaluation_detail_id: Mapped[int] = mapped_column(
-        ForeignKey("performance_evaluation_details.id"),
-        nullable=False,
+    id: Mapped[str] = mapped_column(String(3), primary_key=True)
+    description: Mapped[str] = mapped_column(String(255), nullable=False)
+    so_id: Mapped[str] = mapped_column(
+        ForeignKey("so.id", ondelete="CASCADE"), nullable=False
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.current_timestamp())
 
-    assesment_evidence: Mapped[AssesmentEvidenceModel] = relationship()
-    student_outcome: Mapped[StudentOutcomeModel] = relationship()
-    performance_evaluation_detail: Mapped[PerformanceEvaluationDetailModel] = relationship()
+    student_outcome: Mapped[StudentOutcomeModel] = relationship(lazy="selectin")
+
+
+class LevelModel(Base):
+    __tablename__ = "level"
+    __table_args__ = (
+        UniqueConstraint("performance_id", "id", name="uq_level_performance"),
+        UniqueConstraint("performance_id", "rank", name="uq_level_rank"),
+        CheckConstraint("rank BETWEEN 1 AND 4", name="ck_level_rank"),
+    )
+
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    description: Mapped[str] = mapped_column(String(255), nullable=False)
+    rank: Mapped[int] = mapped_column(SmallInteger, nullable=False)   # 1..4
+    performance_id: Mapped[str] = mapped_column(
+        ForeignKey("performance.id", ondelete="CASCADE"), nullable=False
+    )
+
+    performance: Mapped[PerformanceModel] = relationship(lazy="selectin")
+
+
+class SoScheduleModel(Base):
+    __tablename__ = "so_schedule"
+    __table_args__ = (
+        UniqueConstraint("so_id", "period_id", name="uq_so_schedule"),
+        CheckConstraint(
+            "status IN ('PLANIFICADO','EN_CURSO','CERRADO')",
+            name="ck_schedule_status",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    so_id: Mapped[str] = mapped_column(
+        ForeignKey("so.id", ondelete="CASCADE"), nullable=False
+    )
+    period_id: Mapped[int] = mapped_column(Integer, nullable=False)            # cross-service
+    coordinator_user_id: Mapped[int] = mapped_column(Integer, nullable=False)  # cross-service
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.current_timestamp()
+    )
+    updated_by: Mapped[int | None] = mapped_column(Integer)          # cross-service
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    student_outcome: Mapped[StudentOutcomeModel] = relationship(lazy="selectin")
+    subjects: Mapped[list["ScheduleSubjectModel"]] = relationship(
+        cascade="all, delete-orphan", lazy="selectin"
+    )
+
+
+class ScheduleSubjectModel(Base):
+    """Qué NRC valoran cada SO programado."""
+    __tablename__ = "schedule_subjects"
+    __table_args__ = (
+        UniqueConstraint("schedule_id", "subjects_id", name="uq_schedule_subject"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    schedule_id: Mapped[int] = mapped_column(
+        ForeignKey("so_schedule.id", ondelete="CASCADE"), nullable=False
+    )
+    subjects_id: Mapped[int] = mapped_column(Integer, nullable=False)   # cross-service (NRC)
+
+
+class EvidenceModel(Base):
+    """Funcionalidad futura. Un archivo por estudiante-NRC-programación."""
+    __tablename__ = "evidence"
+    __table_args__ = (
+        UniqueConstraint("schedule_id", "subjects_id", "student_id", "id",
+                         name="uq_evidence_ctx"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    schedule_id: Mapped[int] = mapped_column(
+        ForeignKey("so_schedule.id", ondelete="CASCADE"), nullable=False
+    )
+    subjects_id: Mapped[int] = mapped_column(Integer, nullable=False)   # cross-service
+    student_id: Mapped[int] = mapped_column(Integer, nullable=False)    # cross-service
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    mime_type: Mapped[str | None] = mapped_column(String(100))
+    uploaded_by: Mapped[int] = mapped_column(Integer, nullable=False)   # cross-service
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.current_timestamp()
+    )
+
+
+class RubricModel(Base):
+    __tablename__ = "rubric"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["performance_id", "level_id"],
+            ["level.performance_id", "level.id"],
+            name="fk_rubric_level",
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["schedule_id", "subjects_id", "student_id", "evidence_id"],
+            ["evidence.schedule_id", "evidence.subjects_id",
+             "evidence.student_id", "evidence.id"],
+            name="fk_rubric_evidence",
+            ondelete="SET NULL (evidence_id)",   # SQLAlchemy pasa el texto tal cual al DDL
+        ),
+        UniqueConstraint(
+            "schedule_id", "student_id", "subjects_id", "performance_id",
+            name="uq_rubric",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    schedule_id: Mapped[int] = mapped_column(
+        ForeignKey("so_schedule.id", ondelete="CASCADE"), nullable=False
+    )
+    evaluator_user_id: Mapped[int] = mapped_column(Integer, nullable=False)  # cross-service (profesor)
+    student_id: Mapped[int] = mapped_column(Integer, nullable=False)         # cross-service (students.id)
+    subjects_id: Mapped[int] = mapped_column(Integer, nullable=False)        # cross-service (NRC)
+    performance_id: Mapped[str] = mapped_column(String(3), nullable=False)
+    level_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    evidence_id: Mapped[int | None] = mapped_column(Integer)   # FK compuesta arriba
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.current_timestamp()
+    )
+
+    schedule: Mapped[SoScheduleModel] = relationship(lazy="selectin")

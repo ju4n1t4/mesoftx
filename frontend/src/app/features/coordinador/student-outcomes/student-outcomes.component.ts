@@ -1,11 +1,13 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 import { AssesmentApiService } from '../../../core/services/assesment-api.service';
 import { UserApiService } from '../../../core/services/user-api.service';
+// TODO fase 2: esta pantalla usaba PerformanceIndicatorDetail (eliminado en modelo v13)
+// y StudentOutcome.code (ahora id string) y Period.period (ahora code). Migrar a Performance/Level.
 import {
-  StudentOutcome, PerformanceIndicatorDetail, Period, User, Role,
+  StudentOutcome, Period, User, Role,
 } from '../../../core/models/abet.models';
 
 @Component({
@@ -54,13 +56,15 @@ import {
             <button *ngFor="let so of sos()" class="so-tab"
                     [class.active]="selectedId() === so.id"
                     (click)="selectedId.set(so.id)">
-              {{ so.code }}
+              <!-- TODO fase 2: StudentOutcome v13 no tiene 'code'; se usa 'id'. -->
+              {{ so.id }}
             </button>
           </div>
 
           <!-- Descripción SO -->
           <div class="so-desc-card" *ngIf="selectedSO() as so">
-            <div class="so-badge">{{ so.code }}</div>
+            <!-- TODO fase 2: StudentOutcome v13 usa 'id' en vez de 'code'. -->
+            <div class="so-badge">{{ so.id }}</div>
             <div>
               <div class="so-desc-title">Descripción del Student Outcome</div>
               <div class="so-desc-text">{{ so.description || 'Sin descripción registrada.' }}</div>
@@ -94,7 +98,8 @@ import {
 
             <div class="rubric-footer">
               <span class="config-count">
-                {{ currentRows().length }} identificadores configurados para {{ selectedSO()?.code }}
+                <!-- TODO fase 2: StudentOutcome v13 usa 'id' en vez de 'code'. -->
+                {{ currentRows().length }} identificadores configurados para {{ selectedSO()?.id }}
               </span>
             </div>
           </div>
@@ -106,7 +111,8 @@ import {
             <div class="mc-header"><i class="pi pi-calendar mc-icon"></i><h2>Periodos académicos</h2></div>
             <div class="empty-inline" *ngIf="periods().length === 0">Sin periodos registrados.</div>
             <div class="period-row" *ngFor="let p of periods()">
-              <div class="period-code">{{ p.period }}</div>
+              <!-- TODO fase 2: Period v13 usa 'code' en vez de 'period'. -->
+              <div class="period-code">{{ p.code }}</div>
               <span class="status-badge open">Periodo</span>
             </div>
           </div>
@@ -116,7 +122,8 @@ import {
             <div class="empty-inline" *ngIf="users().length === 0">Sin usuarios registrados.</div>
             <div class="user-row" *ngFor="let u of users()">
               <div class="u-av">{{ initials(u) }}</div>
-              <span class="u-name">{{ u.name }} {{ u.surname }}</span>
+              <!-- TODO fase 2: User v13 no tiene surname; se castea a any. -->
+              <span class="u-name">{{ u.name }} {{ $any(u).surname }}</span>
               <span class="u-role" [class]="roleClass(u.role_id)">{{ roleName(u.role_id) }}</span>
             </div>
           </div>
@@ -231,21 +238,23 @@ export class StudentOutcomesComponent implements OnInit {
   loading = signal(true);
   error   = signal<string | null>(null);
   sos     = signal<StudentOutcome[]>([]);
-  details = signal<PerformanceIndicatorDetail[]>([]);
+  details = signal<any[]>([]);   // TODO fase 2: PerformanceIndicatorDetail eliminado; usar Level v13
   periods = signal<Period[]>([]);
   users   = signal<User[]>([]);
   roles   = signal<Role[]>([]);
-  selectedId = signal<number | null>(null);
+  // TODO fase 2: StudentOutcome v13 usa id string; selectedId se tipa como any.
+  selectedId = signal<any>(null);
 
   selectedSO = computed(() => this.sos().find(s => s.id === this.selectedId()) ?? null);
 
   currentRows = computed(() => {
     const soId = this.selectedId();
     if (!soId) return [];
-    // Cada detalle de indicador ligado a este SO representa un identificador (ID)
+    // TODO fase 2: PerformanceIndicatorDetail y student_outcome_id eliminados en modelo v13.
+    // Se mapea de forma laxa (any) hasta migrar a Performance/Level.
     return this.details()
-      .filter(d => d.student_outcome_id === soId)
-      .map((d, i) => ({ code: `ID${i + 1}`, description: d.description }));
+      .filter((d: any) => d.student_outcome_id === soId)
+      .map((d: any, i: number) => ({ code: `ID${i + 1}`, description: d.description }));
   });
 
   constructor(private assesment: AssesmentApiService, private userApi: UserApiService) {}
@@ -253,9 +262,11 @@ export class StudentOutcomesComponent implements OnInit {
   ngOnInit(): void {
     // Los SO y detalles vienen del Assesment_MS (sin auth).
     // Periodos y usuarios del User_MS (requiere JWT — puede fallar en modo demo).
+    // TODO fase 2: getPerformanceIndicatorDetails() eliminado en modelo v13 (sin equivalente).
+    // Se cargan solo los Student Outcomes; los detalles quedan vacíos.
     forkJoin({
       sos: this.assesment.getStudentOutcomes(),
-      details: this.assesment.getPerformanceIndicatorDetails(),
+      details: of([] as any[]),
     }).subscribe({
       next: ({ sos, details }) => {
         this.sos.set(sos ?? []);
@@ -276,7 +287,8 @@ export class StudentOutcomesComponent implements OnInit {
   }
 
   initials(u: User): string {
-    return ((u.name?.[0] ?? '') + (u.surname?.[0] ?? '')).toUpperCase();
+    // TODO fase 2: User v13 no tiene surname; se castea a any.
+    return ((u.name?.[0] ?? '') + ((u as any).surname?.[0] ?? '')).toUpperCase();
   }
   roleName(roleId: number): string {
     return this.roles().find(r => r.id === roleId)?.name ?? 'Usuario';

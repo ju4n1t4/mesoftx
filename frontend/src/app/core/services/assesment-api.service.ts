@@ -1,14 +1,13 @@
 /**
  * AssesmentApiService — consume el microservicio Assesment_MS (:8002/api/v1).
+ * Modelo v13 (paso 16) + métodos de F1 (programación, rúbrica, mis valoraciones).
  */
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  StudentOutcome, PerformanceIndicator, PerformanceIndicatorDetail,
-  PerformanceEvaluation, PerformanceEvaluationDetail,
-  AssesmentEvidence, AssesmentResult,
+  StudentOutcome, Performance, Level, Rubric, SoSchedule, ScheduleStatus, MyAssessment, IndicatorsChart,
 } from '../models/abet.models';
 
 @Injectable({ providedIn: 'root' })
@@ -18,70 +17,67 @@ export class AssesmentApiService {
 
   // ── Student Outcomes ──────────────────────────────────────
   getStudentOutcomes(): Observable<StudentOutcome[]> {
-    return this.http.get<StudentOutcome[]>(`${this.base}/student-outcomes`);
+    return this.http.get<StudentOutcome[]>(`${this.base}/so`);
   }
-  createStudentOutcome(so: { code: string; description?: string }): Observable<StudentOutcome> {
-    return this.http.post<StudentOutcome>(`${this.base}/student-outcomes`, so);
+  createStudentOutcome(so: { id: string; description: string; college_id: string }): Observable<StudentOutcome> {
+    return this.http.post<StudentOutcome>(`${this.base}/so`, so);
   }
-  updateStudentOutcome(id: number, so: Partial<{ code: string; description: string }>): Observable<StudentOutcome> {
-    return this.http.put<StudentOutcome>(`${this.base}/student-outcomes/${id}`, so);
-  }
-
-  // ── Performance Indicators ────────────────────────────────
-  getPerformanceIndicators(): Observable<PerformanceIndicator[]> {
-    return this.http.get<PerformanceIndicator[]>(`${this.base}/performance-indicators`);
-  }
-  createPerformanceIndicator(pi: { code: string; name?: string }): Observable<PerformanceIndicator> {
-    return this.http.post<PerformanceIndicator>(`${this.base}/performance-indicators`, pi);
+  updateStudentOutcome(id: string, so: Partial<{ description: string; college_id: string }>): Observable<StudentOutcome> {
+    return this.http.put<StudentOutcome>(`${this.base}/so/${id}`, so);
   }
 
-  // ── Performance Indicator Details ─────────────────────────
-  getPerformanceIndicatorDetails(): Observable<PerformanceIndicatorDetail[]> {
-    return this.http.get<PerformanceIndicatorDetail[]>(`${this.base}/performance-indicator-details`);
+  // ── Indicadores y niveles ─────────────────────────────────
+  getPerformances(soId: string): Observable<Performance[]> {
+    return this.http.get<Performance[]>(`${this.base}/performance`, { params: { so_id: soId } });
   }
-  createPerformanceIndicatorDetail(d: Omit<PerformanceIndicatorDetail, 'id'>): Observable<PerformanceIndicatorDetail> {
-    return this.http.post<PerformanceIndicatorDetail>(`${this.base}/performance-indicator-details`, d);
-  }
-  updatePerformanceIndicatorDetail(id: number, d: Partial<Omit<PerformanceIndicatorDetail, 'id'>>): Observable<PerformanceIndicatorDetail> {
-    return this.http.put<PerformanceIndicatorDetail>(`${this.base}/performance-indicator-details/${id}`, d);
+  getLevels(performanceId: string): Observable<Level[]> {
+    return this.http.get<Level[]>(`${this.base}/performance/${performanceId}/levels`);
   }
 
-  // ── Performance Evaluations (niveles N1–N4) ───────────────
-  getPerformanceEvaluations(): Observable<PerformanceEvaluation[]> {
-    return this.http.get<PerformanceEvaluation[]>(`${this.base}/performance-evaluations`);
+  // ── Programación de Student Outcomes ──────────────────────
+  getSoSchedules(periodId?: number): Observable<SoSchedule[]> {
+    let params = new HttpParams();
+    if (periodId != null) params = params.set('period_id', String(periodId));
+    return this.http.get<SoSchedule[]>(`${this.base}/so-schedule`, { params });
   }
-  createPerformanceEvaluation(pe: { evaluation_value: string }): Observable<PerformanceEvaluation> {
-    return this.http.post<PerformanceEvaluation>(`${this.base}/performance-evaluations`, pe);
+  createSoSchedule(body: { so_id: string; period_id: number }): Observable<SoSchedule> {
+    return this.http.post<SoSchedule>(`${this.base}/so-schedule`, body);
   }
-
-  // ── Performance Evaluation Details ────────────────────────
-  getPerformanceEvaluationDetails(): Observable<PerformanceEvaluationDetail[]> {
-    return this.http.get<PerformanceEvaluationDetail[]>(`${this.base}/performance-evaluation-details`);
+  deleteSoSchedule(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/so-schedule/${id}`);
   }
-  createPerformanceEvaluationDetail(d: Omit<PerformanceEvaluationDetail, 'id'>): Observable<PerformanceEvaluationDetail> {
-    return this.http.post<PerformanceEvaluationDetail>(`${this.base}/performance-evaluation-details`, d);
+  setScheduleSubjects(id: number, nrcs: number[]): Observable<void> {
+    return this.http.put<void>(`${this.base}/so-schedule/${id}/subjects`, { nrcs });
   }
-
-  // ── Assesment Evidence ────────────────────────────────────
-  getAssesmentEvidence(): Observable<AssesmentEvidence[]> {
-    return this.http.get<AssesmentEvidence[]>(`${this.base}/assesment-evidence`);
+  getScheduleSubjects(id: number): Observable<number[]> {
+    return this.http.get<number[]>(`${this.base}/so-schedule/${id}/subjects`);
   }
-  createAssesmentEvidence(e: Omit<AssesmentEvidence, 'id' | 'created_at'>): Observable<AssesmentEvidence> {
-    return this.http.post<AssesmentEvidence>(`${this.base}/assesment-evidence`, e);
-  }
-  createEvidenceWithResults(payload: {
-    evidence_name_doc: string;
-    student_code: string;
-    student_outcome_id: number;
-    results: { subject_code: string; student_outcome_id: number; performance_evaluation_detail_id: number }[];
-  }): Observable<{ evidence: AssesmentEvidence; results: AssesmentResult[] }> {
-    return this.http.post<{ evidence: AssesmentEvidence; results: AssesmentResult[] }>(
-      `${this.base}/assesment-evidence/with-results`, payload,
-    );
+  patchScheduleStatus(id: number, status: ScheduleStatus): Observable<SoSchedule> {
+    return this.http.patch<SoSchedule>(`${this.base}/so-schedule/${id}/status`, { status });
   }
 
-  // ── Assesment Results ─────────────────────────────────────
-  getAssesmentResults(): Observable<AssesmentResult[]> {
-    return this.http.get<AssesmentResult[]>(`${this.base}/assesment-results`);
+  // ── Profesor: qué debo valorar ────────────────────────────
+  getMyAssessments(): Observable<MyAssessment[]> {
+    return this.http.get<MyAssessment[]>(`${this.base}/me/assessments`);
+  }
+
+  // ── Rúbricas (valoraciones) ───────────────────────────────
+  createRubric(body: {
+    schedule_id: number; student_id: number; subjects_id: number;
+    performance_id: string; level_id: string; evidence_id?: number | null;
+  }): Observable<Rubric> {
+    return this.http.post<Rubric>(`${this.base}/rubric`, body);
+  }
+  getRubrics(params?: { period_id?: number; schedule_id?: number; subjects_id?: number }): Observable<Rubric[]> {
+    let httpParams = new HttpParams();
+    if (params?.period_id != null) httpParams = httpParams.set('period_id', String(params.period_id));
+    if (params?.schedule_id != null) httpParams = httpParams.set('schedule_id', String(params.schedule_id));
+    if (params?.subjects_id != null) httpParams = httpParams.set('subjects_id', String(params.subjects_id));
+    return this.http.get<Rubric[]>(`${this.base}/rubric`, { params: httpParams });
+  }
+
+  // ── Gráfica de indicadores (dashboards / auditor) ─────────
+  getIndicatorsChart(periodId: number): Observable<IndicatorsChart> {
+    return this.http.get<IndicatorsChart>(`${this.base}/indicators/chart`, { params: { period_id: String(periodId) } });
   }
 }

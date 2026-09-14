@@ -30,7 +30,7 @@ export const APP_MODULES: AppModule[] = [
 ];
 
 /** Roles del sistema (coinciden con el catálogo de la base de datos). */
-export const SYSTEM_ROLES = ['Admin', 'Coordinador', 'Docente'] as const;
+export const SYSTEM_ROLES = ['Administrativo', 'Coordinador', 'Profesor', 'Auditor'] as const;
 export type SystemRole = (typeof SYSTEM_ROLES)[number];
 
 /** Estructura: { [rol]: { [moduloKey]: boolean } } */
@@ -47,11 +47,13 @@ export class AccessControlService {
     const all = (v: boolean) => Object.fromEntries(APP_MODULES.map(m => [m.key, v]));
     return {
       // El administrador gestiona accesos y usuarios.
-      Admin: { ...all(false), docentes: true, configuracion: true, asignacion: true },
+      Administrativo: { ...all(false), docentes: true, configuracion: true, asignacion: true },
       // El coordinador opera el proceso completo de acreditación.
       Coordinador: { ...all(true), asignacion: false },
-      // El docente no accede al panel de coordinación.
-      Docente: all(false),
+      // El profesor no accede al panel de coordinación.
+      Profesor: all(false),
+      // El auditor solo consulta.
+      Auditor: all(false),
     };
   }
 

@@ -1,8 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { UserApiService } from '../../../core/services/user-api.service';
 
 @Component({
   selector: 'app-login',
@@ -95,13 +96,24 @@ import { AuthService } from '../../../core/services/auth.service';
           <div class="demo-wrap">
             <div class="demo-divider"><span>Acceso de demostración</span></div>
             <div class="demo-btns">
-              <button class="btn-demo" (click)="demoDocente()">
-                <i class="pi pi-user"></i> Entrar como Docente
+              <button class="btn-demo" (click)="demoProfesor()"
+                      [disabled]="!roleExists('Profesor')"
+                      [title]="roleExists('Profesor') ? '' : 'Perfil aún no creado'">
+                <i class="pi pi-user"></i> Entrar como Profesor
               </button>
-              <button class="btn-demo accent" (click)="demoCoordinador()">
+              <button class="btn-demo accent" (click)="demoCoordinador()"
+                      [disabled]="!roleExists('Coordinador')"
+                      [title]="roleExists('Coordinador') ? '' : 'Perfil aún no creado'">
                 <i class="pi pi-shield"></i> Entrar como Coordinador
               </button>
-              <button class="btn-demo admin" (click)="demoAdmin()">
+              <button class="btn-demo" (click)="demoAuditor()"
+                      [disabled]="!roleExists('Auditor')"
+                      [title]="roleExists('Auditor') ? '' : 'Perfil aún no creado'">
+                <i class="pi pi-eye"></i> Entrar como Auditor
+              </button>
+              <button class="btn-demo admin" (click)="demoAdmin()"
+                      [disabled]="!roleExists('Administrativo')"
+                      [title]="roleExists('Administrativo') ? '' : 'Perfil aún no creado'">
                 <i class="pi pi-cog"></i> Entrar como Administrador
               </button>
             </div>
@@ -256,25 +268,44 @@ import { AuthService } from '../../../core/services/auth.service';
       display: flex; align-items: center; justify-content: center; gap: 7px;
       transition: all 0.15s;
     }
-    .btn-demo:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-demo:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+    .btn-demo:disabled { opacity: 0.45; cursor: not-allowed; }
     .btn-demo.accent { border-color: rgba(124,58,237,0.3); color: var(--accent); }
     .btn-demo.accent:hover { background: rgba(124,58,237,0.05); }
 
     @media (max-width: 700px) { .login-left { display: none; } }
   `]
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   form: FormGroup;
   loading  = signal(false);
   errorMsg = signal('');
   showPass = signal(false);
 
-  constructor(private fb: FormBuilder, private auth: AuthService) {
+  // Perfiles existentes en la BD (consulta pública, temporal para la defensa).
+  // El Administrativo existe siempre por el bootstrap; el resto habilita su
+  // botón demo cuando el admin crea ese perfil.
+  private existingRoles = signal<string[]>(['Administrativo']);
+
+  constructor(private fb: FormBuilder, private auth: AuthService, private userApi: UserApiService) {
     this.form = this.fb.group({
       email:    ['', [Validators.required, Validators.email]],
       password: ['', Validators.required],
     });
   }
+
+  ngOnInit(): void {
+    this.userApi.getPublicRoles().subscribe({
+      next: roles => {
+        const names = (roles ?? []).map(r => r.name);
+        if (!names.includes('Administrativo')) names.push('Administrativo');
+        this.existingRoles.set(names);
+      },
+      error: () => { /* si falla, queda solo Administrativo habilitado */ },
+    });
+  }
+
+  roleExists(name: string): boolean { return this.existingRoles().includes(name); }
 
   f(name: string) { return this.form.get(name)!; }
 
@@ -293,7 +324,8 @@ export class LoginComponent {
 
   togglePass()      { this.showPass.set(!this.showPass()); }
   loginWithGoogle() { alert('Integración Google Workspace pendiente de configuración OAuth.'); }
-  demoDocente()     { this.auth.loginAsDocente(); }
+  demoProfesor()    { this.auth.loginAsProfesor(); }
   demoCoordinador() { this.auth.loginAsCoordinador(); }
+  demoAuditor()     { this.auth.loginAsAuditor(); }
   demoAdmin()       { this.auth.loginAsAdmin(); }
 }

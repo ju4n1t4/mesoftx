@@ -26,7 +26,7 @@ export const routes: Routes = [
     path: 'docente',
     loadComponent: () => import('./layout/docente-layout/docente-layout.component').then(m => m.DocenteLayoutComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['Docente', 'Admin'] },
+    data: { roles: ['Profesor', 'Administrativo'] },
     children: [
       { path: '', redirectTo: 'inicio', pathMatch: 'full' },
       {
@@ -65,7 +65,7 @@ export const routes: Routes = [
     path: 'coordinador',
     loadComponent: () => import('./layout/coordinador-layout/coordinador-layout.component').then(m => m.CoordinadorLayoutComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['Coordinador', 'Admin'] },
+    data: { roles: ['Coordinador', 'Administrativo'] },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {

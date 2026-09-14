@@ -142,11 +142,13 @@ export class CoordDashboardComponent implements OnInit {
 
   ngOnInit() {
     forkJoin({
-      careers: this.userApi.getCareers(),
+      // TODO fase 2: getCareers() renombrado a getPrograms() (Program[] id string).
+      careers: this.userApi.getPrograms(),
       users:   this.userApi.getUsers(),
       roles:   this.userApi.getRoles(),
       sos:     this.assesment.getStudentOutcomes(),
-      results: this.assesment.getAssesmentResults(),
+      // TODO fase 2: getAssesmentResults() renombrado a getRubrics() (Rubric[]).
+      results: this.assesment.getRubrics(),
     }).subscribe({
       next: (r) => {
         this.careers.set(r.careers);

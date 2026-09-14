@@ -2,7 +2,9 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserApiService } from '../../../core/services/user-api.service';
-import { User, Role, Career, UserCreate } from '../../../core/models/abet.models';
+// TODO fase 2: esta pantalla usaba Career (modelo viejo) y campos surname/code/career_id/subject_ids.
+// Migrar a Program y a UserCreate v13 (document_number/program_id/accredited).
+import { User, Role, UserCreate } from '../../../core/models/abet.models';
 
 @Component({
   selector: 'app-docentes',
@@ -52,12 +54,13 @@ import { User, Role, Career, UserCreate } from '../../../core/models/abet.models
                 <td>
                   <div class="user-cell">
                     <div class="u-av">{{ initials(u) }}</div>
-                    <span class="u-name">{{ u.name }} {{ u.surname }}</span>
+                    <!-- TODO fase 2: User v13 sin surname/code/career_id; se castean a any. -->
+                    <span class="u-name">{{ u.name }} {{ $any(u).surname }}</span>
                   </div>
                 </td>
-                <td class="code-cell">{{ u.code }}</td>
+                <td class="code-cell">{{ $any(u).code }}</td>
                 <td class="email-cell">{{ u.email }}</td>
-                <td><span class="prog-tag">{{ careerName(u.career_id) }}</span></td>
+                <td><span class="prog-tag">{{ careerName($any(u).career_id) }}</span></td>
                 <td><span class="role-tag">{{ roleName(u.role_id) }}</span></td>
                 <td><span class="status-badge" [class]="u.active ? 'open' : 'expired'">{{ u.active ? 'Activo' : 'Inactivo' }}</span></td>
               </tr>
@@ -106,7 +109,8 @@ import { User, Role, Career, UserCreate } from '../../../core/models/abet.models
                 <label>Programa académico <span class="req">*</span></label>
                 <select [(ngModel)]="form.career_id" class="fc">
                   <option [ngValue]="0" disabled>Selecciona el programa del docente</option>
-                  <option *ngFor="let c of careers()" [ngValue]="c.id">{{ c.name }} ({{ c.code }})</option>
+                  <!-- TODO fase 2: Program v13 no tiene 'code'; se castea a any. -->
+                <option *ngFor="let c of careers()" [ngValue]="c.id">{{ c.name }} ({{ $any(c).code }})</option>
                 </select>
                 <span class="field-hint">Identifica a qué programa pertenece este profesor.</span>
               </div>
@@ -217,12 +221,13 @@ export class DocentesComponent implements OnInit {
   search  = '';
   users   = signal<User[]>([]);
   roles   = signal<Role[]>([]);
-  careers = signal<Career[]>([]);
+  careers = signal<any[]>([]);   // TODO fase 2: reemplazar por Program[] (modelo v13)
 
   showForm  = signal(false);
   saving    = signal(false);
   formError = signal('');
-  form: UserCreate = this.emptyForm();
+  // TODO fase 2: el formulario usa surname/code/career_id/subject_ids (modelo viejo). Tipado any.
+  form: any = this.emptyForm();
 
   constructor(private userApi: UserApiService) {}
 
@@ -242,7 +247,8 @@ export class DocentesComponent implements OnInit {
       next: (r) => { this.roles.set(r ?? []); done(); },
       error: () => { anyFail = true; this.showConnHint(); done(); },
     });
-    this.userApi.getCareers().subscribe({
+    // TODO fase 2: getCareers() renombrado a getPrograms() (Program[] id string).
+    this.userApi.getPrograms().subscribe({
       next: (c) => { this.careers.set(c ?? []); done(); },
       error: () => { anyFail = true; this.showConnHint(); done(); },
     });
@@ -252,7 +258,8 @@ export class DocentesComponent implements OnInit {
     this.error.set('Algunos catálogos requieren una sesión autenticada. Inicia sesión con tus credenciales para ver y gestionar usuarios.');
   }
 
-  private emptyForm(): UserCreate {
+  // TODO fase 2: campos surname/code/career_id/subject_ids son del modelo viejo. Retorno any.
+  private emptyForm(): any {
     return { name: '', surname: '', code: '', email: '', password: '', role_id: 0, career_id: 0, subject_ids: [] };
   }
 
@@ -280,7 +287,8 @@ export class DocentesComponent implements OnInit {
 
     this.saving.set(true);
     this.formError.set('');
-    this.userApi.createUser(this.form).subscribe({
+    // TODO fase 2: this.form usa el modelo viejo; se castea a any para createUser (UserCreate v13).
+    this.userApi.createUser(this.form as any).subscribe({
       next: (created) => {
         this.users.set([...this.users(), created]);
         this.saving.set(false);
@@ -296,12 +304,15 @@ export class DocentesComponent implements OnInit {
   filtered() {
     const q = this.search.toLowerCase().trim();
     if (!q) return this.users();
+    // TODO fase 2: User v13 sin surname; se castea a any y email puede ser null.
     return this.users().filter(u =>
-      `${u.name} ${u.surname}`.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+      `${u.name} ${(u as any).surname}`.toLowerCase().includes(q) || (u.email ?? '').toLowerCase().includes(q)
     );
   }
 
-  initials(u: User) { return `${u.name?.[0] ?? ''}${u.surname?.[0] ?? ''}`.toUpperCase(); }
+  // TODO fase 2: User v13 sin surname; se castea a any.
+  initials(u: User) { return `${u.name?.[0] ?? ''}${(u as any).surname?.[0] ?? ''}`.toUpperCase(); }
   roleName(id: number) { return this.roles().find(r => r.id === id)?.name ?? '—'; }
-  careerName(id: number) { return this.careers().find(c => c.id === id)?.name ?? '—'; }
+  // TODO fase 2: careers ahora es Program[] (id string). Comparación laxa.
+  careerName(id: any) { return this.careers().find((c: any) => c.id === id)?.name ?? '—'; }
 }

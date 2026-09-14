@@ -1,8 +1,10 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AssesmentApiService } from '../../../core/services/assesment-api.service';
-import { AssesmentResult, StudentOutcome } from '../../../core/models/abet.models';
-import { forkJoin } from 'rxjs';
+// TODO fase 2: esta pantalla usaba AssesmentResult (renombrado a Rubric) y getAssesmentEvidence()
+// (eliminado). Los campos subject_code/assesment_evidence_id y StudentOutcome.code ya no existen.
+import { StudentOutcome } from '../../../core/models/abet.models';
+import { forkJoin, of } from 'rxjs';
 
 @Component({
   selector: 'app-coord-valoraciones',
@@ -42,9 +44,10 @@ import { forkJoin } from 'rxjs';
             </thead>
             <tbody>
               <tr *ngFor="let r of results()">
-                <td><span class="code-tag">{{ r.subject_code }}</span></td>
-                <td class="so-cell">{{ soCode(r.student_outcome_id) }}</td>
-                <td class="ev-cell">#{{ r.assesment_evidence_id }}</td>
+                <!-- TODO fase 2: Rubric v13 no tiene subject_code/assesment_evidence_id; se castea a any. -->
+                <td><span class="code-tag">{{ $any(r).subject_code }}</span></td>
+                <td class="so-cell">{{ soCode($any(r).student_outcome_id) }}</td>
+                <td class="ev-cell">#{{ $any(r).assesment_evidence_id }}</td>
               </tr>
             </tbody>
           </table>
@@ -81,7 +84,7 @@ import { forkJoin } from 'rxjs';
 export class CoordValoracionesComponent implements OnInit {
   loading = signal(true);
   error   = signal('');
-  results = signal<AssesmentResult[]>([]);
+  results = signal<any[]>([]);   // TODO fase 2: reemplazar por Rubric[] (modelo v13)
   sos     = signal<StudentOutcome[]>([]);
   evidenceCount = signal(0);
   sosCount      = signal(0);
@@ -90,9 +93,11 @@ export class CoordValoracionesComponent implements OnInit {
 
   ngOnInit() {
     forkJoin({
-      results:  this.assesment.getAssesmentResults(),
+      // TODO fase 2: getAssesmentResults() renombrado a getRubrics() (Rubric[]).
+      results:  this.assesment.getRubrics(),
       sos:      this.assesment.getStudentOutcomes(),
-      evidence: this.assesment.getAssesmentEvidence(),
+      // TODO fase 2: getAssesmentEvidence() eliminado en modelo v13 (sin equivalente aquí).
+      evidence: of([] as any[]),
     }).subscribe({
       next: (r) => {
         this.results.set(r.results);
@@ -108,5 +113,6 @@ export class CoordValoracionesComponent implements OnInit {
     });
   }
 
-  soCode(id: number) { return this.sos().find(s => s.id === id)?.code ?? '—'; }
+  // TODO fase 2: StudentOutcome v13 usa id (string) en vez de code. Comparación laxa.
+  soCode(id: any) { return this.sos().find((s: any) => s.id === id)?.id ?? '—'; }
 }

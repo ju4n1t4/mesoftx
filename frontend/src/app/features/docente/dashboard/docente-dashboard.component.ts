@@ -4,7 +4,9 @@ import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AssesmentApiService } from '../../../core/services/assesment-api.service';
 import { UserApiService } from '../../../core/services/user-api.service';
-import { StudentOutcome, PerformanceEvaluation } from '../../../core/models/abet.models';
+// TODO fase 2: PerformanceEvaluation eliminado en modelo v13; Subject ya no tiene 'code' (ahora nrc/materia_curso).
+import { StudentOutcome } from '../../../core/models/abet.models';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-docente-dashboard',
@@ -136,7 +138,7 @@ export class DocenteDashboardComponent implements OnInit {
   loading = signal(true);
   error   = signal<string | null>(null);
   outcomes = signal<StudentOutcome[]>([]);
-  levels   = signal<PerformanceEvaluation[]>([]);
+  levels   = signal<any[]>([]);   // TODO fase 2: reemplazar por Level[] (modelo v13)
   courses  = signal<{ code: string; name: string }[]>([]);
   pendingCount = signal(0);
 
@@ -148,13 +150,15 @@ export class DocenteDashboardComponent implements OnInit {
   ngOnInit(): void {
     forkJoin({
       outcomes: this.assesment.getStudentOutcomes(),
-      levels: this.assesment.getPerformanceEvaluations(),
+      // TODO fase 2: getPerformanceEvaluations() eliminado en modelo v13 (sin equivalente).
+      levels: of([] as any[]),
       subjects: this.users.getSubjects(),
     }).subscribe({
       next: ({ outcomes, levels, subjects }) => {
         this.outcomes.set(outcomes ?? []);
         this.levels.set(levels ?? []);
-        this.courses.set((subjects ?? []).map(s => ({ code: s.code ?? '', name: s.name ?? '' })));
+        // TODO fase 2: Subject v13 no tiene 'code' (ahora nrc/materia_curso); se castea a any.
+        this.courses.set((subjects ?? []).map((s: any) => ({ code: s.code ?? String(s.nrc ?? ''), name: s.name ?? '' })));
         this.loading.set(false);
       },
       error: () => {

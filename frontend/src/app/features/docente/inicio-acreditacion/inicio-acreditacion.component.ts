@@ -2,7 +2,10 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { AssesmentApiService } from '../../../core/services/assesment-api.service';
-import { StudentOutcome, AssesmentResult, PerformanceEvaluationDetail, PerformanceEvaluation } from '../../../core/models/abet.models';
+// TODO fase 2: esta pantalla usaba AssesmentResult (renombrado a Rubric), PerformanceEvaluationDetail,
+// PerformanceEvaluation y getAssesmentEvidence() (eliminados en modelo v13). Migrar a Rubric/Performance/Level.
+import { StudentOutcome } from '../../../core/models/abet.models';
+import { of } from 'rxjs';
 
 interface OutcomeRow { code: string; desc: string; pct: number; barColor: string; }
 
@@ -169,10 +172,14 @@ export class InicioAcreditacionComponent implements OnInit {
   ngOnInit(): void {
     forkJoin({
       sos: this.assesment.getStudentOutcomes(),
-      results: this.assesment.getAssesmentResults(),
-      details: this.assesment.getPerformanceEvaluationDetails(),
-      levels: this.assesment.getPerformanceEvaluations(),
-      evidence: this.assesment.getAssesmentEvidence(),
+      // TODO fase 2: getAssesmentResults() renombrado a getRubrics() (Rubric[]).
+      results: this.assesment.getRubrics(),
+      // TODO fase 2: getPerformanceEvaluationDetails() eliminado en modelo v13 (sin equivalente).
+      details: of([] as any[]),
+      // TODO fase 2: getPerformanceEvaluations() eliminado en modelo v13 (sin equivalente).
+      levels: of([] as any[]),
+      // TODO fase 2: getAssesmentEvidence() eliminado en modelo v13 (sin equivalente).
+      evidence: of([] as any[]),
     }).subscribe({
       next: ({ sos, results, details, levels, evidence }) => {
         this.compute(sos ?? [], results ?? [], details ?? [], levels ?? [], evidence ?? []);
@@ -185,17 +192,19 @@ export class InicioAcreditacionComponent implements OnInit {
     });
   }
 
+  // TODO fase 2: firma migrada a any[] porque AssesmentResult/PerformanceEvaluationDetail/
+  // PerformanceEvaluation/AssesmentEvidence fueron eliminados en modelo v13. Cálculo neutralizado.
   private compute(
     sos: StudentOutcome[],
-    results: AssesmentResult[],
-    details: PerformanceEvaluationDetail[],
-    levels: PerformanceEvaluation[],
-    evidence: { student_code: string }[],
+    results: any[],
+    details: any[],
+    levels: any[],
+    evidence: any[],
   ): void {
     // Mapa detalle -> nivel (N1..N4)
-    const levelById = new Map(levels.map(l => [l.id, l.evaluation_value]));
+    const levelById = new Map(levels.map((l: any) => [l.id, l.evaluation_value]));
     const detailLevel = new Map<number, string>();
-    details.forEach(d => {
+    details.forEach((d: any) => {
       const lvl = levelById.get(d.performance_evaluation_id);
       if (lvl) detailLevel.set(d.id, lvl);
     });
@@ -210,14 +219,16 @@ export class InicioAcreditacionComponent implements OnInit {
       return 0;
     };
 
-    const rows: OutcomeRow[] = sos.map(so => {
-      const soResults = results.filter(r => r.student_outcome_id === so.id);
+    const rows: OutcomeRow[] = sos.map((so: any) => {
+      // TODO fase 2: Rubric v13 no tiene student_outcome_id/performance_evaluation_detail_id.
+      const soResults = results.filter((r: any) => r.student_outcome_id === so.id);
       let pct = 0;
       if (soResults.length) {
-        const sum = soResults.reduce((acc, r) => acc + levelScore(detailLevel.get(r.performance_evaluation_detail_id) ?? ''), 0);
+        const sum = soResults.reduce((acc: number, r: any) => acc + levelScore(detailLevel.get(r.performance_evaluation_detail_id) ?? ''), 0);
         pct = Math.round(sum / soResults.length);
       }
-      return { code: so.code, desc: so.description ?? '', pct, barColor: this.barColor(pct) };
+      // TODO fase 2: StudentOutcome v13 usa 'id' en vez de 'code'.
+      return { code: so.id, desc: so.description ?? '', pct, barColor: this.barColor(pct) };
     });
 
     this.outcomes.set(rows);
@@ -226,7 +237,7 @@ export class InicioAcreditacionComponent implements OnInit {
     const measured = rows.filter(r => r.pct > 0);
     this.globalPct.set(measured.length ? Math.round(measured.reduce((a, r) => a + r.pct, 0) / measured.length) : null);
 
-    const uniqueStudents = new Set(evidence.map(e => e.student_code).filter(Boolean));
+    const uniqueStudents = new Set(evidence.map((e: any) => e.student_code).filter(Boolean));
     this.studentsEvaluated.set(uniqueStudents.size);
   }
 

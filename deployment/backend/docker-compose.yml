@@ -33,6 +33,12 @@ services:
       dockerfile: deployment/backend/Assesment_MS/Dockerfile
     container_name: assesment-ms
     restart: unless-stopped
+    # Assesment_MS depende de User_MS (paso 16.2): no arranca hasta que User_MS
+    # responda /health. La base de datos (mesoftx-db) vive en deployment/db y
+    # comparte la red externa mesoftx-network; debe estar healthy antes (ver nota).
+    depends_on:
+      user-ms:
+        condition: service_healthy
     environment:
       APP_NAME: Assesment_MS
       APP_ENV: container

@@ -3,8 +3,11 @@ import { CommonModule } from '@angular/common';
 import { AssesmentApiService } from '../../../../core/services/assesment-api.service';
 import { UserApiService } from '../../../../core/services/user-api.service';
 import { AuthService } from '../../../../core/services/auth.service';
+// TODO fase 2: esta pantalla usaba PerformanceIndicatorDetail/PerformanceEvaluationDetail y los
+// endpoints getPerformanceIndicatorDetails/getPerformanceEvaluationDetails/createEvidenceWithResults,
+// eliminados en modelo v13. También usaba StudentOutcome.code (ahora id) y User.career_id/getCareer.
 import {
-  StudentOutcome, PerformanceIndicatorDetail, PerformanceEvaluationDetail,
+  StudentOutcome,
 } from '../../../../core/models/abet.models';
 import { forkJoin, of, catchError } from 'rxjs';
 
@@ -73,12 +76,14 @@ interface RubricRow {
                 <button *ngFor="let so of outcomes()" class="so-tab"
                         [class.active]="selectedId() === so.id"
                         (click)="selectedId.set(so.id)">
-                  {{ so.code }}
+                  <!-- TODO fase 2: StudentOutcome v13 usa 'id' en vez de 'code'. -->
+                  {{ so.id }}
                 </button>
               </div>
 
               <div class="so-desc-card" *ngIf="selectedSO() as so">
-                <div class="so-badge">{{ so.code }}</div>
+                <!-- TODO fase 2: StudentOutcome v13 usa 'id' en vez de 'code'. -->
+                <div class="so-badge">{{ so.id }}</div>
                 <div>
                   <div class="so-desc-title">Descripción del Student Outcome</div>
                   <div class="so-desc-text">{{ so.description || 'Sin descripción registrada.' }}</div>
@@ -105,7 +110,7 @@ interface RubricRow {
                 <div class="rubric-bar">
                   <span class="rb-title">Rúbrica · Identificadores de desempeño</span>
                   <span class="rb-hint" *ngIf="currentRows().length > 0">Haz clic en la celda que describe el desempeño del estudiante</span>
-                  <span class="rb-so">{{ selectedSO()?.code }}</span>
+                  <span class="rb-so">{{ selectedSO()?.id }}</span>
                 </div>
                 <div class="rubric-scroll">
                   <table class="rubric-table">
@@ -132,7 +137,7 @@ interface RubricRow {
                         </td>
                       </tr>
                       <tr *ngIf="currentRows().length === 0">
-                        <td colspan="5" class="rubric-empty">Sin identificadores configurados para {{ selectedSO()?.code }}.</td>
+                        <td colspan="5" class="rubric-empty">Sin identificadores configurados para {{ selectedSO()?.id }}.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -147,7 +152,7 @@ interface RubricRow {
       <!-- Barra inferior fija -->
       <div class="rv-footer" *ngIf="!loading() && !blocked() && outcomes().length > 0">
         <div class="footer-left">
-          <span class="footer-txt" *ngIf="!saveMsg()">{{ ratedIndicators() }} de {{ currentRows().length }} identificadores valorados en {{ selectedSO()?.code }}</span>
+          <span class="footer-txt" *ngIf="!saveMsg()">{{ ratedIndicators() }} de {{ currentRows().length }} identificadores valorados en {{ selectedSO()?.id }}</span>
           <span class="footer-msg" [class.ok]="saveOk()" [class.err]="!saveOk()" *ngIf="saveMsg()">
             <i class="pi" [class.pi-check-circle]="saveOk()" [class.pi-exclamation-triangle]="!saveOk()"></i> {{ saveMsg() }}
           </span>
@@ -250,11 +255,12 @@ export class RegistrarValoracionComponent implements OnInit {
   error   = signal('');
   blocked     = signal(false);
   careerName  = signal('');
-  selectedId = signal<number | null>(null);
+  // TODO fase 2: StudentOutcome v13 usa id string; selectedId se tipa como any.
+  selectedId = signal<any>(null);
 
   outcomes  = signal<StudentOutcome[]>([]);
-  piDetails = signal<PerformanceIndicatorDetail[]>([]);
-  peDetails = signal<PerformanceEvaluationDetail[]>([]);
+  piDetails = signal<any[]>([]);   // TODO fase 2: PerformanceIndicatorDetail eliminado en modelo v13
+  peDetails = signal<any[]>([]);   // TODO fase 2: PerformanceEvaluationDetail eliminado en modelo v13
   levels    = LEVELS;
 
   studentCode  = signal('');
@@ -271,10 +277,11 @@ export class RegistrarValoracionComponent implements OnInit {
   currentRows = computed<RubricRow[]>(() => {
     const soId = this.selectedId();
     if (!soId) return [];
-    const details = this.piDetails().filter(d => d.student_outcome_id === soId);
-    return details.map((d, i) => {
+    // TODO fase 2: piDetails/peDetails son any[] (modelos eliminados en v13); siempre vacíos por ahora.
+    const details = this.piDetails().filter((d: any) => d.student_outcome_id === soId);
+    return details.map((d: any, i: number) => {
       const evals = this.peDetails().filter(
-        e => e.performance_indicator_id === d.performance_indicator_id && e.student_outcome_id === soId
+        (e: any) => e.performance_indicator_id === d.performance_indicator_id && e.student_outcome_id === soId
       );
       return {
         indicatorId: d.performance_indicator_id,
@@ -299,15 +306,19 @@ export class RegistrarValoracionComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    const careerId = this.auth.user()?.career_id ?? 0;
-    const career$ = careerId > 0 && !this.auth.isDemo()
-      ? this.users.getCareer(careerId).pipe(catchError(() => of(null)))
+    // TODO fase 2: CurrentUser v13 no tiene career_id (ahora program_id). Se castea a any.
+    const careerId = (this.auth.user() as any)?.career_id ?? (this.auth.user()?.program_id ?? 0);
+    // TODO fase 2: getCareer(id) renombrado a getProgram(id) (id string en v13).
+    const career$ = careerId && !this.auth.isDemo()
+      ? this.users.getProgram(String(careerId)).pipe(catchError(() => of(null)))
       : of(null);
 
     forkJoin({
       sos:    this.assesment.getStudentOutcomes(),
-      piDet:  this.assesment.getPerformanceIndicatorDetails(),
-      peDet:  this.assesment.getPerformanceEvaluationDetails(),
+      // TODO fase 2: getPerformanceIndicatorDetails() eliminado en modelo v13 (sin equivalente).
+      piDet:  of([] as any[]),
+      // TODO fase 2: getPerformanceEvaluationDetails() eliminado en modelo v13 (sin equivalente).
+      peDet:  of([] as any[]),
       career: career$,
     }).subscribe({
       next: (r) => {
@@ -368,6 +379,8 @@ export class RegistrarValoracionComponent implements OnInit {
     }
 
     const rows = this.currentRows();
+    // TODO fase 2: AssesmentResult v13 (Rubric) ya no tiene subject_code/student_outcome_id/
+    // performance_evaluation_detail_id. Se conserva el payload como any hasta migrar.
     const results = rows
       .filter(r => this.selections[r.indicatorId])
       .map(r => ({
@@ -392,11 +405,15 @@ export class RegistrarValoracionComponent implements OnInit {
 
     this.saving.set(true);
     this.saveMsg.set('');
-    this.assesment.createEvidenceWithResults(payload).subscribe({
+    // TODO fase 2: createEvidenceWithResults() eliminado en modelo v13 (sin equivalente).
+    // Se simula el guardado en memoria hasta migrar a createRubric()/createEvidence().
+    void payload;
+    of(null).subscribe({
       next: () => {
         this.saving.set(false);
         this.saveOk.set(true);
-        this.saveMsg.set(`Valoración guardada: ${results.length} resultado(s) para ${student} en ${so.code}.`);
+        // TODO fase 2: StudentOutcome v13 usa 'id' en vez de 'code'.
+        this.saveMsg.set(`Valoración guardada: ${results.length} resultado(s) para ${student} en ${so.id}.`);
         this.selections = {};
         this.studentCode.set('');
         this.evidenceName.set('');

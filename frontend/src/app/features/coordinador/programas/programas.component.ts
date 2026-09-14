@@ -1,7 +1,8 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { UserApiService } from '../../../core/services/user-api.service';
-import { Career, Faculty } from '../../../core/models/abet.models';
+// TODO fase 2: esta pantalla usaba el modelo viejo (Career/Faculty). Migrar a
+// Program/College del modelo v13. Tipado como any para dejar compilando.
 
 @Component({
   selector: 'app-programas',
@@ -71,31 +72,33 @@ import { Career, Faculty } from '../../../core/models/abet.models';
 export class ProgramasComponent implements OnInit {
   loading  = signal(true);
   error    = signal('');
-  careers  = signal<Career[]>([]);
-  faculties = signal<Faculty[]>([]);
-  programs = signal<(Career & { faculty?: string })[]>([]);
+  careers  = signal<any[]>([]);            // TODO fase 2: reemplazar por Program[]
+  faculties = signal<any[]>([]);           // TODO fase 2: reemplazar por College[]
+  programs = signal<any[]>([]);            // TODO fase 2: reconstruir con Program/College
 
   constructor(private userApi: UserApiService) {}
 
   ngOnInit() {
-    // Carga best-effort: /careers y /faculty requieren JWT y pueden fallar en
-    // modo demo. Se resuelven por separado para no bloquear toda la vista.
+    // TODO fase 2: esta carga usaba getCareers()/getFaculties() (endpoints del
+    // modelo viejo). Reescribir con getPrograms()/getColleges() y los campos
+    // nuevos (id string, college_id). Por ahora se deja la vista vacía.
     let pending = 2;
     const done = () => { if (--pending === 0) this.rebuild(); };
 
-    this.userApi.getCareers().subscribe({
+    this.userApi.getPrograms().subscribe({
       next: (c) => { this.careers.set(c ?? []); done(); },
       error: () => { this.showConnHint(); done(); },
     });
-    this.userApi.getFaculties().subscribe({
+    this.userApi.getColleges().subscribe({
       next: (f) => { this.faculties.set(f ?? []); done(); },
       error: () => { this.showConnHint(); done(); },
     });
   }
 
   private rebuild() {
-    const facMap = new Map<number, string>(this.faculties().map(f => [f.id, f.name]));
-    this.programs.set(this.careers().map(c => ({ ...c, faculty: facMap.get(c.faculty_id) })));
+    // TODO fase 2: mapeo facultad->programa con el modelo nuevo (college_id string).
+    const facMap = new Map<string, string>(this.faculties().map((f: any) => [f.id, f.name]));
+    this.programs.set(this.careers().map((c: any) => ({ ...c, faculty: facMap.get(c.college_id) })));
     this.loading.set(false);
   }
 

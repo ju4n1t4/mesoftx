@@ -188,7 +188,8 @@ export class CoordinadorLayoutComponent {
   });
 
   constructor(private auth: AuthService) {}
-  fullName() { return `Prof. ${this.auth.user()?.name ?? ''} ${this.auth.user()?.surname ?? ''}`.trim(); }
+  // TODO fase 2: CurrentUser v13 no tiene surname; se castea a any.
+  fullName() { return `Prof. ${this.auth.user()?.name ?? ''} ${(this.auth.user() as any)?.surname ?? ''}`.trim(); }
   initial()  { return (this.auth.user()?.name?.[0] ?? 'C').toUpperCase(); }
   logout()   { this.auth.logout(); }
 }

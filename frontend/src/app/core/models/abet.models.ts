@@ -5,90 +5,79 @@ export interface TokenResponse { access_token: string; token_type: string; }
 export interface CurrentUser {
   id: number;
   name: string;
-  surname: string;
   email: string;
-  code: string;
+  document_number: string;
   role_id: number;
-  role: 'Admin' | 'Coordinador' | 'Docente' | 'Evaluador' | 'Estudiante';
-  career_id: number;
-  subject_ids: number[];
+  role: 'Admin' | 'Administrativo' | 'Coordinador' | 'Profesor' | 'Auditor';
+  program_id: string | null;
   active: boolean;
 }
 
 // ── User MS ───────────────────────────────────────────────────────────────
 export interface Role     { id: number; name: string; description?: string; }
-export interface Year     { id: number; year: number; }
-export interface Period   { id: number; period: string; }
-export interface AcademicPeriod { id: number; name: string; code: string; period_id: number; year_id: number; }
-export interface Faculty  { id: number; name: string; code: string; description?: string; }
-export interface Career   { id: number; name: string; code: string; faculty_id: number; description?: string; accredited: boolean; accreditation_end_year?: number | null; }
-export interface Subject  { id: number; name: string; code: string; career_id: number; description?: string; }
+export interface Period   { id: number; code: string; }
+export interface College  { id: string; name: string; }
+export interface Program  { id: string; name: string; college_id: string; accredited: boolean; accreditation_end_year?: number | null; }
+export interface Subject  { nrc: number; materia_curso: string; name: string; periods_id: number; program_id: string; }
 
 export interface User {
   id: number;
+  document_number: string;
   name: string;
-  surname: string;
-  code: string;
-  email: string;
+  email: string | null;
   active: boolean;
   role_id: number;
-  career_id: number;
-  subject_ids: number[];
+  program_id: string | null;
+  accredited?: boolean | null;
   created_at?: string;
 }
 
 export interface UserCreate {
-  name: string; surname: string; code: string; email: string; password: string;
-  role_id: number; career_id: number; subject_ids: number[];
+  document_number: string; name: string; email?: string | null; password: string;
+  role_id: number; program_id?: string | null; accredited?: boolean | null;
 }
 
 // ── Assesment MS ──────────────────────────────────────────────────────────
 export interface StudentOutcome {
-  id: number;
-  code: string;
-  description?: string;
-}
-
-export interface PerformanceIndicator {
-  id: number;
-  code: string;
-  name?: string;
-}
-
-export interface PerformanceIndicatorDetail {
-  id: number;
-  performance_indicator_id: number;
-  student_outcome_id: number;
+  id: string;
   description: string;
+  college_id: string;
 }
 
-export interface PerformanceEvaluation {
-  id: number;
-  evaluation_value: string;   // e.g. "N1", "N2", "N3", "N4"
-}
-
-export interface PerformanceEvaluationDetail {
-  id: number;
-  performance_evaluation_id: number;
-  performance_indicator_id: number;
-  student_outcome_id: number;
+export interface Performance {
+  id: string;
   description: string;
+  so_id: string;
 }
 
-export interface AssesmentEvidence {
+export interface Level {
+  id: string;
+  description: string;
+  rank: number;
+  performance_id: string;
+}
+
+export interface Rubric {
   id: number;
-  evidence_name_doc: string;
-  student_code: string;
-  student_outcome_id: number;
+  schedule_id: number;
+  evaluator_user_id: number;
+  studentId: number;
+  subjectsId: number;
+  performance_id: string;
+  level_id: string;
+  evidence_id?: number | null;
   created_at?: string;
 }
 
-export interface AssesmentResult {
+export interface Evidence {
   id: number;
-  subject_code: string;
-  assesment_evidence_id: number;
-  student_outcome_id: number;
-  performance_evaluation_detail_id: number;
+  schedule_id: number;
+  subjectsId: number;
+  studentId: number;
+  name: string;
+  file_url: string;
+  mime_type?: string | null;
+  uploaded_by: number;
   created_at?: string;
 }
 

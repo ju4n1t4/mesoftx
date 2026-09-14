@@ -1,14 +1,14 @@
 /**
  * UserApiService — consume el microservicio User_MS (:8001/api/v1).
  * Todos los endpoints (salvo /auth/login) requieren JWT; el interceptor lo añade.
+ * Renombrado al modelo v13 (paso 16): careers→/programs, faculty→/colleges.
  */
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  User, UserCreate, Role, Career, Subject, Faculty,
-  Year, Period, AcademicPeriod,
+  User, UserCreate, Role, Program, Subject, College, Period,
 } from '../models/abet.models';
 
 @Injectable({ providedIn: 'root' })
@@ -29,27 +29,17 @@ export class UserApiService {
   // ── Roles ─────────────────────────────────────────────────
   getRoles(): Observable<Role[]> { return this.http.get<Role[]>(`${this.base}/roles`); }
 
-  // ── Carreras ──────────────────────────────────────────────
-  getCareers(): Observable<Career[]>      { return this.http.get<Career[]>(`${this.base}/careers`); }
-  getCareer(id: number): Observable<Career> { return this.http.get<Career>(`${this.base}/careers/${id}`); }
+  // ── Programas (antes carreras) ────────────────────────────
+  getPrograms(): Observable<Program[]>          { return this.http.get<Program[]>(`${this.base}/programs`); }
+  getProgram(id: string): Observable<Program>   { return this.http.get<Program>(`${this.base}/programs/${id}`); }
 
   // ── Asignaturas ───────────────────────────────────────────
   getSubjects(): Observable<Subject[]> { return this.http.get<Subject[]>(`${this.base}/subjects`); }
 
-  // ── Facultades (endpoint singular en el backend) ──────────
-  getFaculties(): Observable<Faculty[]> { return this.http.get<Faculty[]>(`${this.base}/faculty`); }
-
-  // ── Años ──────────────────────────────────────────────────
-  getYears(): Observable<Year[]> { return this.http.get<Year[]>(`${this.base}/years`); }
-  createYear(y: { year: number }): Observable<Year> { return this.http.post<Year>(`${this.base}/years`, y); }
+  // ── Facultades (antes faculty) ────────────────────────────
+  getColleges(): Observable<College[]> { return this.http.get<College[]>(`${this.base}/colleges`); }
 
   // ── Periodos ──────────────────────────────────────────────
   getPeriods(): Observable<Period[]> { return this.http.get<Period[]>(`${this.base}/periods`); }
-  createPeriod(p: { period: string }): Observable<Period> { return this.http.post<Period>(`${this.base}/periods`, p); }
-
-  // ── Periodos académicos ───────────────────────────────────
-  getAcademicPeriods(): Observable<AcademicPeriod[]> { return this.http.get<AcademicPeriod[]>(`${this.base}/academic-periods`); }
-  createAcademicPeriod(ap: Omit<AcademicPeriod, 'id'>): Observable<AcademicPeriod> {
-    return this.http.post<AcademicPeriod>(`${this.base}/academic-periods`, ap);
-  }
+  createPeriod(p: { code: string }): Observable<Period> { return this.http.post<Period>(`${this.base}/periods`, p); }
 }

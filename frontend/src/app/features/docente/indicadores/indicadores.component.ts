@@ -2,7 +2,10 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { AssesmentApiService } from '../../../core/services/assesment-api.service';
-import { StudentOutcome, AssesmentResult, PerformanceEvaluationDetail, PerformanceEvaluation } from '../../../core/models/abet.models';
+// TODO fase 2: esta pantalla usaba AssesmentResult (renombrado a Rubric), PerformanceEvaluationDetail
+// y PerformanceEvaluation (eliminados en modelo v13). Migrar a Rubric/Performance/Level.
+import { StudentOutcome } from '../../../core/models/abet.models';
+import { of } from 'rxjs';
 
 interface OutcomeItem {
   id: string;
@@ -186,9 +189,12 @@ export class IndicadoresComponent implements OnInit {
   ngOnInit(): void {
     forkJoin({
       sos: this.assesment.getStudentOutcomes(),
-      results: this.assesment.getAssesmentResults(),
-      details: this.assesment.getPerformanceEvaluationDetails(),
-      levels: this.assesment.getPerformanceEvaluations(),
+      // TODO fase 2: getAssesmentResults() renombrado a getRubrics() (Rubric[]).
+      results: this.assesment.getRubrics(),
+      // TODO fase 2: getPerformanceEvaluationDetails() eliminado en modelo v13 (sin equivalente).
+      details: of([] as any[]),
+      // TODO fase 2: getPerformanceEvaluations() eliminado en modelo v13 (sin equivalente).
+      levels: of([] as any[]),
     }).subscribe({
       next: ({ sos, results, details, levels }) => {
         this.compute(sos ?? [], results ?? [], details ?? [], levels ?? []);
@@ -201,27 +207,31 @@ export class IndicadoresComponent implements OnInit {
     });
   }
 
+  // TODO fase 2: firma migrada a any[] porque AssesmentResult/PerformanceEvaluationDetail/
+  // PerformanceEvaluation fueron eliminados en modelo v13. Cálculo neutralizado a 0%.
   private compute(
     sos: StudentOutcome[],
-    results: AssesmentResult[],
-    details: PerformanceEvaluationDetail[],
-    levels: PerformanceEvaluation[],
+    results: any[],
+    details: any[],
+    levels: any[],
   ): void {
-    const levelById = new Map(levels.map(l => [l.id, l.evaluation_value]));
+    const levelById = new Map(levels.map((l: any) => [l.id, l.evaluation_value]));
     const detailLevel = new Map<number, string>();
-    details.forEach(d => {
+    details.forEach((d: any) => {
       const lvl = levelById.get(d.performance_evaluation_id);
       if (lvl) detailLevel.set(d.id, lvl);
     });
     const scoreOf = (k: string) => ({ N4: 100, N3: 75, N2: 50, N1: 25 } as Record<string, number>)[k] ?? 0;
 
-    const items: OutcomeItem[] = sos.map((so, i) => {
-      const soResults = results.filter(r => r.student_outcome_id === so.id);
+    const items: OutcomeItem[] = sos.map((so: any, i) => {
+      // TODO fase 2: Rubric v13 no tiene student_outcome_id/performance_evaluation_detail_id;
+      // sin detalles el porcentaje queda en 0 hasta migrar el cálculo.
+      const soResults = results.filter((r: any) => r.student_outcome_id === so.id);
       let pct = 0;
       if (soResults.length) {
-        pct = Math.round(soResults.reduce((a, r) => a + scoreOf(detailLevel.get(r.performance_evaluation_detail_id) ?? ''), 0) / soResults.length);
+        pct = Math.round(soResults.reduce((a: number, r: any) => a + scoreOf(detailLevel.get(r.performance_evaluation_detail_id) ?? ''), 0) / soResults.length);
       }
-      return { id: `O${i + 1}`, label: so.description ?? so.code, pct, ...this.statusFor(pct) };
+      return { id: `O${i + 1}`, label: so.description ?? so.id, pct, ...this.statusFor(pct) };
     });
 
     this.outcomes.set(items);

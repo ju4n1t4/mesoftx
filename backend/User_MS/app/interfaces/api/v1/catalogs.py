@@ -87,6 +87,18 @@ def list_permissions(db: Session = Depends(db_session), _=Depends(require_permis
     return _service(PermissionRepository, db).list()
 
 
+@router.get("/roles/{entity_id}/permissions", response_model=list[str])
+def get_role_permissions(
+    entity_id: int,
+    db: Session = Depends(db_session),
+    _=Depends(require_permission("USER_CRUD")),
+):
+    codes = RoleRepository(db).codes_for_role(entity_id)
+    if codes is None:
+        raise map_repository_error(EntityNotFoundError("Role not found."))
+    return codes
+
+
 @router.put("/roles/{entity_id}/permissions", response_model=RoleResponse)
 def set_role_permissions(
     entity_id: int,

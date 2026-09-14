@@ -50,7 +50,7 @@ import { Role, Permission } from '../../../core/models/abet.models';
             <td>{{ r.name }}</td>
             <td>{{ r.description || '—' }}</td>
             <td class="actions">
-              <button pButton type="button" label="Permisos" icon="pi pi-shield" class="p-button-sm p-button-secondary" (click)="openPermissions(r)"></button>
+              <button pButton type="button" label="Permisos" icon="pi pi-shield" class="p-button-sm p-button-secondary" [disabled]="loadingPerms()" (click)="openPermissions(r)"></button>
               <button pButton type="button" icon="pi pi-pencil" class="p-button-sm p-button-text" (click)="openEdit(r)"></button>
               <button pButton type="button" icon="pi pi-trash" class="p-button-sm p-button-text p-button-danger" (click)="confirmDelete(r)"></button>
             </td>
@@ -103,6 +103,7 @@ import { Role, Permission } from '../../../core/models/abet.models';
 export class PerfilesComponent implements OnInit {
   loading = signal(true);
   saving = signal(false);
+  loadingPerms = signal(false);
   editing = signal(false);
   roleVisible = false;
   permVisible = false;
@@ -163,11 +164,23 @@ export class PerfilesComponent implements OnInit {
   }
 
   openPermissions(r: Role): void {
-    this.permTargetSig.set(r);
-    // El backend no expone los permisos actuales del rol por GET; se parte de vacío
-    // y el guardado reemplaza el set (PUT /roles/{id}/permissions es idempotente).
-    this.permCtrl.setValue([]);
-    this.permVisible = true;
+    // El PUT reemplaza el set completo de permisos. Por eso NUNCA se abre el
+    // diálogo en vacío: se precargan los permisos actuales con GET
+    // /roles/{id}/permissions. Si el GET falla, no se abre el diálogo (evita
+    // que al guardar se borren sin querer los permisos que el rol ya tenía).
+    this.loadingPerms.set(true);
+    this.userApi.getRolePermissions(r.id).subscribe({
+      next: codes => {
+        this.permTargetSig.set(r);
+        this.permCtrl.setValue(codes ?? []);
+        this.loadingPerms.set(false);
+        this.permVisible = true;
+      },
+      error: e => {
+        this.loadingPerms.set(false);
+        this.showError(e);
+      },
+    });
   }
 
   savePermissions(): void {

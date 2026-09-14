@@ -35,6 +35,9 @@ export class UserApiService {
   setRolePermissions(id: number, codes: string[]): Observable<Role> {
     return this.http.put<Role>(`${this.base}/roles/${id}/permissions`, { permission_codes: codes });
   }
+  getRolePermissions(id: number): Observable<string[]> {
+    return this.http.get<string[]>(`${this.base}/roles/${id}/permissions`);
+  }
 
   // ── Permisos ──────────────────────────────────────────────
   getPermissions(): Observable<Permission[]> { return this.http.get<Permission[]>(`${this.base}/permissions`); }

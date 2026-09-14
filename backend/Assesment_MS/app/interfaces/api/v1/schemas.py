@@ -149,30 +149,41 @@ class EvidenceResponse(BaseModel):
 
 
 # ── Dashboards ──────────────────────────────────────────────
-class DashboardProgramResponse(BaseModel):
-    period_id: int
+class ProgramProgressItem(BaseModel):
+    program_id: str
     expected: int
     done: int
 
 
+class DashboardProgramResponse(BaseModel):
+    period_id: int
+    expected: int                       # total del periodo (se conserva)
+    done: int                           # total del periodo (se conserva)
+    items: list[ProgramProgressItem]    # desglose por programa
+
+
 class SoProgressItem(BaseModel):
     so_id: str
+    expected: int
     done: int
 
 
 class DashboardSoResponse(BaseModel):
     period_id: int
-    expected: int
+    expected: int                       # total del periodo (se conserva)
     items: list[SoProgressItem]
 
 
 class TeacherProgressItem(BaseModel):
     evaluator_user_id: int
+    expected: int
     done: int
 
 
 class DashboardTeacherResponse(BaseModel):
     period_id: int
+    expected: int                       # total del periodo
+    done: int                           # total del periodo
     items: list[TeacherProgressItem]
 
 

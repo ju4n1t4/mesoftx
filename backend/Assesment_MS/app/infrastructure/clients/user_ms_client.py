@@ -75,3 +75,27 @@ class UserMsClient:
             )
             resp.raise_for_status()
             return {int(k): v for k, v in resp.json().items()}
+
+    async def subjects_teachers(self, nrcs: list[int]) -> dict[int, list[int]]:
+        """nrc -> lista de user_id de los profesores que lo dictan, en UNA sola
+        llamada. La usa el dashboard de avance por profesor."""
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"{self.base_url}/api/v1/internal/subjects/teachers",
+                json={"nrcs": nrcs},
+                headers=self.headers,
+            )
+            resp.raise_for_status()
+            return {int(k): [int(u) for u in v] for k, v in resp.json().items()}
+
+    async def subjects_programs(self, nrcs: list[int]) -> dict[int, str]:
+        """nrc -> program_id, en UNA sola llamada. La usa el dashboard de avance
+        por programa."""
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"{self.base_url}/api/v1/internal/subjects/programs",
+                json={"nrcs": nrcs},
+                headers=self.headers,
+            )
+            resp.raise_for_status()
+            return {int(k): str(v) for k, v in resp.json().items()}

@@ -50,18 +50,6 @@ export const routes: Routes = [
         loadComponent: () => import('./features/profesor/dashboard/profesor-dashboard.component').then(m => m.ProfesorDashboardComponent),
       },
       {
-        path: 'valoraciones',
-        loadComponent: () => import('./features/profesor/valoraciones/registrar/registrar-valoracion.component').then(m => m.RegistrarValoracionComponent),
-      },
-      {
-        path: 'valoraciones/registrar',
-        loadComponent: () => import('./features/profesor/valoraciones/registrar/registrar-valoracion.component').then(m => m.RegistrarValoracionComponent),
-      },
-      {
-        path: 'mis-estudiantes',
-        loadComponent: () => import('./features/profesor/mis-estudiantes/mis-estudiantes.component').then(m => m.MisEstudiantesComponent),
-      },
-      {
         path: 'indicadores',
         loadComponent: () => import('./features/profesor/indicadores/indicadores.component').then(m => m.IndicadoresComponent),
       },
@@ -92,27 +80,27 @@ export const routes: Routes = [
       },
       {
         path: 'materias',
-        data: { roles: ['Coordinador', 'Administrativo'] },
+        data: { roles: ['Coordinador'] },
         loadComponent: () => import('./features/coordinador/materias/materias.component').then(m => m.MateriasComponent),
       },
       {
         path: 'asignacion-materias',
-        data: { roles: ['Coordinador', 'Administrativo'] },
+        data: { roles: ['Coordinador'] },
         loadComponent: () => import('./features/coordinador/asignacion-materias/asignacion-materias.component').then(m => m.AsignacionMateriasComponent),
       },
       {
         path: 'programacion',
-        data: { roles: ['Coordinador', 'Administrativo'] },
+        data: { roles: ['Coordinador'] },
         loadComponent: () => import('./features/coordinador/programacion/programacion.component').then(m => m.ProgramacionComponent),
       },
       {
         path: 'avance',
-        data: { roles: ['Coordinador', 'Administrativo'] },
+        data: { roles: ['Coordinador'] },
         loadComponent: () => import('./features/coordinador/avance/avance.component').then(m => m.AvanceComponent),
       },
       {
         path: 'indicadores',
-        data: { roles: ['Coordinador', 'Administrativo'] },
+        data: { roles: ['Coordinador'] },
         loadComponent: () => import('./features/coordinador/indicadores/indicadores.component').then(m => m.CoordIndicadoresComponent),
       },
       {
@@ -128,24 +116,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/coordinador/valoraciones/coord-valoraciones.component').then(m => m.CoordValoracionesComponent),
       },
       {
-        path: 'auditoria',
-        loadComponent: () => import('./features/coordinador/auditoria/auditoria.component').then(m => m.AuditoriaComponent),
-      },
-      {
-        path: 'informes',
-        loadComponent: () => import('./features/coordinador/informes/informes.component').then(m => m.InformesComponent),
-      },
-      {
         path: 'periodos',
         loadComponent: () => import('./features/coordinador/periodos/periodos.component').then(m => m.PeriodosComponent),
       },
       {
         path: 'configuracion',
         loadComponent: () => import('./features/coordinador/configuracion/configuracion.component').then(m => m.ConfiguracionComponent),
-      },
-      {
-        path: 'asignacion',
-        loadComponent: () => import('./features/coordinador/asignacion/asignacion.component').then(m => m.AsignacionComponent),
       },
     ],
   },

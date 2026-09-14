@@ -2,10 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { AssesmentApiService } from '../../../core/services/assesment-api.service';
-// TODO fase 2: esta pantalla usaba AssesmentResult (renombrado a Rubric), PerformanceEvaluationDetail,
-// PerformanceEvaluation y getAssesmentEvidence() (eliminados en modelo v13). Migrar a Rubric/Performance/Level.
-import { StudentOutcome } from '../../../core/models/abet.models';
-import { of } from 'rxjs';
+import { StudentOutcome, Performance, Level, Rubric } from '../../../core/models/abet.models';
 
 interface OutcomeRow { code: string; desc: string; pct: number; barColor: string; }
 
@@ -170,64 +167,56 @@ export class InicioAcreditacionComponent implements OnInit {
   constructor(private assesment: AssesmentApiService) {}
 
   ngOnInit(): void {
-    forkJoin({
-      sos: this.assesment.getStudentOutcomes(),
-      // TODO fase 2: getAssesmentResults() renombrado a getRubrics() (Rubric[]).
-      results: this.assesment.getRubrics(),
-      // TODO fase 2: getPerformanceEvaluationDetails() eliminado en modelo v13 (sin equivalente).
-      details: of([] as any[]),
-      // TODO fase 2: getPerformanceEvaluations() eliminado en modelo v13 (sin equivalente).
-      levels: of([] as any[]),
-      // TODO fase 2: getAssesmentEvidence() eliminado en modelo v13 (sin equivalente).
-      evidence: of([] as any[]),
-    }).subscribe({
-      next: ({ sos, results, details, levels, evidence }) => {
-        this.compute(sos ?? [], results ?? [], details ?? [], levels ?? [], evidence ?? []);
-        this.loading.set(false);
+    // v13: SO -> indicadores -> niveles, cruzados con las rúbricas. El logro de
+    // cada SO es el promedio del score del rank de nivel de sus rúbricas.
+    this.assesment.getStudentOutcomes().subscribe({
+      next: sos => {
+        if (!sos?.length) { this.outcomes.set([]); this.globalPct.set(null); this.loading.set(false); return; }
+        forkJoin({
+          perfsBySo: forkJoin(sos.map(so => this.assesment.getPerformances(so.id))),
+          rubrics: this.assesment.getRubrics(),
+        }).subscribe({
+          next: ({ perfsBySo, rubrics }) => {
+            const allPerfs = perfsBySo.reduce((acc, arr) => acc.concat(arr), [] as Performance[]);
+            if (!allPerfs.length) { this.compute(sos, perfsBySo, allPerfs, [], rubrics ?? []); this.loading.set(false); return; }
+            forkJoin(allPerfs.map(p => this.assesment.getLevels(p.id))).subscribe({
+              next: levelsByPerf => { this.compute(sos, perfsBySo, allPerfs, levelsByPerf, rubrics ?? []); this.loading.set(false); },
+              error: () => this.failLoad(),
+            });
+          },
+          error: () => this.failLoad(),
+        });
       },
-      error: () => {
-        this.error.set('No se pudieron cargar los indicadores. Verifica la conexión con el servidor.');
-        this.loading.set(false);
-      },
+      error: () => this.failLoad(),
     });
   }
 
-  // TODO fase 2: firma migrada a any[] porque AssesmentResult/PerformanceEvaluationDetail/
-  // PerformanceEvaluation/AssesmentEvidence fueron eliminados en modelo v13. Cálculo neutralizado.
+  private failLoad(): void {
+    this.error.set('No se pudieron cargar los indicadores. Verifica la conexión con el servidor.');
+    this.loading.set(false);
+  }
+
   private compute(
     sos: StudentOutcome[],
-    results: any[],
-    details: any[],
-    levels: any[],
-    evidence: any[],
+    perfsBySo: Performance[][],
+    allPerfs: Performance[],
+    levelsByPerf: Level[][],
+    rubrics: Rubric[],
   ): void {
-    // Mapa detalle -> nivel (N1..N4)
-    const levelById = new Map(levels.map((l: any) => [l.id, l.evaluation_value]));
-    const detailLevel = new Map<number, string>();
-    details.forEach((d: any) => {
-      const lvl = levelById.get(d.performance_evaluation_id);
-      if (lvl) detailLevel.set(d.id, lvl);
-    });
+    const perfToSo = new Map<string, string>();
+    perfsBySo.forEach((perfs, i) => perfs.forEach(p => perfToSo.set(p.id, sos[i].id)));
+    const levelRank = new Map<string, number>();
+    allPerfs.forEach((p, i) => (levelsByPerf[i] ?? []).forEach(l => levelRank.set(l.id, l.rank)));
 
-    const levelScore = (lvl: string): number => {
-      const v = lvl.trim().toLowerCase();
-      // Acepta tanto códigos (N1..N4) como etiquetas del backend
-      if (v === 'n4' || v.includes('supera')) return 100;
-      if (v === 'n3' || v.includes('bueno')) return 75;
-      if (v === 'n2' || v.includes('desarrollo')) return 50;
-      if (v === 'n1' || v.includes('insatisfactorio')) return 25;
-      return 0;
-    };
+    const scoreOf = (rank: number) => ({ 4: 100, 3: 75, 2: 50, 1: 25 } as Record<number, number>)[rank] ?? 0;
 
-    const rows: OutcomeRow[] = sos.map((so: any) => {
-      // TODO fase 2: Rubric v13 no tiene student_outcome_id/performance_evaluation_detail_id.
-      const soResults = results.filter((r: any) => r.student_outcome_id === so.id);
+    const rows: OutcomeRow[] = sos.map(so => {
+      const soRubrics = rubrics.filter(r => perfToSo.get(r.performance_id) === so.id);
       let pct = 0;
-      if (soResults.length) {
-        const sum = soResults.reduce((acc: number, r: any) => acc + levelScore(detailLevel.get(r.performance_evaluation_detail_id) ?? ''), 0);
-        pct = Math.round(sum / soResults.length);
+      if (soRubrics.length) {
+        const sum = soRubrics.reduce((acc, r) => acc + scoreOf(levelRank.get(r.level_id) ?? 0), 0);
+        pct = Math.round(sum / soRubrics.length);
       }
-      // TODO fase 2: StudentOutcome v13 usa 'id' en vez de 'code'.
       return { code: so.id, desc: so.description ?? '', pct, barColor: this.barColor(pct) };
     });
 
@@ -237,8 +226,10 @@ export class InicioAcreditacionComponent implements OnInit {
     const measured = rows.filter(r => r.pct > 0);
     this.globalPct.set(measured.length ? Math.round(measured.reduce((a, r) => a + r.pct, 0) / measured.length) : null);
 
-    const uniqueStudents = new Set(evidence.map((e: any) => e.student_code).filter(Boolean));
-    this.studentsEvaluated.set(uniqueStudents.size);
+    const students = new Set(rubrics
+      .filter(r => perfToSo.has(r.performance_id))
+      .map(r => r.student_id));
+    this.studentsEvaluated.set(students.size);
   }
 
   private barColor(pct: number): string {

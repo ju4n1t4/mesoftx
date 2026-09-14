@@ -1,13 +1,16 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { UserApiService } from '../../../core/services/user-api.service';
-import { AssesmentApiService } from '../../../core/services/assesment-api.service';
-// TODO fase 2: esta pantalla usaba el modelo viejo (AcademicPeriod, PerformanceEvaluation, Career).
-// Migrar a Period/Level/Program del modelo v13. Solo se importan los tipos vigentes.
-import { User, Role } from '../../../core/models/abet.models';
-import { of } from 'rxjs';
+import { Period } from '../../../core/models/abet.models';
 
+/**
+ * Configuración general del coordinador. En el modelo v13 esta pantalla quedó
+ * reducida: los periodos son el único parámetro que gestiona aquí (con su
+ * pantalla dedicada en /coordinador/periodos), y las integraciones son
+ * informativas. La gestión de usuarios y perfiles vive en el módulo /admin.
+ */
 @Component({
   selector: 'app-configuracion',
   standalone: true,
@@ -33,46 +36,16 @@ import { of } from 'rxjs';
             </button>
           </div>
 
-          <!-- Form nuevo periodo -->
           <div class="inline-form" *ngIf="showPeriodForm()">
             <input class="mini-input" [(ngModel)]="newPeriodCode" placeholder="Código (202610)" />
-            <input class="mini-input" [(ngModel)]="newPeriodName" placeholder="Nombre" />
             <button class="save-mini" (click)="addPeriod()">Guardar</button>
             <button class="cancel-mini" (click)="cancelPeriod()">Cancelar</button>
           </div>
 
           <div class="row" *ngFor="let p of periods()">
-            <div>
-              <div class="row-title">{{ p.code }}</div>
-              <!-- TODO fase 2: Period del modelo v13 no tiene 'name'; se castea a any. -->
-              <div class="row-sub">{{ $any(p).name }}</div>
-            </div>
-            <button class="icon-btn" title="Editar"><i class="pi pi-pencil"></i></button>
+            <div class="row-title">{{ p.code }}</div>
           </div>
           <div class="empty-inline" *ngIf="periods().length === 0 && !showPeriodForm()">Sin periodos registrados.</div>
-        </div>
-
-        <!-- Niveles de logro -->
-        <div class="config-card">
-          <div class="cc-header">
-            <i class="pi pi-star cc-icon"></i><h2>Niveles de logro</h2>
-            <button class="add-btn" (click)="showLevelForm.set(!showLevelForm())">
-              <i class="pi pi-plus"></i> Agregar
-            </button>
-          </div>
-
-          <div class="inline-form" *ngIf="showLevelForm()">
-            <input class="mini-input" [(ngModel)]="newLevelValue" placeholder="Nivel (N1, N2…)" />
-            <button class="save-mini" (click)="addLevel()">Guardar</button>
-            <button class="cancel-mini" (click)="cancelLevel()">Cancelar</button>
-          </div>
-
-          <div class="row" *ngFor="let lv of levels()">
-            <!-- TODO fase 2: PerformanceEvaluation eliminado; Level v13 usa 'description'. -->
-            <span class="row-title">{{ $any(lv).evaluation_value }}</span>
-            <button class="icon-btn" title="Editar"><i class="pi pi-pencil"></i></button>
-          </div>
-          <div class="empty-inline" *ngIf="levels().length === 0 && !showLevelForm()">Sin niveles de logro registrados.</div>
         </div>
 
         <!-- Integraciones -->
@@ -80,63 +53,26 @@ import { of } from 'rxjs';
           <div class="cc-header"><i class="pi pi-check-circle cc-icon"></i><h2>Integraciones</h2></div>
           <div class="int-row">
             <span class="int-name">Base de datos PostgreSQL</span>
-            <div class="int-actions">
-              <span class="int-status connected">Operativo</span>
-              <button class="config-btn">Configurar</button>
-            </div>
+            <span class="int-status connected">Operativo</span>
           </div>
           <div class="int-row">
-            <span class="int-name">Power BI</span>
-            <div class="int-actions">
-              <span class="int-status pending">No configurado</span>
-              <button class="config-btn">Configurar</button>
-            </div>
+            <span class="int-name">Microservicio de usuarios (User_MS)</span>
+            <span class="int-status connected">Operativo</span>
+          </div>
+          <div class="int-row">
+            <span class="int-name">Microservicio de valoración (Assesment_MS)</span>
+            <span class="int-status connected">Operativo</span>
           </div>
         </div>
 
-        <!-- Usuarios -->
+        <!-- Gestión de usuarios: vive en /admin -->
         <div class="config-card">
-          <div class="cc-header">
-            <i class="pi pi-users cc-icon"></i><h2>Usuarios y roles</h2>
-            <button class="add-btn" (click)="showUserForm.set(!showUserForm())">
-              <i class="pi pi-plus"></i> Agregar
-            </button>
-          </div>
-
-          <div class="user-form-box" *ngIf="showUserForm()">
-            <div class="uf-row">
-              <input class="uf-input" [(ngModel)]="newUserName" placeholder="Nombre" />
-              <input class="uf-input" [(ngModel)]="newUserEmail" placeholder="Correo institucional" />
-            </div>
-            <div class="uf-row">
-              <select class="uf-input uf-select-wide" [(ngModel)]="newUserCareerId">
-                <option [ngValue]="null">Programa académico</option>
-                <option *ngFor="let c of careers()" [ngValue]="c.id">{{ c.name }}</option>
-              </select>
-              <select class="uf-input uf-select" [(ngModel)]="newUserRoleId">
-                <option [ngValue]="null">Rol</option>
-                <option *ngFor="let r of assignableRoles()" [ngValue]="r.id">{{ r.name }}</option>
-              </select>
-              <button class="uf-save" (click)="addUser()" [disabled]="savingUser()">
-                <i class="pi pi-spin pi-spinner" *ngIf="savingUser()"></i>
-                {{ savingUser() ? 'Guardando…' : 'Guardar' }}
-              </button>
-              <button class="uf-cancel" (click)="cancelUser()">Cancelar</button>
-            </div>
-            <div class="form-error" *ngIf="userFormError()">{{ userFormError() }}</div>
-          </div>
-
-          <div class="user-row" *ngFor="let u of users()">
-            <div class="u-av">{{ initials(u) }}</div>
-            <div class="u-info">
-              <!-- TODO fase 2: User v13 no tiene surname/career_id (ahora document_number/program_id). -->
-              <span class="u-name">{{ u.name }} {{ $any(u).surname }}</span>
-              <span class="u-career">{{ careerName($any(u).career_id) }}</span>
-            </div>
-            <span class="u-role">{{ roleName(u.role_id) }}</span>
-            <button class="icon-btn" title="Editar"><i class="pi pi-pencil"></i></button>
-          </div>
-          <div class="empty-inline" *ngIf="users().length === 0 && !showUserForm()">Sin usuarios registrados.</div>
+          <div class="cc-header"><i class="pi pi-users cc-icon"></i><h2>Usuarios y perfiles</h2></div>
+          <p class="info-text">
+            La creación de usuarios y perfiles y la asignación de permisos se gestionan
+            desde el módulo de administración (<code>/admin</code>). El coordinador registra
+            profesores desde la pantalla “Profesores”.
+          </p>
         </div>
       </div>
     </div>
@@ -153,247 +89,62 @@ import { of } from 'rxjs';
     .cc-header h2 { font-size: 15px; font-weight: 700; color: var(--text); }
     .cc-icon { color: var(--accent); font-size: 15px; }
 
-    .add-btn {
-      margin-left: auto; display: inline-flex; align-items: center; gap: 5px;
-      font-size: 12px; font-weight: 600; color: var(--accent);
-      background: rgba(124,58,237,0.08); border: none; border-radius: var(--radius-sm);
-      padding: 6px 12px; cursor: pointer; font-family: inherit; transition: background 0.15s;
-    }
+    .add-btn { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--accent); background: rgba(124,58,237,0.08); border: none; border-radius: var(--radius-sm); padding: 6px 12px; cursor: pointer; font-family: inherit; }
     .add-btn:hover { background: rgba(124,58,237,0.16); }
     .add-btn i { font-size: 11px; }
 
-    .inline-form {
-      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
-      padding: 12px; background: var(--surface-2); border-radius: var(--radius-sm);
-    }
-    .mini-input {
-      flex: 1; min-width: 120px; padding: 8px 10px; border: 1px solid var(--border);
-      border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; color: var(--text);
-    }
+    .inline-form { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; padding: 12px; background: var(--surface-2); border-radius: var(--radius-sm); }
+    .mini-input { flex: 1; min-width: 120px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; color: var(--text); }
     .mini-input:focus { outline: none; border-color: var(--primary); }
-    .mini-select { background: #fff; cursor: pointer; max-width: 140px; }
-    .save-mini {
-      background: var(--primary); color: #1A1A2E; border: none; border-radius: var(--radius-sm);
-      padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
-    }
+    .save-mini { background: var(--primary); color: #1A1A2E; border: none; border-radius: var(--radius-sm); padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
     .save-mini:hover { background: var(--primary-dark); }
-    .cancel-mini {
-      background: #fff; color: var(--text-muted); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: 8px 14px; font-size: 12px; font-weight: 600;
-      cursor: pointer; font-family: inherit;
-    }
-    .cancel-mini:hover { border-color: var(--text-muted); color: var(--text); }
+    .cancel-mini { background: #fff; color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
 
     .row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
     .row:last-child { border-bottom: none; }
     .row-title { font-size: 14px; font-weight: 600; color: var(--text); }
-    .row-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
 
     .int-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
     .int-row:last-child { border-bottom: none; }
     .int-name { font-size: 13px; color: var(--text); font-weight: 500; }
-    .int-actions { display: flex; align-items: center; gap: 10px; }
     .int-status { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
     .int-status.connected { background: var(--badge-open-bg); color: var(--badge-open); }
-    .int-status.pending { background: var(--badge-draft-bg); color: var(--badge-draft); }
-    .config-btn {
-      font-size: 12px; font-weight: 600; color: var(--text-muted);
-      background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
-      padding: 5px 12px; cursor: pointer; font-family: inherit; transition: all 0.15s;
-    }
-    .config-btn:hover { border-color: var(--primary); color: var(--primary); }
 
-    /* Formulario de usuario horizontal (Nombre · Correo · Rol) */
-    .user-form-box {
-      background: var(--surface-2); border-radius: var(--radius-sm);
-      padding: 12px; margin-bottom: 14px;
-    }
-    .uf-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .uf-input {
-      flex: 1; min-width: 120px; padding: 9px 12px; border: 1px solid var(--border);
-      border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; color: var(--text);
-      background: #fff;
-    }
-    .uf-input:focus { outline: none; border-color: var(--primary); }
-    .uf-select { flex: 0 0 120px; min-width: 100px; cursor: pointer; }
-    .uf-select-wide { flex: 1; min-width: 160px; cursor: pointer; background: #fff; }
-    .uf-row + .uf-row { margin-top: 8px; }
-    .uf-save {
-      background: var(--primary); color: #1A1A2E; border: none; border-radius: var(--radius-sm);
-      padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
-      display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-    }
-    .uf-save:hover:not(:disabled) { background: var(--primary-dark); }
-    .uf-save:disabled { opacity: 0.6; cursor: not-allowed; }
-    .uf-cancel {
-      background: #fff; color: var(--text-muted); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: 9px 16px; font-size: 13px; font-weight: 600;
-      cursor: pointer; font-family: inherit; white-space: nowrap;
-    }
-    .uf-cancel:hover { border-color: var(--text-muted); color: var(--text); }
-    .form-error { font-size: 12px; color: var(--badge-expired); margin-top: 8px; }
-
-    .user-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-    .user-row:last-child { border-bottom: none; }
-    .u-av { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; flex-shrink: 0; }
-    .u-info { flex: 1; display: flex; flex-direction: column; }
-    .u-name { font-size: 13px; font-weight: 500; color: var(--text); }
-    .u-career { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
-    .u-role { font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 4px; color: var(--accent); background: rgba(124,58,237,0.1); }
-
-    .icon-btn { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 13px; padding: 5px; border-radius: 4px; transition: all 0.15s; }
-    .icon-btn:hover { background: var(--surface-2); color: var(--text); }
-
+    .info-text { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+    .info-text code { background: var(--surface-2); padding: 1px 6px; border-radius: 4px; }
     .empty-inline { font-size: 13px; color: var(--text-muted); padding: 8px 0; }
   `]
 })
 export class ConfiguracionComponent implements OnInit {
   loading = signal(true);
   error   = signal('');
-  periods = signal<any[]>([]);   // TODO fase 2: reemplazar por Period[] (modelo v13)
-  levels  = signal<any[]>([]);   // TODO fase 2: reemplazar por Level[] (modelo v13)
-  users   = signal<User[]>([]);
-  roles   = signal<Role[]>([]);
-  careers = signal<any[]>([]);   // TODO fase 2: reemplazar por Program[] (modelo v13)
+  periods = signal<Period[]>([]);
 
-  // Los profesores son del proceso ABET y los gestiona el coordinador desde su
-  // vista "Profesores". Aquí (gestión general) el rol Profesor no es asignable.
-  assignableRoles = computed(() => this.roles().filter(r => r.name.toLowerCase() !== 'profesor'));
-
-  // Estados de formularios
   showPeriodForm = signal(false);
-  showLevelForm  = signal(false);
-  showUserForm   = signal(false);
-  savingUser     = signal(false);
-  userFormError  = signal('');
-
   newPeriodCode = '';
-  newPeriodName = '';
-  newLevelValue = '';
-  newUserName     = '';
-  newUserEmail    = '';
-  newUserRoleId: number | null = null;
-  newUserCareerId: number | null = null;
 
-  constructor(private userApi: UserApiService, private assesment: AssesmentApiService) {}
+  constructor(private userApi: UserApiService) {}
 
   ngOnInit() {
-    // Carga best-effort. Los catálogos de User_MS (periodos, usuarios, roles,
-    // carreras) requieren JWT y pueden fallar en modo demo; los niveles de logro
-    // vienen de Assesment_MS (sin auth). Cada llamada se resuelve por separado
-    // para que un fallo parcial no bloquee toda la vista.
-    let pending = 5;
-    const done = () => { if (--pending === 0) this.loading.set(false); };
-
-    // TODO fase 2: getAcademicPeriods() eliminado en modelo v13 (sin equivalente).
-    // Se deja la lista de periodos vacía hasta migrar a getPeriods()/Period v13.
-    of([]).subscribe({
-      next: (p: any[]) => { this.periods.set(p ?? []); done(); },
-      error: () => { this.showConnHint(); done(); },
-    });
-    this.userApi.getUsers().subscribe({
-      next: (u) => { this.users.set(u ?? []); done(); },
-      error: () => { this.showConnHint(); done(); },
-    });
-    this.userApi.getRoles().subscribe({
-      next: (r) => { this.roles.set(r ?? []); done(); },
-      error: () => { this.showConnHint(); done(); },
-    });
-    // TODO fase 2: getCareers() renombrado a getPrograms() (Program[] con id string).
-    this.userApi.getPrograms().subscribe({
-      next: (c) => { this.careers.set(c ?? []); done(); },
-      error: () => { this.showConnHint(); done(); },
-    });
-    // TODO fase 2: getPerformanceEvaluations() eliminado en modelo v13 (sin equivalente).
-    of([]).subscribe({
-      next: (lv: any[]) => { this.levels.set(lv ?? []); done(); },
-      error: () => { done(); },
+    this.userApi.getPeriods().subscribe({
+      next: (p) => { this.periods.set(p ?? []); this.loading.set(false); },
+      error: (e: HttpErrorResponse) => {
+        this.error.set(e.status === 401
+          ? 'El catálogo de periodos requiere una sesión autenticada.'
+          : (typeof e.error?.detail === 'string' ? e.error.detail : 'No se pudieron cargar los periodos.'));
+        this.loading.set(false);
+      },
     });
   }
 
-  private showConnHint() {
-    this.error.set('Algunos catálogos requieren una sesión autenticada. Inicia sesión con tus credenciales para gestionarlos por completo.');
-  }
-
-  // ── Periodos ──
   addPeriod() {
     const code = this.newPeriodCode.trim();
-    const name = this.newPeriodName.trim();
-    if (!code || !name) return;
-    // TODO fase 2: createAcademicPeriod() eliminado en modelo v13. El nuevo
-    // createPeriod({ code }) crea un Period simple; el resto de campos ya no existen.
+    if (!code) return;
     this.userApi.createPeriod({ code }).subscribe({
       next: (p) => { this.periods.set([...this.periods(), p]); this.cancelPeriod(); },
-      error: () => alert('No se pudo crear el período. Verifica la conexión con el backend.'),
+      error: (e: HttpErrorResponse) => this.error.set(
+        typeof e.error?.detail === 'string' ? e.error.detail : 'No se pudo crear el período.'),
     });
   }
-  cancelPeriod() { this.showPeriodForm.set(false); this.newPeriodCode = ''; this.newPeriodName = ''; }
-
-  // ── Niveles ──
-  addLevel() {
-    const value = this.newLevelValue.trim();
-    if (!value) return;
-    // TODO fase 2: createPerformanceEvaluation() eliminado en modelo v13 (sin equivalente).
-    // Se agrega el nivel solo en memoria hasta migrar a Level v13.
-    this.levels.set([...this.levels(), { evaluation_value: value }]);
-    this.cancelLevel();
-  }
-  cancelLevel() { this.showLevelForm.set(false); this.newLevelValue = ''; }
-
-  // ── Usuarios ──
-  addUser() {
-    this.userFormError.set('');
-    const fullName = this.newUserName.trim();
-    const email    = this.newUserEmail.trim();
-
-    if (!fullName)             { this.userFormError.set('Ingresa el nombre.'); return; }
-    if (!email)                { this.userFormError.set('Ingresa el correo institucional.'); return; }
-    if (!this.newUserCareerId) { this.userFormError.set('Selecciona el programa académico.'); return; }
-    if (!this.newUserRoleId)   { this.userFormError.set('Selecciona un rol.'); return; }
-
-    // Derivar nombre/apellido del campo "Nombre"
-    const parts   = fullName.split(/\s+/);
-    const name    = parts[0];
-    const surname = parts.slice(1).join(' ') || parts[0];
-
-    // Generar código y contraseña temporal automáticos
-    const code     = 'USR' + Date.now().toString().slice(-6);
-    const password = 'MesoftX' + Math.random().toString(36).slice(-5) + '!';
-
-    this.savingUser.set(true);
-    // TODO fase 2: UserCreate v13 ya no tiene surname/code/career_id/subject_ids
-    // (ahora document_number/program_id/accredited). Se castea a any para compilar.
-    this.userApi.createUser({
-      name, surname, code, email, password,
-      role_id: this.newUserRoleId,
-      career_id: this.newUserCareerId,
-      subject_ids: [],
-    } as any).subscribe({
-      next: (u) => {
-        this.users.set([...this.users(), u]);
-        this.savingUser.set(false);
-        this.cancelUser();
-      },
-      error: (e) => {
-        this.savingUser.set(false);
-        this.userFormError.set(
-          e?.error?.detail ?? 'No se pudo crear el usuario. Verifica los datos y la conexión con el backend.',
-        );
-      },
-    });
-  }
-  cancelUser() {
-    this.showUserForm.set(false);
-    this.userFormError.set('');
-    this.newUserName     = '';
-    this.newUserEmail    = '';
-    this.newUserRoleId   = null;
-    this.newUserCareerId = null;
-  }
-
-  // TODO fase 2: User v13 no tiene surname; se castea a any para el iniciales.
-  initials(u: User) { return `${u.name?.[0] ?? ''}${(u as any).surname?.[0] ?? ''}`.toUpperCase(); }
-  roleName(id: number) { return this.roles().find(r => r.id === id)?.name ?? '—'; }
-  // TODO fase 2: careers ahora es Program[] (id string). Se compara laxo.
-  careerName(id: any) { return this.careers().find((c: any) => c.id === id)?.name ?? '—'; }
+  cancelPeriod() { this.showPeriodForm.set(false); this.newPeriodCode = ''; }
 }

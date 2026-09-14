@@ -1,8 +1,12 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { forkJoin } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { UserApiService } from '../../../core/services/user-api.service';
-// TODO fase 2: esta pantalla usaba el modelo viejo (Career/Faculty). Migrar a
-// Program/College del modelo v13. Tipado como any para dejar compilando.
+import { Program, College } from '../../../core/models/abet.models';
+
+/** Programa con el nombre de su facultad resuelto para mostrar. */
+interface ProgramView extends Program { collegeName: string; }
 
 @Component({
   selector: 'app-programas',
@@ -30,18 +34,17 @@ import { UserApiService } from '../../../core/services/user-api.service';
         <div class="prog-grid" *ngIf="programs().length > 0">
           <div class="prog-card" *ngFor="let p of programs()">
             <div class="pc-top">
-              <span class="pc-code">{{ p.code }}</span>
+              <span class="pc-code">{{ p.id }}</span>
               <span class="pc-acc" [class.on]="p.accredited">
                 <i class="pi" [class.pi-verified]="p.accredited" [class.pi-clock]="!p.accredited"></i>
                 {{ p.accredited ? 'Acreditada' : 'En proceso' }}
               </span>
             </div>
             <div class="pc-name">{{ p.name }}</div>
-            <div class="pc-meta">{{ p.faculty || 'Facultad de Ingeniería' }}</div>
+            <div class="pc-meta">{{ p.collegeName || 'Facultad de Ingeniería' }}</div>
             <div class="pc-acc-year" *ngIf="p.accredited && p.accreditation_end_year">
               Acreditación vigente hasta {{ p.accreditation_end_year }}
             </div>
-            <div class="pc-desc" *ngIf="p.description">{{ p.description }}</div>
           </div>
         </div>
       </ng-container>
@@ -72,37 +75,28 @@ import { UserApiService } from '../../../core/services/user-api.service';
 export class ProgramasComponent implements OnInit {
   loading  = signal(true);
   error    = signal('');
-  careers  = signal<any[]>([]);            // TODO fase 2: reemplazar por Program[]
-  faculties = signal<any[]>([]);           // TODO fase 2: reemplazar por College[]
-  programs = signal<any[]>([]);            // TODO fase 2: reconstruir con Program/College
+  programs = signal<ProgramView[]>([]);
 
   constructor(private userApi: UserApiService) {}
 
   ngOnInit() {
-    // TODO fase 2: esta carga usaba getCareers()/getFaculties() (endpoints del
-    // modelo viejo). Reescribir con getPrograms()/getColleges() y los campos
-    // nuevos (id string, college_id). Por ahora se deja la vista vacía.
-    let pending = 2;
-    const done = () => { if (--pending === 0) this.rebuild(); };
-
-    this.userApi.getPrograms().subscribe({
-      next: (c) => { this.careers.set(c ?? []); done(); },
-      error: () => { this.showConnHint(); done(); },
+    // Programas y facultades del modelo v13; se resuelve el nombre de la
+    // facultad (college_id -> college.name) para mostrarlo en cada tarjeta.
+    forkJoin({
+      programs: this.userApi.getPrograms(),
+      colleges: this.userApi.getColleges(),
+    }).subscribe({
+      next: ({ programs, colleges }) => {
+        const collegeName = new Map<string, string>((colleges as College[]).map(c => [c.id, c.name]));
+        this.programs.set((programs as Program[]).map(p => ({ ...p, collegeName: collegeName.get(p.college_id) ?? '' })));
+        this.loading.set(false);
+      },
+      error: (e: HttpErrorResponse) => {
+        this.error.set(e.status === 401
+          ? 'El catálogo de programas requiere una sesión autenticada. Inicia sesión para verlo.'
+          : (typeof e.error?.detail === 'string' ? e.error.detail : 'No se pudieron cargar los programas.'));
+        this.loading.set(false);
+      },
     });
-    this.userApi.getColleges().subscribe({
-      next: (f) => { this.faculties.set(f ?? []); done(); },
-      error: () => { this.showConnHint(); done(); },
-    });
-  }
-
-  private rebuild() {
-    // TODO fase 2: mapeo facultad->programa con el modelo nuevo (college_id string).
-    const facMap = new Map<string, string>(this.faculties().map((f: any) => [f.id, f.name]));
-    this.programs.set(this.careers().map((c: any) => ({ ...c, faculty: facMap.get(c.college_id) })));
-    this.loading.set(false);
-  }
-
-  private showConnHint() {
-    this.error.set('El catálogo de programas requiere una sesión autenticada. Inicia sesión con tus credenciales para verlo.');
   }
 }

@@ -4,10 +4,7 @@ import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AssesmentApiService } from '../../core/services/assesment-api.service';
 import { UserApiService } from '../../core/services/user-api.service';
-// TODO fase 2: esta pantalla usaba AssesmentResult (renombrado a Rubric), PerformanceEvaluationDetail,
-// PerformanceEvaluation y getAssesmentEvidence()/getCareers() (eliminados/renombrados en modelo v13).
-import { StudentOutcome } from '../../core/models/abet.models';
-import { of } from 'rxjs';
+import { StudentOutcome, Performance, Level, Rubric } from '../../core/models/abet.models';
 
 interface OutcomeCard {
   code: string;
@@ -155,84 +152,91 @@ export class PublicoComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // Modelo v13: se cruzan SO -> indicadores -> niveles con las rúbricas
+    // registradas. Cada rúbrica trae performance_id y level_id; el rank del
+    // nivel (1..4) determina el bucket de logro. Los estudiantes valorados por
+    // SO se cuentan como los student_id distintos de sus rúbricas.
     forkJoin({
       sos: this.assesment.getStudentOutcomes(),
-      // TODO fase 2: getAssesmentResults() renombrado a getRubrics() (Rubric[]).
-      results: this.assesment.getRubrics(),
-      // TODO fase 2: getPerformanceEvaluationDetails() eliminado en modelo v13 (sin equivalente).
-      details: of([] as any[]),
-      // TODO fase 2: getPerformanceEvaluations() eliminado en modelo v13 (sin equivalente).
-      levels: of([] as any[]),
-      // TODO fase 2: getAssesmentEvidence() eliminado en modelo v13 (sin equivalente).
-      evidence: of([] as any[]),
-      // TODO fase 2: getCareers() renombrado a getPrograms() (Program[]).
-      careers: this.users.getPrograms(),
+      rubrics: this.assesment.getRubrics(),
+      programs: this.users.getPrograms(),
     }).subscribe({
-      next: ({ sos, results, details, levels, evidence, careers }) => {
-        this.programsCount.set((careers ?? []).length);
-        this.compute(sos ?? [], results ?? [], details ?? [], levels ?? [], evidence ?? []);
-        this.loading.set(false);
+      next: ({ sos, rubrics, programs }) => {
+        this.programsCount.set((programs ?? []).length);
+        if (!sos?.length) { this.outcomes.set([]); this.avgPct.set(null); this.loading.set(false); return; }
+        // Para cada SO, sus indicadores; para cada indicador, sus niveles.
+        forkJoin(sos.map(so => this.assesment.getPerformances(so.id))).subscribe({
+          next: perfsBySo => {
+            const allPerfs = allFlat(perfsBySo);
+            if (!allPerfs.length) {
+              this.compute(sos, perfsBySo, allPerfs, [], rubrics ?? []);
+              this.loading.set(false);
+              return;
+            }
+            forkJoin(allPerfs.map(p => this.assesment.getLevels(p.id))).subscribe({
+              next: levelsByPerf => {
+                this.compute(sos, perfsBySo, allPerfs, levelsByPerf, rubrics ?? []);
+                this.loading.set(false);
+              },
+              error: () => this.failLoad(),
+            });
+          },
+          error: () => this.failLoad(),
+        });
       },
-      error: () => {
-        this.error.set('No se pudieron cargar los indicadores. Verifica la conexión con el servidor.');
-        this.loading.set(false);
-      },
+      error: () => this.failLoad(),
     });
   }
 
-  // TODO fase 2: firma migrada a any[] porque AssesmentResult/PerformanceEvaluationDetail/
-  // PerformanceEvaluation/AssesmentEvidence fueron eliminados en modelo v13. Cálculo neutralizado.
+  private failLoad(): void {
+    this.error.set('No se pudieron cargar los indicadores. Verifica la conexión con el servidor.');
+    this.loading.set(false);
+  }
+
   private compute(
     sos: StudentOutcome[],
-    results: any[],
-    details: any[],
-    levels: any[],
-    evidence: any[],
+    perfsBySo: Performance[][],
+    allPerfs: Performance[],
+    levelsByPerf: Level[][],
+    rubrics: Rubric[],
   ): void {
-    const levelById = new Map(levels.map((l: any) => [l.id, l.evaluation_value]));
-    const detailLevel = new Map<number, string>();
-    details.forEach((d: any) => {
-      const lvl = levelById.get(d.performance_evaluation_id);
-      if (lvl) detailLevel.set(d.id, lvl);
-    });
+    // performance_id -> so_id, y level_id -> rank (1..4).
+    const perfToSo = new Map<string, string>();
+    perfsBySo.forEach((perfs, i) => perfs.forEach(p => perfToSo.set(p.id, sos[i].id)));
+    const levelRank = new Map<string, number>();
+    allPerfs.forEach((p, i) => (levelsByPerf[i] ?? []).forEach(l => levelRank.set(l.id, l.rank)));
 
-    const levelMeta: { key: string; label: string; cls: string; color: string }[] = [
-      { key: 'N4', label: 'Supera',          cls: 'n4', color: '#16A34A' },
-      { key: 'N3', label: 'Bueno',           cls: 'n3', color: '#CA8A04' },
-      { key: 'N2', label: 'En desarrollo',   cls: 'n2', color: '#EA580C' },
-      { key: 'N1', label: 'Insatisfactorio', cls: 'n1', color: '#DC2626' },
+    const levelMeta = [
+      { rank: 4, label: 'Supera',          cls: 'n4', color: '#16A34A' },
+      { rank: 3, label: 'Bueno',           cls: 'n3', color: '#CA8A04' },
+      { rank: 2, label: 'En desarrollo',   cls: 'n2', color: '#EA580C' },
+      { rank: 1, label: 'Insatisfactorio', cls: 'n1', color: '#DC2626' },
     ];
-
-    const scoreOf = (k: string) => ({ N4: 100, N3: 75, N2: 50, N1: 25 } as Record<string, number>)[k] ?? 0;
+    const scoreOf = (rank: number) => ({ 4: 100, 3: 75, 2: 50, 1: 25 } as Record<number, number>)[rank] ?? 0;
     const measured: number[] = [];
 
-    const cards: OutcomeCard[] = sos.map((so: any, i) => {
-      // TODO fase 2: Rubric v13 no tiene student_outcome_id/performance_evaluation_detail_id.
-      const soResults = results.filter((r: any) => r.student_outcome_id === so.id);
-      const total = soResults.length;
-      const counts: Record<string, number> = { N4: 0, N3: 0, N2: 0, N1: 0 };
-      soResults.forEach((r: any) => {
-        const lvl = detailLevel.get(r.performance_evaluation_detail_id);
-        if (lvl && counts[lvl] !== undefined) counts[lvl]++;
+    const cards: OutcomeCard[] = sos.map((so, i) => {
+      const soRubrics = rubrics.filter(r => perfToSo.get(r.performance_id) === so.id);
+      const total = soRubrics.length;
+      const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+      soRubrics.forEach(r => {
+        const rank = levelRank.get(r.level_id);
+        if (rank && counts[rank] !== undefined) counts[rank]++;
       });
       if (total > 0) {
-        const avg = Math.round(Object.entries(counts).reduce((a, [k, n]) => a + scoreOf(k) * n, 0) / total);
+        const avg = Math.round([1, 2, 3, 4].reduce((a, rank) => a + scoreOf(rank) * counts[rank], 0) / total);
         measured.push(avg);
       }
-      const studentsForSo = new Set(
-        evidence.filter((e: any) => e.student_outcome_id === so.id).map((e: any) => e.student_code).filter(Boolean),
-      ).size;
-
+      const students = new Set(soRubrics.map(r => r.student_id)).size;
       return {
-        // TODO fase 2: StudentOutcome v13 usa 'id' en vez de 'code'.
         code: so.id,
         desc: so.description ?? '',
         color: this.palette[i % this.palette.length],
-        students: studentsForSo,
+        students,
         levels: levelMeta.map(m => ({
           label: m.label,
           class: m.cls,
-          pct: total ? Math.round((counts[m.key] / total) * 100) : 0,
+          pct: total ? Math.round((counts[m.rank] / total) * 100) : 0,
           barColor: m.color,
         })),
       };
@@ -241,4 +245,9 @@ export class PublicoComponent implements OnInit {
     this.outcomes.set(cards);
     this.avgPct.set(measured.length ? Math.round(measured.reduce((a, b) => a + b, 0) / measured.length) : null);
   }
+}
+
+/** Aplana una lista de listas de indicadores. */
+function allFlat(perfsBySo: Performance[][]): Performance[] {
+  return perfsBySo.reduce((acc, arr) => acc.concat(arr), [] as Performance[]);
 }

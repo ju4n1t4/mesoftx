@@ -21,6 +21,16 @@ const ROLE_MAP: Record<number, CurrentUser['role']> = {
   1: 'Administrativo',
 };
 
+/** Claims del JWT emitido por User_MS que consume el frontend. */
+interface JwtClaims {
+  sub?: string | number;
+  role_id?: number;
+  role?: CurrentUser['role'];
+  email?: string;
+  program_id?: string | null;
+  perms?: string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private _user = signal<CurrentUser | null>(this._loadUser());
@@ -111,7 +121,6 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
-    localStorage.removeItem('mesoftx_students');
     this._user.set(null);
     this.router.navigate(['/auth/login']);
   }
@@ -131,8 +140,8 @@ export class AuthService {
     try { const raw = localStorage.getItem(USER_KEY); return raw ? JSON.parse(raw) : null; }
     catch { return null; }
   }
-  private _decodeJwt(token: string): any {
-    try { return JSON.parse(atob(token.split('.')[1])); } catch { return null; }
+  private _decodeJwt(token: string): JwtClaims | null {
+    try { return JSON.parse(atob(token.split('.')[1])) as JwtClaims; } catch { return null; }
   }
   private _redirectByRole(role: string): void {
     if (role === 'Profesor') this.router.navigate(['/profesor/mis-cursos']);

@@ -4,9 +4,7 @@ import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AssesmentApiService } from '../../../core/services/assesment-api.service';
 import { UserApiService } from '../../../core/services/user-api.service';
-// TODO fase 2: PerformanceEvaluation eliminado en modelo v13; Subject ya no tiene 'code' (ahora nrc/materia_curso).
-import { StudentOutcome } from '../../../core/models/abet.models';
-import { of } from 'rxjs';
+import { StudentOutcome, Subject } from '../../../core/models/abet.models';
 
 @Component({
   selector: 'app-profesor-dashboard',
@@ -27,9 +25,9 @@ import { of } from 'rxjs';
           <div class="kpi-sub">Asignados este período</div>
         </div>
         <div class="kpi-card" style="border-top-color: var(--n2-color)">
-          <div class="kpi-label">Valoraciones pendientes</div>
-          <div class="kpi-value" style="color: var(--n2-color)">{{ pendingCount() }}</div>
-          <div class="kpi-sub">Registradas por ti</div>
+          <div class="kpi-label">Valoraciones registradas</div>
+          <div class="kpi-value" style="color: var(--n2-color)">{{ rubricsCount() }}</div>
+          <div class="kpi-sub">Rúbricas que has llenado</div>
         </div>
         <div class="kpi-card" style="border-top-color: var(--accent)">
           <div class="kpi-label">Outcomes disponibles</div>
@@ -37,16 +35,16 @@ import { of } from 'rxjs';
           <div class="kpi-sub">Parametrizados en el sistema</div>
         </div>
         <div class="kpi-card" style="border-top-color: var(--badge-open)">
-          <div class="kpi-label">Niveles de logro</div>
-          <div class="kpi-value" style="color: var(--badge-open)">{{ levels().length }}</div>
-          <div class="kpi-sub">Escala de valoración</div>
+          <div class="kpi-label">Estudiantes valorados</div>
+          <div class="kpi-value" style="color: var(--badge-open)">{{ studentsCount() }}</div>
+          <div class="kpi-sub">Distintos en tus rúbricas</div>
         </div>
       </div>
 
       <!-- Mis cursos activos -->
       <div class="section-header">
         <h2>Mis cursos activos</h2>
-        <a routerLink="/profesor/valoraciones" class="ver-todos">Ver todos →</a>
+        <a routerLink="/profesor/mis-cursos" class="ver-todos">Ver todos →</a>
       </div>
 
       <div class="state-box" *ngIf="loading()">
@@ -71,7 +69,7 @@ import { of } from 'rxjs';
             <span class="cc-code">{{ c.code }}</span>
           </div>
           <div class="cc-name">{{ c.name }}</div>
-          <a [routerLink]="['/profesor/valoraciones/registrar']" class="cc-link">
+          <a [routerLink]="['/profesor/valorar']" class="cc-link">
             Registrar valoración →
           </a>
         </div>
@@ -138,9 +136,9 @@ export class ProfesorDashboardComponent implements OnInit {
   loading = signal(true);
   error   = signal<string | null>(null);
   outcomes = signal<StudentOutcome[]>([]);
-  levels   = signal<any[]>([]);   // TODO fase 2: reemplazar por Level[] (modelo v13)
   courses  = signal<{ code: string; name: string }[]>([]);
-  pendingCount = signal(0);
+  rubricsCount = signal(0);
+  studentsCount = signal(0);
 
   constructor(
     private assesment: AssesmentApiService,
@@ -148,17 +146,18 @@ export class ProfesorDashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // Modelo v13: cursos del profesor (getMySubjects), SO parametrizados y sus
+    // rúbricas registradas (getRubrics). El código de curso es materia_curso.
     forkJoin({
       outcomes: this.assesment.getStudentOutcomes(),
-      // TODO fase 2: getPerformanceEvaluations() eliminado en modelo v13 (sin equivalente).
-      levels: of([] as any[]),
-      subjects: this.users.getSubjects(),
+      subjects: this.users.getMySubjects(),
+      rubrics: this.assesment.getRubrics(),
     }).subscribe({
-      next: ({ outcomes, levels, subjects }) => {
+      next: ({ outcomes, subjects, rubrics }) => {
         this.outcomes.set(outcomes ?? []);
-        this.levels.set(levels ?? []);
-        // TODO fase 2: Subject v13 no tiene 'code' (ahora nrc/materia_curso); se castea a any.
-        this.courses.set((subjects ?? []).map((s: any) => ({ code: s.code ?? String(s.nrc ?? ''), name: s.name ?? '' })));
+        this.courses.set((subjects as Subject[] ?? []).map(s => ({ code: s.materia_curso, name: s.name })));
+        this.rubricsCount.set((rubrics ?? []).length);
+        this.studentsCount.set(new Set((rubrics ?? []).map(r => r.student_id)).size);
         this.loading.set(false);
       },
       error: () => {

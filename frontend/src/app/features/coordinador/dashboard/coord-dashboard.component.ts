@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { UserApiService } from '../../../core/services/user-api.service';
 import { AssesmentApiService } from '../../../core/services/assesment-api.service';
+import { Program } from '../../../core/models/abet.models';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -132,7 +133,7 @@ export class CoordDashboardComponent implements OnInit {
   loading = signal(true);
   error   = signal('');
 
-  careers      = signal<any[]>([]);
+  careers      = signal<Program[]>([]);
   careersCount  = signal(0);
   teachersCount = signal(0);
   sosCount      = signal(0);
@@ -142,12 +143,10 @@ export class CoordDashboardComponent implements OnInit {
 
   ngOnInit() {
     forkJoin({
-      // TODO fase 2: getCareers() renombrado a getPrograms() (Program[] id string).
       careers: this.userApi.getPrograms(),
       users:   this.userApi.getUsers(),
       roles:   this.userApi.getRoles(),
       sos:     this.assesment.getStudentOutcomes(),
-      // TODO fase 2: getAssesmentResults() renombrado a getRubrics() (Rubric[]).
       results: this.assesment.getRubrics(),
     }).subscribe({
       next: (r) => {

@@ -1,10 +1,9 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AssesmentApiService } from '../../../core/services/assesment-api.service';
-// TODO fase 2: esta pantalla usaba AssesmentResult (renombrado a Rubric) y getAssesmentEvidence()
-// (eliminado). Los campos subject_code/assesment_evidence_id y StudentOutcome.code ya no existen.
-import { StudentOutcome } from '../../../core/models/abet.models';
-import { forkJoin, of } from 'rxjs';
+import { StudentOutcome, Rubric } from '../../../core/models/abet.models';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-coord-valoraciones',
@@ -23,7 +22,7 @@ import { forkJoin, of } from 'rxjs';
       <ng-container *ngIf="!loading()">
         <div class="stats-row">
           <div class="stat-box"><div class="sb-val">{{ results().length }}</div><div class="sb-label">Valoraciones registradas</div></div>
-          <div class="stat-box"><div class="sb-val">{{ evidenceCount() }}</div><div class="sb-label">Evidencias cargadas</div></div>
+          <div class="stat-box"><div class="sb-val">{{ evidenceCount() }}</div><div class="sb-label">Con evidencia</div></div>
           <div class="stat-box"><div class="sb-val">{{ sosCount() }}</div><div class="sb-label">Student Outcomes</div></div>
         </div>
 
@@ -37,17 +36,20 @@ import { forkJoin, of } from 'rxjs';
           <table class="data-table">
             <thead>
               <tr>
-                <th>Materia (código)</th>
-                <th>Student Outcome</th>
+                <th>NRC</th>
+                <th>Estudiante</th>
+                <th>Indicador</th>
+                <th>Nivel</th>
                 <th>Evidencia</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let r of results()">
-                <!-- TODO fase 2: Rubric v13 no tiene subject_code/assesment_evidence_id; se castea a any. -->
-                <td><span class="code-tag">{{ $any(r).subject_code }}</span></td>
-                <td class="so-cell">{{ soCode($any(r).student_outcome_id) }}</td>
-                <td class="ev-cell">#{{ $any(r).assesment_evidence_id }}</td>
+                <td><span class="code-tag">{{ r.subjects_id }}</span></td>
+                <td>{{ r.student_id }}</td>
+                <td class="so-cell">{{ r.performance_id }}</td>
+                <td>{{ r.level_id }}</td>
+                <td class="ev-cell">{{ r.evidence_id != null ? '#' + r.evidence_id : '—' }}</td>
               </tr>
             </tbody>
           </table>
@@ -84,7 +86,7 @@ import { forkJoin, of } from 'rxjs';
 export class CoordValoracionesComponent implements OnInit {
   loading = signal(true);
   error   = signal('');
-  results = signal<any[]>([]);   // TODO fase 2: reemplazar por Rubric[] (modelo v13)
+  results = signal<Rubric[]>([]);
   sos     = signal<StudentOutcome[]>([]);
   evidenceCount = signal(0);
   sosCount      = signal(0);
@@ -93,26 +95,22 @@ export class CoordValoracionesComponent implements OnInit {
 
   ngOnInit() {
     forkJoin({
-      // TODO fase 2: getAssesmentResults() renombrado a getRubrics() (Rubric[]).
-      results:  this.assesment.getRubrics(),
-      sos:      this.assesment.getStudentOutcomes(),
-      // TODO fase 2: getAssesmentEvidence() eliminado en modelo v13 (sin equivalente aquí).
-      evidence: of([] as any[]),
+      results: this.assesment.getRubrics(),
+      sos:     this.assesment.getStudentOutcomes(),
     }).subscribe({
-      next: (r) => {
-        this.results.set(r.results);
-        this.sos.set(r.sos);
-        this.sosCount.set(r.sos.length);
-        this.evidenceCount.set(r.evidence.length);
+      next: ({ results, sos }) => {
+        this.results.set(results);
+        this.sos.set(sos);
+        this.sosCount.set(sos.length);
+        // "Con evidencia" se cuenta desde las propias rúbricas (evidence_id no nulo).
+        this.evidenceCount.set(results.filter(r => r.evidence_id != null).length);
         this.loading.set(false);
       },
-      error: () => {
-        this.error.set('No se pudo conectar con el servicio. Verifica que los microservicios estén activos.');
+      error: (e: HttpErrorResponse) => {
+        this.error.set(typeof e.error?.detail === 'string' ? e.error.detail
+          : 'No se pudo conectar con el servicio. Verifica que los microservicios estén activos.');
         this.loading.set(false);
       },
     });
   }
-
-  // TODO fase 2: StudentOutcome v13 usa id (string) en vez de code. Comparación laxa.
-  soCode(id: any) { return this.sos().find((s: any) => s.id === id)?.id ?? '—'; }
 }

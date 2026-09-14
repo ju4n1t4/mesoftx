@@ -128,14 +128,6 @@ export const routes: Routes = [
         loadComponent: () => import('./features/coordinador/valoraciones/coord-valoraciones.component').then(m => m.CoordValoracionesComponent),
       },
       {
-        path: 'auditoria',
-        loadComponent: () => import('./features/coordinador/auditoria/auditoria.component').then(m => m.AuditoriaComponent),
-      },
-      {
-        path: 'informes',
-        loadComponent: () => import('./features/coordinador/informes/informes.component').then(m => m.InformesComponent),
-      },
-      {
         path: 'periodos',
         loadComponent: () => import('./features/coordinador/periodos/periodos.component').then(m => m.PeriodosComponent),
       },

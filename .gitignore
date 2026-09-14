@@ -107,3 +107,5 @@ logs/
 
 # ── Documentos de trabajo / seguimiento (no versionar) ───────
 frontend/PLAN_FRONTEND.md
+
+.kiro/

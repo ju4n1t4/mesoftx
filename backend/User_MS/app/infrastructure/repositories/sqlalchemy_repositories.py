@@ -134,6 +134,15 @@ class SubjectRepository(SqlAlchemyRepository):
             ).all()
         )
 
+    def programs_for_nrcs(self, nrcs: list[int]) -> dict[int, str]:
+        """nrc -> program_id, en UNA sola consulta (batch para dashboards)."""
+        if not nrcs:
+            return {}
+        rows = self.db.execute(
+            select(SubjectModel.nrc, SubjectModel.program_id).where(SubjectModel.nrc.in_(nrcs))
+        ).all()
+        return {int(nrc): str(program_id) for nrc, program_id in rows}
+
 
 class UserRepository(SqlAlchemyRepository):
     model = UserModel
@@ -199,6 +208,21 @@ class TeacherSubjectRepository(SqlAlchemyRepository):
             select(TeacherSubjectModel.subjects_id).where(TeacherSubjectModel.user_id == user_id)
         ).all()
         return list(rows)
+
+    def teachers_for_nrcs(self, nrcs: list[int]) -> dict[int, list[int]]:
+        """nrc -> lista de user_id de los profesores que lo dictan, en UNA sola
+        consulta (batch para el dashboard de avance por profesor)."""
+        if not nrcs:
+            return {}
+        rows = self.db.execute(
+            select(TeacherSubjectModel.subjects_id, TeacherSubjectModel.user_id).where(
+                TeacherSubjectModel.subjects_id.in_(nrcs)
+            )
+        ).all()
+        result: dict[int, list[int]] = {nrc: [] for nrc in nrcs}
+        for nrc, user_id in rows:
+            result[int(nrc)].append(int(user_id))
+        return result
 
     def subjects_for_user(self, user_id: int) -> list[SubjectModel]:
         stmt = (

@@ -19,6 +19,15 @@ class UserMsClient:
             resp = await client.get(f"{self.base_url}/api/v1/internal/subjects/{nrc}", headers=self.headers)
             return resp.status_code == 200
 
+    async def subject_period(self, nrc: int) -> int | None:
+        """periods_id de la materia, o None si no existe. Sirve para validar que
+        un NRC pertenezca al mismo periodo de la programación (paso 13)."""
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{self.base_url}/api/v1/internal/subjects/{nrc}", headers=self.headers)
+            if resp.status_code != 200:
+                return None
+            return resp.json().get("periods_id")
+
     async def period_exists(self, period_id: int) -> bool:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(f"{self.base_url}/api/v1/internal/periods/{period_id}", headers=self.headers)

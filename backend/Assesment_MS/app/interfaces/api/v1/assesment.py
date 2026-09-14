@@ -263,12 +263,20 @@ async def set_schedule_subjects(
         raise map_repository_error(EntityNotFoundError("Schedule not found."))
     if sched.status == "CERRADO":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="La programación está cerrada")
-    # cada NRC debe existir en User_MS (validación de mismo periodo: ver reporte).
+    # Cada NRC debe existir en User_MS Y pertenecer al MISMO periodo que la
+    # programación (paso 13). subject.periods_id y so_schedule.period_id apuntan
+    # ambos a users_db.periods.id, así que son comparables directamente.
     client = UserMsClient()
     try:
         for nrc in payload.nrcs:
-            if not await client.subject_exists(nrc):
+            period = await client.subject_period(nrc)
+            if period is None:
                 raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"El NRC {nrc} no existe")
+            if period != sched.period_id:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"El NRC {nrc} no es del periodo de la programación",
+                )
     except httpx.HTTPError as exc:
         raise _SERVICE_DOWN from exc
     repo.replace_subjects(schedule_id, payload.nrcs)

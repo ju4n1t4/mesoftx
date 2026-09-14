@@ -2,30 +2,35 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.application.services.user_service import UserService
+from app.infrastructure.clients.assesment_ms_client import AssesmentMsClient
 from app.infrastructure.repositories.sqlalchemy_repositories import (
     EntityAlreadyExistsError,
     EntityNotFoundError,
+    RoleRepository,
     UserRepository,
 )
-from app.core.roles import Role
-from app.interfaces.api.v1.dependencies import db_session, get_current_user, require_roles
+from app.interfaces.api.v1.dependencies import db_session, get_current_user, require_permission
 from app.interfaces.api.v1.error_handlers import map_repository_error
 from app.interfaces.api.v1.schemas import UserCreate, UserResponse, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["Users"], dependencies=[Depends(get_current_user)])
 
-# El listado y la consulta de usuarios exponen datos sensibles: solo Admin y
-# Coordinador. La gestión del ciclo de vida (alta, activación, desactivación) es
-# función exclusivamente administrativa.
-require_staff = require_roles(Role.ADMIN, Role.COORDINADOR)
-require_admin = require_roles(Role.ADMIN)
+# Quién puede crear a quién (paso 13). Keyea por PERMISO del que llama y NOMBRE
+# del rol destino, porque los roles son dinámicos (los crea el admin).
+ALLOWED_TARGET_ROLES = {
+    "USER_CRUD": {"Coordinador"},
+    "TEACHER_CRUD": {"Profesor", "Auditor"},
+}
 
 
 @router.get("", response_model=list[UserResponse])
 def list_users(
     db: Session = Depends(db_session),
-    _=Depends(require_staff),
+    current_user=Depends(get_current_user),
 ) -> list[UserResponse]:
+    perms = getattr(current_user, "permissions", [])
+    if "USER_CRUD" not in perms and "TEACHER_CRUD" not in perms:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions.")
     users = UserService(UserRepository(db)).list()
     return [UserResponse.from_model(user) for user in users]
 
@@ -36,12 +41,9 @@ def get_user(
     db: Session = Depends(db_session),
     current_user=Depends(get_current_user),
 ) -> UserResponse:
-    # Admin y Coordinador pueden ver cualquier perfil; el resto solo el propio.
-    if current_user.role_id not in (Role.ADMIN, Role.COORDINADOR) and current_user.id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not allowed to view this user.",
-        )
+    perms = getattr(current_user, "permissions", [])
+    if "USER_CRUD" not in perms and "TEACHER_CRUD" not in perms and current_user.id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to view this user.")
     try:
         user = UserService(UserRepository(db)).get(user_id)
         return UserResponse.from_model(user)
@@ -53,18 +55,36 @@ def get_user(
 def create_user(
     payload: UserCreate,
     db: Session = Depends(db_session),
-    current_user=Depends(require_staff),
+    current_user=Depends(get_current_user),
 ) -> UserResponse:
-    # El alta de usuarios queda habilitada para Admin y Coordinador. Para evitar
-    # una escalada de privilegios, un Coordinador no puede crear cuentas con rol
-    # Admin: solo un Admin puede otorgar el rol administrador.
-    if current_user.role_id != Role.ADMIN and payload.role_id == Role.ADMIN:
+    perms = getattr(current_user, "permissions", [])
+    if "USER_CRUD" not in perms and "TEACHER_CRUD" not in perms:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions.")
+
+    target_role = RoleRepository(db).get_by_id(payload.role_id)
+    if not target_role:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="role_id inexistente")
+
+    allowed: set[str] = set()
+    for perm, roles in ALLOWED_TARGET_ROLES.items():
+        if perm in perms:
+            allowed |= roles
+    if target_role.name not in allowed:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only an administrator can create users with the Admin role.",
+            detail=f"No puede crear usuarios con el rol {target_role.name}",
         )
+
+    # program_id es obligatorio SOLO para Profesor; se ignora/rechaza para el resto.
+    if target_role.name == "Profesor" and not payload.program_id:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="program_id es obligatorio para Profesor")
+    if target_role.name != "Profesor" and payload.program_id:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Solo el Profesor pertenece a un programa")
+
+    data = payload.model_dump()
+    data["created_by"] = current_user.id
     try:
-        user = UserService(UserRepository(db)).create(payload.model_dump())
+        user = UserService(UserRepository(db)).create(data)
         return UserResponse.from_model(user)
     except (EntityAlreadyExistsError, EntityNotFoundError) as exc:
         raise map_repository_error(exc) from exc
@@ -75,12 +95,8 @@ def update_user(
     user_id: int,
     payload: UserUpdate,
     db: Session = Depends(db_session),
-    _=Depends(require_admin),
+    _=Depends(require_permission("TEACHER_CRUD")),
 ) -> UserResponse:
-    # La modificación de usuarios (incluidos rol y programa) es una función
-    # exclusivamente administrativa. Al exigir Admin para toda la operación se
-    # elimina cualquier vía de auto-promoción: un Coordinador o Docente no puede
-    # editarse a sí mismo para cambiar su role_id ni alterar a terceros.
     try:
         user = UserService(UserRepository(db)).update(user_id, payload.model_dump(exclude_unset=True))
         return UserResponse.from_model(user)
@@ -88,11 +104,43 @@ def update_user(
         raise map_repository_error(exc) from exc
 
 
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(
+    user_id: int,
+    db: Session = Depends(db_session),
+    _=Depends(require_permission("TEACHER_CRUD")),
+):
+    """Borra un profesor/auditor. Antes borra en cascada sus rúbricas en
+    Assesment_MS; si hay periodos cerrados -> 409; si el servicio no responde
+    -> 503 y no borra nada (paso 12)."""
+    repo = UserRepository(db)
+    if not repo.get_by_id(user_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+
+    import httpx
+
+    client = AssesmentMsClient()
+    try:
+        ok, closed = await client.delete_rubrics(evaluator_user_id=user_id)
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Servicio de valoraciones no disponible; no se borró nada",
+        ) from exc
+    if not ok:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Tiene valoraciones en periodos cerrados: {', '.join(closed)}",
+        )
+    repo.delete(user_id)
+    return None
+
+
 @router.patch("/{user_id}/activate", response_model=UserResponse)
 def activate_user(
     user_id: int,
     db: Session = Depends(db_session),
-    _=Depends(require_admin),
+    _=Depends(require_permission("TEACHER_CRUD")),
 ) -> UserResponse:
     try:
         user = UserService(UserRepository(db)).activate(user_id)
@@ -105,7 +153,7 @@ def activate_user(
 def deactivate_user(
     user_id: int,
     db: Session = Depends(db_session),
-    _=Depends(require_admin),
+    _=Depends(require_permission("TEACHER_CRUD")),
 ) -> UserResponse:
     try:
         user = UserService(UserRepository(db)).deactivate(user_id)

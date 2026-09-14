@@ -26,9 +26,16 @@ class AuthService:
         if not user.active:
             raise InactiveUserError("User is inactive.")
 
+        permissions = [rp.permission.code for rp in user.role.role_permissions]
         expires_delta = timedelta(minutes=self.settings.jwt_access_token_expire_minutes)
         return create_access_token(
             subject=str(user.id),
-            claims={"email": user.email, "role_id": user.role_id},
+            claims={
+                "email": user.email,
+                "role_id": user.role_id,
+                "role": user.role.name,
+                "program_id": user.program_id,   # None salvo Profesor; lo usa el alcance
+                "perms": permissions,
+            },
             expires_delta=expires_delta,
         )

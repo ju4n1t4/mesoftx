@@ -43,6 +43,10 @@ class RoleModel(Base):
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     description: Mapped[str | None] = mapped_column(String(255))
 
+    role_permissions: Mapped[list["RolePermissionModel"]] = relationship(
+        cascade="all, delete-orphan", lazy="selectin"
+    )
+
 
 class PermissionModel(Base):
     __tablename__ = "permissions"

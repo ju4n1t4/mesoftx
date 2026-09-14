@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 60
 
+    # Comunicación entre microservicios (paso 12).
+    assesment_ms_url: str = "http://assesment-ms:8002"
+    service_token: str = Field(..., min_length=1)
+
     cors_origins: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

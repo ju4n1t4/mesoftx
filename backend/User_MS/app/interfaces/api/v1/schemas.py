@@ -95,3 +95,135 @@ class UserResponse(BaseModel):
             accredited=user.accredited,
             created_at=user.created_at,
         )
+
+
+# ── Permisos ────────────────────────────────────────────────
+class PermissionResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+    description: str | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RolePermissionsUpdate(BaseModel):
+    permission_codes: list[str] = Field(default_factory=list)
+
+
+# ── College (facultad) ──────────────────────────────────────
+class CollegeCreate(BaseModel):
+    id: str = Field(..., max_length=3)
+    name: str = Field(..., max_length=255)
+
+
+class CollegeUpdate(BaseModel):
+    name: str | None = Field(default=None, max_length=255)
+
+
+class CollegeResponse(CollegeCreate):
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ── Program (programa académico) ────────────────────────────
+class ProgramCreate(BaseModel):
+    id: str = Field(..., max_length=3)
+    name: str = Field(..., max_length=255)
+    college_id: str = Field(..., max_length=3)
+    accredited: bool = False
+    accreditation_end_year: int | None = Field(default=None, ge=1900, le=2200)
+
+
+class ProgramUpdate(BaseModel):
+    name: str | None = Field(default=None, max_length=255)
+    college_id: str | None = Field(default=None, max_length=3)
+    accredited: bool | None = None
+    accreditation_end_year: int | None = Field(default=None, ge=1900, le=2200)
+
+
+class ProgramResponse(ProgramCreate):
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ── Periodo ─────────────────────────────────────────────────
+class PeriodCreate(BaseModel):
+    code: str = Field(..., max_length=6)
+
+
+class PeriodUpdate(BaseModel):
+    code: str | None = Field(default=None, max_length=6)
+
+
+class PeriodResponse(BaseModel):
+    id: int
+    code: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ── Materia (subject / NRC) ─────────────────────────────────
+class SubjectCreate(BaseModel):
+    nrc: int = Field(..., gt=0)
+    materia_curso: str = Field(..., max_length=25)
+    name: str = Field(..., max_length=255)
+    periods_id: int = Field(..., gt=0)
+    program_id: str = Field(..., max_length=3)
+
+
+class SubjectUpdate(BaseModel):
+    materia_curso: str | None = Field(default=None, max_length=25)
+    name: str | None = Field(default=None, max_length=255)
+    periods_id: int | None = Field(default=None, gt=0)
+    program_id: str | None = Field(default=None, max_length=3)
+
+
+class SubjectResponse(SubjectCreate):
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ── Asignación NRC → profesor ───────────────────────────────
+class TeacherSubjectCreate(BaseModel):
+    user_id: int = Field(..., gt=0)
+    subjects_id: int = Field(..., gt=0)
+
+
+class TeacherSubjectResponse(BaseModel):
+    id: int
+    user_id: int
+    subjects_id: int
+    assigned_by: int | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ── Estudiantes ─────────────────────────────────────────────
+class StudentResponse(BaseModel):
+    id: int
+    document_number: str
+    name: str
+    program_id: str
+    created_by: int | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class StudentUpdate(BaseModel):
+    """El coordinador puede corregir name y program_id, nunca document_number."""
+    name: str | None = Field(default=None, max_length=255)
+    program_id: str | None = Field(default=None, max_length=3)
+
+
+class StudentRow(BaseModel):
+    document_number: str = Field(..., max_length=25)
+    name: str = Field(..., max_length=255)
+
+
+class StudentUploadRequest(BaseModel):
+    students: list[StudentRow] = Field(..., min_length=1)
+
+
+class StudentUploadResult(BaseModel):
+    created: int
+    already_existed: int
+    enrolled: int
+
+
+# ── Batch interno (dashboards) ──────────────────────────────
+class SubjectsCountRequest(BaseModel):
+    nrcs: list[int] = Field(default_factory=list)

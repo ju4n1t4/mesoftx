@@ -1,6 +1,6 @@
 from typing import Any, TypeVar
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -91,9 +91,16 @@ class RoleRepository(SqlAlchemyRepository):
         role = self.get_by_id(role_id)
         if not role:
             return None
-        role.role_permissions = [
+        # Reemplazo del set de permisos. Hay que BORRAR las filas anteriores y
+        # forzar el flush ANTES de insertar las nuevas: si no, el ORM inserta
+        # antes de borrar en el mismo flush y viola uq_role_permission cuando el
+        # rol ya tenía permisos (p. ej. al reasignar). La restricción es correcta
+        # y se conserva; lo que se ordena es el flush dentro de la transacción.
+        self.db.execute(delete(RolePermissionModel).where(RolePermissionModel.role_id == role_id))
+        self.db.flush()
+        self.db.add_all(
             RolePermissionModel(role_id=role_id, permission_id=pid) for pid in permission_ids
-        ]
+        )
         return self._commit(role)
 
     def codes_for_role(self, role_id: int) -> list[str] | None:

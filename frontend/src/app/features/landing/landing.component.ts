@@ -76,7 +76,7 @@ import { RouterLink } from '@angular/router';
           <div class="feat">
             <div class="feat-icon orange"><i class="pi pi-users"></i></div>
             <h3>Gestión de roles</h3>
-            <p>Flujos diferenciados para docentes, coordinadores y evaluadores.</p>
+            <p>Flujos diferenciados para profesores, coordinadores y evaluadores.</p>
           </div>
           <div class="feat">
             <div class="feat-icon purple"><i class="pi pi-globe"></i></div>

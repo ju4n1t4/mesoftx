@@ -173,7 +173,7 @@ export class CoordinadorLayoutComponent {
   // El Administrativo y el Auditor tienen sus propios módulos (/admin, /auditor).
   navItems: NavItem[] = [
     { label: 'Dashboard',         icon: 'pi-home',         route: '/coordinador/dashboard' },
-    { label: 'Profesores',        icon: 'pi-users',        route: '/coordinador/docentes' },
+    { label: 'Profesores',        icon: 'pi-users',        route: '/coordinador/profesores' },
     { label: 'Programas',         icon: 'pi-building',     route: '/coordinador/programas' },
     { label: 'Materias',          icon: 'pi-book',         route: '/coordinador/materias' },
     { label: 'Asignar NRC',       icon: 'pi-sitemap',      route: '/coordinador/asignacion-materias' },

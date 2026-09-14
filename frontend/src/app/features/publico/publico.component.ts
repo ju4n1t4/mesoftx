@@ -85,7 +85,7 @@ interface OutcomeCard {
 
         <div class="pub-note">
           <i class="pi pi-info-circle"></i>
-          Esta vista es de acceso público y no requiere autenticación. Los datos son actualizados por los docentes de la facultad.
+          Esta vista es de acceso público y no requiere autenticación. Los datos son actualizados por los profesores de la facultad.
         </div>
       </div>
     </div>

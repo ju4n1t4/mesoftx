@@ -26,7 +26,7 @@ import {
         <div class="pb-left">
           <div class="pb-icon"><i class="pi pi-bolt"></i></div>
           <div>
-            <div class="pb-title">Lo que publiques aquí es exactamente la rúbrica que verá el docente al valorar.</div>
+            <div class="pb-title">Lo que publiques aquí es exactamente la rúbrica que verá el profesor al valorar.</div>
             <div class="pb-sub">Los cambios se reflejan en el módulo "Registrar valoración" del profesor.</div>
           </div>
         </div>
@@ -214,7 +214,7 @@ import {
     .u-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); }
     .u-role { font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 4px; }
     .u-role.coord   { color: var(--primary); background: rgba(255,165,2,0.1); }
-    .u-role.docente { color: var(--accent); background: rgba(124,58,237,0.1); }
+    .u-role.profesor { color: var(--accent); background: rgba(124,58,237,0.1); }
     .u-role.other   { color: var(--text-muted); background: var(--badge-draft-bg); }
 
     .empty-inline { font-size: 13px; color: var(--text-muted); padding: 12px 0; }
@@ -296,9 +296,9 @@ export class StudentOutcomesComponent implements OnInit {
   roleClass(roleId: number): string {
     const name = this.roleName(roleId).toLowerCase();
     if (name.includes('coord')) return 'coord';
-    if (name.includes('docente')) return 'docente';
+    if (name.includes('profesor')) return 'profesor';
     return 'other';
   }
 
-  publish() { alert('Cambios publicados. Los docentes ya pueden ver la rúbrica actualizada.'); }
+  publish() { alert('Cambios publicados. Los profesores ya pueden ver la rúbrica actualizada.'); }
 }

@@ -14,7 +14,7 @@ import { forkJoin, of } from 'rxjs';
     <div class="content-area">
       <div class="page-header">
         <h1>Valoraciones por curso</h1>
-        <p>Estado de las valoraciones registradas por los docentes.</p>
+        <p>Estado de las valoraciones registradas por los profesores.</p>
       </div>
 
       <div class="state-box" *ngIf="loading()"><i class="pi pi-spin pi-spinner"></i> Cargando valoraciones…</div>

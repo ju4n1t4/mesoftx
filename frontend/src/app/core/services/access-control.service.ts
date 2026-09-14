@@ -18,7 +18,7 @@ export interface AppModule {
 /** Módulos asignables de la plataforma. */
 export const APP_MODULES: AppModule[] = [
   { key: 'dashboard',        label: 'Dashboard',          description: 'Panel de indicadores y resumen general.',              route: '/coordinador/dashboard' },
-  { key: 'docentes',         label: 'Usuarios y docentes', description: 'Gestión de usuarios, roles y programa académico.',     route: '/coordinador/docentes' },
+  { key: 'profesores',       label: 'Profesores',          description: 'Gestión de profesores, roles y programa académico.',   route: '/coordinador/profesores' },
   { key: 'programas',        label: 'Programas',          description: 'Programas académicos en acreditación ABET.',           route: '/coordinador/programas' },
   { key: 'student-outcomes', label: 'Student Outcomes',   description: 'Parametrización de resultados de aprendizaje y rúbricas.', route: '/coordinador/student-outcomes' },
   { key: 'valoraciones',     label: 'Valoraciones',       description: 'Seguimiento y estado de las valoraciones registradas.', route: '/coordinador/valoraciones' },
@@ -47,7 +47,7 @@ export class AccessControlService {
     const all = (v: boolean) => Object.fromEntries(APP_MODULES.map(m => [m.key, v]));
     return {
       // El administrador gestiona accesos y usuarios.
-      Administrativo: { ...all(false), docentes: true, configuracion: true, asignacion: true },
+      Administrativo: { ...all(false), profesores: true, configuracion: true, asignacion: true },
       // El coordinador opera el proceso completo de acreditación.
       Coordinador: { ...all(true), asignacion: false },
       // El profesor no accede al panel de coordinación.

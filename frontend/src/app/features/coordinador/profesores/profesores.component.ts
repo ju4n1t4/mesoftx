@@ -7,14 +7,14 @@ import { UserApiService } from '../../../core/services/user-api.service';
 import { User, Role, UserCreate } from '../../../core/models/abet.models';
 
 @Component({
-  selector: 'app-docentes',
+  selector: 'app-profesores',
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
     <div class="content-area">
       <div class="page-header">
-        <h1>Docentes y roles</h1>
-        <p>Asigna roles, programa académico y supervisa el avance de valoración de cada docente.</p>
+        <h1>Profesores y roles</h1>
+        <p>Asigna roles, programa académico y supervisa el avance de valoración de cada profesor.</p>
       </div>
 
       <div class="notice" *ngIf="error()"><i class="pi pi-info-circle"></i> <span>{{ error() }}</span></div>
@@ -24,17 +24,17 @@ import { User, Role, UserCreate } from '../../../core/models/abet.models';
         <div class="toolbar">
           <div class="search-wrap">
             <i class="pi pi-search"></i>
-            <input [(ngModel)]="search" placeholder="Buscar docente…" class="search-input" />
+            <input [(ngModel)]="search" placeholder="Buscar profesor…" class="search-input" />
           </div>
           <button class="btn-new" (click)="openForm()">
-            <i class="pi pi-plus"></i> Nuevo docente
+            <i class="pi pi-plus"></i> Nuevo profesor
           </button>
         </div>
 
         <div class="empty-state" *ngIf="users().length === 0">
           <div class="empty-icon"><i class="pi pi-users"></i></div>
           <div class="empty-title">No hay usuarios registrados</div>
-          <div class="empty-desc">Crea el primer docente con el botón "Nuevo docente".</div>
+          <div class="empty-desc">Crea el primer profesor con el botón "Nuevo profesor".</div>
         </div>
 
         <div class="table-card" *ngIf="users().length > 0">
@@ -69,11 +69,11 @@ import { User, Role, UserCreate } from '../../../core/models/abet.models';
         </div>
       </ng-container>
 
-      <!-- ── Modal Nuevo docente ── -->
+      <!-- ── Modal Nuevo profesor ── -->
       <div class="modal-overlay" *ngIf="showForm()" (click)="closeForm()">
         <div class="modal" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h2>Nuevo docente</h2>
+            <h2>Nuevo profesor</h2>
             <button class="modal-close" (click)="closeForm()"><i class="pi pi-times"></i></button>
           </div>
 
@@ -101,14 +101,14 @@ import { User, Role, UserCreate } from '../../../core/models/abet.models';
               </div>
               <div class="form-field">
                 <label>Rol</label>
-                <input class="fc fc-locked" value="Docente" readonly />
-                <span class="field-hint">Los usuarios creados aquí se registran siempre con el rol Docente.</span>
+                <input class="fc fc-locked" value="Profesor" readonly />
+                <span class="field-hint">Los usuarios creados aquí se registran siempre con el rol Profesor.</span>
               </div>
               <!-- ⭐ Campo Programa -->
               <div class="form-field span-2">
                 <label>Programa académico <span class="req">*</span></label>
                 <select [(ngModel)]="form.career_id" class="fc">
-                  <option [ngValue]="0" disabled>Selecciona el programa del docente</option>
+                  <option [ngValue]="0" disabled>Selecciona el programa del profesor</option>
                   <!-- TODO fase 2: Program v13 no tiene 'code'; se castea a any. -->
                 <option *ngFor="let c of careers()" [ngValue]="c.id">{{ c.name }} ({{ $any(c).code }})</option>
                 </select>
@@ -125,7 +125,7 @@ import { User, Role, UserCreate } from '../../../core/models/abet.models';
             <button class="btn-cancel" (click)="closeForm()">Cancelar</button>
             <button class="btn-save" (click)="save()" [disabled]="saving()">
               <i class="pi pi-spin pi-spinner" *ngIf="saving()"></i>
-              {{ saving() ? 'Guardando…' : 'Crear docente' }}
+              {{ saving() ? 'Guardando…' : 'Crear profesor' }}
             </button>
           </div>
         </div>
@@ -215,7 +215,7 @@ import { User, Role, UserCreate } from '../../../core/models/abet.models';
     .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
   `]
 })
-export class DocentesComponent implements OnInit {
+export class ProfesoresComponent implements OnInit {
   loading = signal(true);
   error   = signal('');
   search  = '';
@@ -265,11 +265,15 @@ export class DocentesComponent implements OnInit {
 
   openForm() {
     this.form = this.emptyForm();
-    // Preselecciona el rol "Docente" si existe
-    // El rol siempre es Docente: es el único tipo de usuario que gestiona el
-    // coordinador. Se resuelve desde el catálogo o, en su defecto, el id 3.
-    const docente = this.roles().find(r => r.name.toLowerCase() === 'docente');
-    this.form.role_id = docente?.id ?? 3;
+    // El rol siempre es Profesor: es el único tipo de usuario que gestiona el
+    // coordinador desde esta pantalla. Se resuelve desde el catálogo de roles.
+    const profesor = this.roles().find(r => r.name.toLowerCase() === 'profesor');
+    if (!profesor) {
+      this.formError.set('No existe el rol "Profesor" en el sistema. Pide al administrador que lo cree antes de registrar profesores.');
+      this.showForm.set(false);
+      return;
+    }
+    this.form.role_id = profesor.id;
     this.formError.set('');
     this.showForm.set(true);
   }
@@ -282,7 +286,7 @@ export class DocentesComponent implements OnInit {
       return;
     }
     if (!this.form.role_id) { this.formError.set('Selecciona un rol.'); return; }
-    if (!this.form.career_id) { this.formError.set('Selecciona el programa académico del docente.'); return; }
+    if (!this.form.career_id) { this.formError.set('Selecciona el programa académico del profesor.'); return; }
     if (this.form.password.length < 8) { this.formError.set('La contraseña debe tener al menos 8 caracteres.'); return; }
 
     this.saving.set(true);
@@ -296,7 +300,7 @@ export class DocentesComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        this.formError.set(err?.error?.detail ?? 'No se pudo crear el docente. Revisa los datos e inténtalo de nuevo.');
+        this.formError.set(err?.error?.detail ?? 'No se pudo crear el profesor. Revisa los datos e inténtalo de nuevo.');
       },
     });
   }

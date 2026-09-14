@@ -2,9 +2,6 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserApiService } from '../../../core/services/user-api.service';
-// TODO fase 2: esta pantalla usaba Year/AcademicPeriod (modelo viejo) y los endpoints
-// getYears/createYear/getAcademicPeriods/createAcademicPeriod, eliminados en modelo v13.
-// Migrar a Period v13 (id, code). Solo se importa Period.
 import { Period } from '../../../core/models/abet.models';
 
 interface PeriodRow { code: string; name: string; semester: string; year: string; }
@@ -119,7 +116,6 @@ export class PeriodosComponent implements OnInit {
 
   newYear = ''; newPeriod = '';
 
-  // TODO fase 2: Year[] eliminado en modelo v13; se conserva solo la lista de Period v13.
   private periodList: Period[] = [];
 
   constructor(private users: UserApiService) {}
@@ -128,8 +124,7 @@ export class PeriodosComponent implements OnInit {
 
   private load(): void {
     this.loading.set(true);
-    // TODO fase 2: getAcademicPeriods()/getYears() eliminados en modelo v13.
-    // Se carga únicamente getPeriods() (Period con id/code).
+    // El modelo v13 tiene un único catálogo Period (id, code).
     this.users.getPeriods().subscribe({
       next: (periods) => {
         this.periodList = periods ?? [];
@@ -144,7 +139,7 @@ export class PeriodosComponent implements OnInit {
   }
 
   private mapRows(periods: Period[]): PeriodRow[] {
-    // TODO fase 2: Period v13 solo tiene code; año/semestre se derivan del code.
+    // Period v13 solo tiene code; el año y el semestre se derivan del código.
     return periods.map(p => {
       const code = p.code ?? '';
       const yearStr = code.slice(0, 4);
@@ -162,8 +157,7 @@ export class PeriodosComponent implements OnInit {
     }
     this.saving.set(true);
     const period = this.newPeriod.trim();
-    // TODO fase 2: createYear()/createAcademicPeriod() eliminados en modelo v13.
-    // El nuevo createPeriod({ code }) crea el Period directamente con el código año+semestre.
+    // createPeriod({ code }) crea el Period con el código año+semestre (ej. 202610).
     const code = `${yearNum}${period}`;
     this.users.createPeriod({ code }).subscribe({
       next: () => {

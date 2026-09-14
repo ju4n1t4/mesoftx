@@ -106,8 +106,8 @@ export const routes: Routes = [
         loadComponent: () => import('./features/coordinador/programacion/programacion.component').then(m => m.ProgramacionComponent),
       },
       {
-        path: 'docentes',
-        loadComponent: () => import('./features/coordinador/docentes/docentes.component').then(m => m.DocentesComponent),
+        path: 'profesores',
+        loadComponent: () => import('./features/coordinador/profesores/profesores.component').then(m => m.ProfesoresComponent),
       },
       {
         path: 'student-outcomes',

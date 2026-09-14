@@ -96,6 +96,12 @@ class RoleRepository(SqlAlchemyRepository):
         ]
         return self._commit(role)
 
+    def codes_for_role(self, role_id: int) -> list[str] | None:
+        role = self.get_by_id(role_id)
+        if not role:
+            return None
+        return [rp.permission.code for rp in role.role_permissions]
+
 
 class PermissionRepository(SqlAlchemyRepository):
     model = PermissionModel

@@ -115,9 +115,12 @@ Todos los usuarios comparten la misma contraseña inicial:
 
 | Rol | Correo | Contraseña |
 |---|---|---|
-| Administrador | `admin@example.com` | `Mesoftx2026!` |
-| Coordinador | `orueda741@unab.edu.co` | `Mesoftx2026!` |
-| Docente | `jramirez@unab.edu.co` | `Mesoftx2026!` |
+| Administrador | `admin@unab.edu.co` | `Mesoftx2026!` |
+
+> Con la base recién creada (bootstrap) el **único usuario es el Administrador**.
+> Los demás perfiles (Coordinador, Profesor, Auditor) y sus usuarios se crean
+> desde la aplicación. Todos los usuarios que se creen usan la misma contraseña
+> inicial `Mesoftx2026!` salvo que se indique otra al crearlos.
 
 > Reglas de autorización relevantes para la demo:
 > - **Admin y Coordinador** pueden crear usuarios desde la aplicación.

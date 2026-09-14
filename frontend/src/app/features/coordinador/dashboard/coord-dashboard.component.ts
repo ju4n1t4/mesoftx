@@ -31,9 +31,9 @@ import { forkJoin } from 'rxjs';
             <div class="kpi-sub">Registradas en el sistema</div>
           </div>
           <div class="kpi-card" style="border-top-color: var(--accent)">
-            <div class="kpi-label">Docentes</div>
+            <div class="kpi-label">Profesores</div>
             <div class="kpi-value">{{ teachersCount() }}</div>
-            <div class="kpi-sub">Usuarios con rol docente</div>
+            <div class="kpi-sub">Usuarios con rol Profesor</div>
           </div>
           <div class="kpi-card" style="border-top-color: var(--badge-open)">
             <div class="kpi-label">Student Outcomes</div>
@@ -70,10 +70,10 @@ import { forkJoin } from 'rxjs';
                 <span class="ab-sub">Editar Student Outcomes</span>
               </span>
             </a>
-            <a routerLink="/coordinador/docentes" class="action-btn">
+            <a routerLink="/coordinador/profesores" class="action-btn">
               <span class="ab-icon purple"><i class="pi pi-users"></i></span>
               <span class="ab-text">
-                <span class="ab-title">Gestionar docentes</span>
+                <span class="ab-title">Gestionar profesores</span>
                 <span class="ab-sub">Roles y asignaciones</span>
               </span>
             </a>
@@ -153,8 +153,8 @@ export class CoordDashboardComponent implements OnInit {
       next: (r) => {
         this.careers.set(r.careers);
         this.careersCount.set(r.careers.length);
-        const docenteRole = r.roles.find(x => x.name?.toLowerCase() === 'docente');
-        this.teachersCount.set(docenteRole ? r.users.filter(u => u.role_id === docenteRole.id).length : 0);
+        const profesorRole = r.roles.find(x => x.name?.toLowerCase() === 'profesor');
+        this.teachersCount.set(profesorRole ? r.users.filter(u => u.role_id === profesorRole.id).length : 0);
         this.sosCount.set(r.sos.length);
         this.resultsCount.set(r.results.length);
         this.loading.set(false);

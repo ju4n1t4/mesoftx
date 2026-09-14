@@ -256,9 +256,9 @@ export class ConfiguracionComponent implements OnInit {
   roles   = signal<Role[]>([]);
   careers = signal<any[]>([]);   // TODO fase 2: reemplazar por Program[] (modelo v13)
 
-  // Los docentes son del proceso ABET y los gestiona el coordinador desde su
-  // vista "Docentes". Aquí (gestión general) el rol Docente no es asignable.
-  assignableRoles = computed(() => this.roles().filter(r => r.name.toLowerCase() !== 'docente'));
+  // Los profesores son del proceso ABET y los gestiona el coordinador desde su
+  // vista "Profesores". Aquí (gestión general) el rol Profesor no es asignable.
+  assignableRoles = computed(() => this.roles().filter(r => r.name.toLowerCase() !== 'profesor'));
 
   // Estados de formularios
   showPeriodForm = signal(false);

@@ -144,6 +144,21 @@ export interface IndicatorsChart {
   items: ChartLevelItem[];
 }
 
+// ── Dashboards de avance (F2) ─────────────────────────────────────────────
+export interface ProgramProgressItem { program_id: string; expected: number; done: number; }
+export interface SoProgressItem      { so_id: string;       expected: number; done: number; }
+export interface TeacherProgressItem { evaluator_user_id: number; expected: number; done: number; }
+
+export interface DashboardProgramResponse {
+  period_id: number; expected: number; done: number; items: ProgramProgressItem[];
+}
+export interface DashboardSoResponse {
+  period_id: number; expected: number; items: SoProgressItem[];
+}
+export interface DashboardTeacherResponse {
+  period_id: number; expected: number; done: number; items: TeacherProgressItem[];
+}
+
 export interface StudentUploadRow {
   document_number: string;
   name: string;

@@ -8,6 +8,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   StudentOutcome, Performance, Level, Rubric, SoSchedule, ScheduleStatus, MyAssessment, IndicatorsChart,
+  DashboardProgramResponse, DashboardSoResponse, DashboardTeacherResponse,
 } from '../models/abet.models';
 
 @Injectable({ providedIn: 'root' })
@@ -25,13 +26,34 @@ export class AssesmentApiService {
   updateStudentOutcome(id: string, so: Partial<{ description: string; college_id: string }>): Observable<StudentOutcome> {
     return this.http.put<StudentOutcome>(`${this.base}/so/${id}`, so);
   }
+  deleteStudentOutcome(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/so/${id}`);
+  }
 
   // ── Indicadores y niveles ─────────────────────────────────
   getPerformances(soId: string): Observable<Performance[]> {
     return this.http.get<Performance[]>(`${this.base}/performance`, { params: { so_id: soId } });
   }
+  createPerformance(body: { id: string; description: string; so_id: string }): Observable<Performance> {
+    return this.http.post<Performance>(`${this.base}/performance`, body);
+  }
+  updatePerformance(id: string, body: { description: string }): Observable<Performance> {
+    return this.http.put<Performance>(`${this.base}/performance/${id}`, body);
+  }
+  deletePerformance(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/performance/${id}`);
+  }
   getLevels(performanceId: string): Observable<Level[]> {
     return this.http.get<Level[]>(`${this.base}/performance/${performanceId}/levels`);
+  }
+  createLevel(body: { id: string; description: string; rank: number; performance_id: string }): Observable<Level> {
+    return this.http.post<Level>(`${this.base}/level`, body);
+  }
+  updateLevel(id: string, body: { description: string }): Observable<Level> {
+    return this.http.put<Level>(`${this.base}/level/${id}`, body);
+  }
+  deleteLevel(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/level/${id}`);
   }
 
   // ── Programación de Student Outcomes ──────────────────────
@@ -79,5 +101,16 @@ export class AssesmentApiService {
   // ── Gráfica de indicadores (dashboards / auditor) ─────────
   getIndicatorsChart(periodId: number): Observable<IndicatorsChart> {
     return this.http.get<IndicatorsChart>(`${this.base}/indicators/chart`, { params: { period_id: String(periodId) } });
+  }
+
+  // ── Dashboards de avance (F2) ─────────────────────────────
+  getDashboardProgram(periodId: number): Observable<DashboardProgramResponse> {
+    return this.http.get<DashboardProgramResponse>(`${this.base}/dashboard/program`, { params: { period_id: String(periodId) } });
+  }
+  getDashboardSo(periodId: number): Observable<DashboardSoResponse> {
+    return this.http.get<DashboardSoResponse>(`${this.base}/dashboard/so`, { params: { period_id: String(periodId) } });
+  }
+  getDashboardTeacher(periodId: number): Observable<DashboardTeacherResponse> {
+    return this.http.get<DashboardTeacherResponse>(`${this.base}/dashboard/teacher`, { params: { period_id: String(periodId) } });
   }
 }

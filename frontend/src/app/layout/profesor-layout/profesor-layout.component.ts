@@ -6,7 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 interface NavItem { label: string; icon: string; route: string; }
 
 @Component({
-  selector: 'app-docente-layout',
+  selector: 'app-profesor-layout',
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
   template: `
@@ -24,7 +24,7 @@ interface NavItem { label: string; icon: string; route: string; }
           <div class="profile-avatar">{{ initial() }}</div>
           <div class="profile-info">
             <span class="profile-name">{{ fullName() }}</span>
-            <span class="profile-role">DOCENTE</span>
+            <span class="profile-role">PROFESOR</span>
           </div>
         </div>
 
@@ -163,20 +163,18 @@ interface NavItem { label: string; icon: string; route: string; }
     .page-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
   `]
 })
-export class DocenteLayoutComponent {
+export class ProfesorLayoutComponent {
 
   navItems: (NavItem & { exact?: boolean })[] = [
-    { label: 'Inicio · Acreditación', icon: 'pi-globe',            route: '/docente/inicio',        exact: true  },
-    { label: 'Dashboard',             icon: 'pi-home',             route: '/docente/dashboard',     exact: false },
-    { label: 'Registrar valoración',  icon: 'pi-check-square',     route: '/docente/valoraciones',  exact: false },
-    { label: 'Mis estudiantes',       icon: 'pi-users',            route: '/docente/mis-estudiantes', exact: false },
-    { label: 'Mis indicadores',       icon: 'pi-chart-line',       route: '/docente/indicadores',   exact: false },
-    { label: 'Ayuda y soporte',       icon: 'pi-question-circle',  route: '/docente/soporte',       exact: false },
+    { label: 'Mis cursos',            icon: 'pi-book',             route: '/profesor/mis-cursos',   exact: false },
+    { label: 'Valorar',               icon: 'pi-check-square',     route: '/profesor/valorar',      exact: false },
+    { label: 'Mis indicadores',       icon: 'pi-chart-line',       route: '/profesor/indicadores',   exact: false },
+    { label: 'Inicio · Acreditación', icon: 'pi-globe',            route: '/profesor/inicio',        exact: true  },
+    { label: 'Ayuda y soporte',       icon: 'pi-question-circle',  route: '/profesor/soporte',       exact: false },
   ];
 
   constructor(private auth: AuthService) {}
-  // TODO fase 2: CurrentUser v13 no tiene surname; se castea a any.
-  fullName() { return `Prof. ${this.auth.user()?.name ?? ''} ${(this.auth.user() as any)?.surname ?? ''}`.trim(); }
-  initial()  { return (this.auth.user()?.name?.[0] ?? 'D').toUpperCase(); }
+  fullName() { return this.auth.user()?.name?.trim() || 'Profesor'; }
+  initial()  { return (this.auth.user()?.name?.[0] ?? 'P').toUpperCase(); }
   logout()   { this.auth.logout(); }
 }

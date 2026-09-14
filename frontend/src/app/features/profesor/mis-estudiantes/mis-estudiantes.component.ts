@@ -95,7 +95,7 @@ const STUDENTS_KEY = 'mesoftx_students';
         </table>
 
         <div class="list-footer">
-          <a routerLink="/docente/valoraciones/registrar" class="btn-rubric">
+          <a routerLink="/profesor/valoraciones/registrar" class="btn-rubric">
             Ir a valorar con la rúbrica →
           </a>
         </div>

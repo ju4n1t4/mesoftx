@@ -9,7 +9,7 @@ import { StudentOutcome } from '../../../core/models/abet.models';
 import { of } from 'rxjs';
 
 @Component({
-  selector: 'app-docente-dashboard',
+  selector: 'app-profesor-dashboard',
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
@@ -46,7 +46,7 @@ import { of } from 'rxjs';
       <!-- Mis cursos activos -->
       <div class="section-header">
         <h2>Mis cursos activos</h2>
-        <a routerLink="/docente/valoraciones" class="ver-todos">Ver todos →</a>
+        <a routerLink="/profesor/valoraciones" class="ver-todos">Ver todos →</a>
       </div>
 
       <div class="state-box" *ngIf="loading()">
@@ -71,7 +71,7 @@ import { of } from 'rxjs';
             <span class="cc-code">{{ c.code }}</span>
           </div>
           <div class="cc-name">{{ c.name }}</div>
-          <a [routerLink]="['/docente/valoraciones/registrar']" class="cc-link">
+          <a [routerLink]="['/profesor/valoraciones/registrar']" class="cc-link">
             Registrar valoración →
           </a>
         </div>
@@ -134,7 +134,7 @@ import { of } from 'rxjs';
     .empty-desc  { font-size: 13px; color: var(--text-muted); max-width: 420px; margin: 0 auto; line-height: 1.6; }
   `]
 })
-export class DocenteDashboardComponent implements OnInit {
+export class ProfesorDashboardComponent implements OnInit {
   loading = signal(true);
   error   = signal<string | null>(null);
   outcomes = signal<StudentOutcome[]>([]);

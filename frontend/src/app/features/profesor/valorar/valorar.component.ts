@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+﻿import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -34,7 +34,7 @@ interface IndicatorRow {
     <p-toast></p-toast>
     <div class="content-area">
       <div class="page-header">
-        <h1>Valorar (rúbrica)</h1>
+        <h1>Valorar (rÃºbrica)</h1>
         <p>Registra las valoraciones de tus estudiantes en los Student Outcomes abiertos.</p>
       </div>
 
@@ -42,12 +42,12 @@ interface IndicatorRow {
         <p-progressSpinner strokeWidth="4" [style]="{ width: '40px', height: '40px' }"></p-progressSpinner>
       </div>
 
-      <!-- Paso 1: qué valorar -->
+      <!-- Paso 1: quÃ© valorar -->
       <ng-container *ngIf="!loading()">
         <div class="step" *ngIf="!assessment()">
-          <div class="step-title">1 · ¿Qué vas a valorar?</div>
+          <div class="step-title">1 Â· Â¿QuÃ© vas a valorar?</div>
           <div class="empty-box" *ngIf="assessments().length === 0">
-            No tienes valoraciones pendientes. El coordinador aún no ha abierto ningún student outcome para tus cursos.
+            No tienes valoraciones pendientes. El coordinador aÃºn no ha abierto ningÃºn student outcome para tus cursos.
           </div>
           <div class="cards" *ngIf="assessments().length > 0">
             <button class="ass-card" *ngFor="let a of assessments()" (click)="pickAssessment(a)">
@@ -58,12 +58,12 @@ interface IndicatorRow {
           </div>
         </div>
 
-        <!-- Paso 2: a quién -->
+        <!-- Paso 2: a quiÃ©n -->
         <div class="step" *ngIf="assessment() && !student()">
-          <div class="step-title">2 · ¿A quién?
+          <div class="step-title">2 Â· Â¿A quiÃ©n?
             <button pButton type="button" label="Cambiar SO" icon="pi pi-arrow-left" class="p-button-text p-button-sm" (click)="reset()"></button>
           </div>
-          <div class="ctx">{{ assessment()!.so_id }} · NRC {{ assessment()!.nrc }}</div>
+          <div class="ctx">{{ assessment()!.so_id }} Â· NRC {{ assessment()!.nrc }}</div>
           <p-table [value]="students()" styleClass="p-datatable-sm" [rowHover]="true">
             <ng-template pTemplate="header"><tr><th>Documento</th><th>Nombre</th><th style="width:8rem"></th></tr></ng-template>
             <ng-template pTemplate="body" let-s>
@@ -77,12 +77,12 @@ interface IndicatorRow {
           </p-table>
         </div>
 
-        <!-- Paso 3: la rúbrica -->
+        <!-- Paso 3: la rÃºbrica -->
         <div class="step" *ngIf="assessment() && student()">
-          <div class="step-title">3 · Rúbrica
+          <div class="step-title">3 Â· RÃºbrica
             <button pButton type="button" label="Cambiar estudiante" icon="pi pi-arrow-left" class="p-button-text p-button-sm" (click)="backToStudents()"></button>
           </div>
-          <div class="ctx">{{ assessment()!.so_id }} · NRC {{ assessment()!.nrc }} · {{ student()!.name }}</div>
+          <div class="ctx">{{ assessment()!.so_id }} Â· NRC {{ assessment()!.nrc }} Â· {{ student()!.name }}</div>
 
           <div class="indicator" *ngFor="let ind of indicators(); let i = index">
             <div class="ind-head">
@@ -96,7 +96,7 @@ interface IndicatorRow {
           </div>
 
           <div class="save-bar">
-            <button pButton type="button" [label]="saving() ? 'Guardando…' : 'Guardar valoración'"
+            <button pButton type="button" [label]="saving() ? 'Guardandoâ€¦' : 'Guardar valoraciÃ³n'"
                     icon="pi pi-save" [disabled]="!canSave() || saving()" (click)="save()"></button>
           </div>
         </div>
@@ -182,7 +182,7 @@ export class ValorarComponent implements OnInit {
     this.studentSig.set(s);
     const a = this.assessmentSig();
     if (!a) return;
-    // Indicadores del SO + niveles (ordenados por rank) + rúbricas ya hechas.
+    // Indicadores del SO + niveles (ordenados por rank) + rÃºbricas ya hechas.
     forkJoin({
       performances: this.assesment.getPerformances(a.so_id),
       rubrics: this.assesment.getRubrics({ schedule_id: a.schedule_id }),
@@ -222,7 +222,7 @@ export class ValorarComponent implements OnInit {
   save(): void {
     const a = this.assessmentSig(); const s = this.studentSig();
     if (!a || !s) return;
-    // Un POST por indicador con nivel elegido que aún no esté valorado.
+    // Un POST por indicador con nivel elegido que aÃºn no estÃ© valorado.
     const toSave = this.indicators()
       .map((ind, i) => ({ ind, levelId: this.levelsForm.at(i)?.value ?? null }))
       .filter(x => x.levelId != null && !x.ind.alreadyRated);
@@ -237,7 +237,7 @@ export class ValorarComponent implements OnInit {
       const okIds = results.filter(r => r.ok).map(r => r.id);
       const failed = results.filter(r => !r.ok);
       if (okIds.length > 0) this.messageService.add({ severity: 'success', summary: 'Guardado', detail: `Indicadores guardados: ${okIds.join(', ')}` });
-      for (const f of failed) this.messageService.add({ severity: 'error', summary: `No se guardó ${f.id}`, detail: f.detail ?? 'Error' });
+      for (const f of failed) this.messageService.add({ severity: 'error', summary: `No se guardÃ³ ${f.id}`, detail: f.detail ?? 'Error' });
       // Guardado parcial: refrescamos el estado real desde el backend.
       this.pickStudent(s);
     };
@@ -254,7 +254,7 @@ export class ValorarComponent implements OnInit {
         error: (e: HttpErrorResponse) => {
           const detail = typeof e.error?.detail === 'string' ? e.error.detail : `Error ${e.status}`;
           results.push({ id: ind.performance.id, ok: false, detail });
-          // Si el periodo se cerró mientras valoraba, recargar lo que toca.
+          // Si el periodo se cerrÃ³ mientras valoraba, recargar lo que toca.
           if (e.status === 409 && detail.includes('cerrado')) this.loadAssessments();
           finish();
         },
@@ -266,7 +266,7 @@ export class ValorarComponent implements OnInit {
     let detail: string;
     if (err.status === 503) detail = 'Servicio no disponible, intenta en unos segundos';
     else if (err.status === 404) detail = 'No encontrado';
-    else detail = typeof err.error?.detail === 'string' ? err.error.detail : 'Ocurrió un error inesperado';
+    else detail = typeof err.error?.detail === 'string' ? err.error.detail : 'OcurriÃ³ un error inesperado';
     this.messageService.add({ severity: 'error', summary: `Error ${err.status}`, detail });
   }
 }

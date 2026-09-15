@@ -36,7 +36,7 @@ import { Subject, Period, Program } from '../../../core/models/abet.models';
       </div>
 
       <div class="toolbar">
-        <p-select
+        <p-select appendTo="body"
           [options]="periodOptions()"
           [formControl]="periodFilter"
           optionLabel="label" optionValue="value"
@@ -103,11 +103,11 @@ import { Subject, Period, Program } from '../../../core/models/abet.models';
           <small class="err" *ngIf="showErr('name')">Requerido, máx 255 caracteres.</small>
         </label>
         <label>Periodo
-          <p-select formControlName="periods_id" [options]="periodOptions()" optionLabel="label" optionValue="value" placeholder="Selecciona un periodo"></p-select>
+          <p-select appendTo="body" formControlName="periods_id" [options]="periodOptions()" optionLabel="label" optionValue="value" placeholder="Selecciona un periodo"></p-select>
           <small class="err" *ngIf="showErr('periods_id')">Selecciona un periodo.</small>
         </label>
         <label>Programa
-          <p-select formControlName="program_id" [options]="programOptions()" optionLabel="label" optionValue="value" placeholder="Selecciona un programa"></p-select>
+          <p-select appendTo="body" formControlName="program_id" [options]="programOptions()" optionLabel="label" optionValue="value" placeholder="Selecciona un programa"></p-select>
           <small class="err" *ngIf="showErr('program_id')">Selecciona un programa.</small>
         </label>
       </form>

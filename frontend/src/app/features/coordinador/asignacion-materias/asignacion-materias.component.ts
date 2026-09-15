@@ -68,7 +68,7 @@ import { User, Subject, TeacherSubjectDetail, Role } from '../../../core/models/
             </div>
 
             <div class="add-row">
-              <p-multiSelect
+              <p-multiSelect appendTo="body"
                 [options]="addableOptions()"
                 [formControl]="toAdd"
                 optionLabel="label" optionValue="value"

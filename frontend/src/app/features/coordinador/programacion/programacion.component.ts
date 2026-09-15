@@ -46,7 +46,7 @@ interface ScheduleRow extends SoSchedule {
       </div>
 
       <div class="toolbar">
-        <p-select [options]="periodOptions()" [formControl]="periodCtrl"
+        <p-select appendTo="body" [options]="periodOptions()" [formControl]="periodCtrl"
                   optionLabel="label" optionValue="value"
                   placeholder="Selecciona un periodo" styleClass="filter-select"></p-select>
         <button pButton type="button" label="Programar SO" icon="pi pi-plus"
@@ -108,7 +108,7 @@ interface ScheduleRow extends SoSchedule {
     <p-dialog [(visible)]="programVisible" [modal]="true" [style]="{ width: '440px' }" header="Programar Student Outcome">
       <div class="dialog-form">
         <label>Student Outcome
-          <p-select [options]="soOptions()" [formControl]="soCtrl" optionLabel="label" optionValue="value" placeholder="Selecciona un SO"></p-select>
+          <p-select appendTo="body" [options]="soOptions()" [formControl]="soCtrl" optionLabel="label" optionValue="value" placeholder="Selecciona un SO"></p-select>
         </label>
       </div>
       <ng-template pTemplate="footer">
@@ -121,7 +121,7 @@ interface ScheduleRow extends SoSchedule {
     <p-dialog [(visible)]="nrcVisible" [modal]="true" [style]="{ width: '520px' }" header="Materias (NRC) que valoran este SO">
       <div class="dialog-form">
         <label>Materias del periodo
-          <p-multiSelect [options]="periodSubjectOptions()" [formControl]="nrcCtrl"
+          <p-multiSelect appendTo="body" [options]="periodSubjectOptions()" [formControl]="nrcCtrl"
                          optionLabel="label" optionValue="value" display="chip"
                          placeholder="Selecciona los NRC"></p-multiSelect>
         </label>

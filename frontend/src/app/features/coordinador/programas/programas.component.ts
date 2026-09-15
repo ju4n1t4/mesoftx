@@ -104,7 +104,7 @@ interface ProgramView extends Program { collegeName: string; }
           <small class="err" *ngIf="showErr('name')">Nombre requerido.</small>
         </label>
         <label>Facultad
-          <p-select formControlName="college_id" [options]="collegeOptions()" optionLabel="label" optionValue="value" placeholder="Selecciona una facultad"></p-select>
+          <p-select appendTo="body" formControlName="college_id" [options]="collegeOptions()" optionLabel="label" optionValue="value" placeholder="Selecciona una facultad"></p-select>
           <small class="err" *ngIf="showErr('college_id')">Selecciona una facultad.</small>
         </label>
         <label class="check-row">

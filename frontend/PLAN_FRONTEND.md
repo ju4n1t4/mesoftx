@@ -45,7 +45,6 @@ Leyenda: ✅ hecho · 🔄 en revisión/ajuste · ⬜ pendiente
 | Valoraciones | `/coordinador/valoraciones` | ✅ stats + tabla estados |
 | Configuración | `/coordinador/configuracion` | ✅ 4 bloques |
 | Auditoría | `/coordinador/auditoria` | 🔄 existe, revisar vs diseño |
-| Informes (Power BI) | `/coordinador/informes` | 🔄 contenedor placeholder |
 | Periodos | `/coordinador/periodos` | 🔄 existe, revisar vs diseño |
 
 ## Vista Pública
@@ -57,11 +56,10 @@ Leyenda: ✅ hecho · 🔄 en revisión/ajuste · ⬜ pendiente
 
 ## Pendientes / Por revisar
 
-- [ ] Revisar Auditoría, Informes y Periodos del coordinador vs diseño (no estaban en el menú de 6 ítems)
+- [ ] Revisar Auditoría y Periodos del coordinador vs diseño
 - [ ] Integración real de valoraciones docente → backend (POST rúbrica)
 - [ ] Parseo real de CSV/Excel en "Mis estudiantes"
 - [ ] OAuth Google en login
-- [ ] Power BI Embedded en Informes
 
 ---
 

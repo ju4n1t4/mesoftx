@@ -35,13 +35,13 @@ interface ProfesorForm {
           </button>
         </div>
 
-        <div class="empty-state" *ngIf="users().length === 0">
+        <div class="empty-state" *ngIf="filtered().length === 0">
           <div class="empty-icon"><i class="pi pi-users"></i></div>
           <div class="empty-title">No hay usuarios registrados</div>
           <div class="empty-desc">Crea el primer profesor con el botón "Nuevo profesor".</div>
         </div>
 
-        <div class="table-card" *ngIf="users().length > 0">
+        <div class="table-card" *ngIf="filtered().length > 0">
           <table class="data-table">
             <thead>
               <tr>
@@ -261,9 +261,9 @@ export class ProfesoresComponent implements OnInit {
     this.form = this.emptyForm();
     // El rol siempre es Profesor: es el único tipo de usuario que gestiona el
     // coordinador desde esta pantalla. Se resuelve desde el catálogo de roles.
-    const profesor = this.roles().find(r => r.name.toLowerCase() === 'profesor');
+    const profesor = this.roles().find(r => this.isTeacherRole(r));
     if (!profesor) {
-      this.formError.set('No existe el rol "Profesor" en el sistema. Pide al administrador que lo cree antes de registrar profesores.');
+      this.formError.set('No existe un rol de profesor en el sistema. Pide al administrador que lo cree antes de registrar profesores.');
       this.showForm.set(false);
       return;
     }
@@ -308,13 +308,23 @@ export class ProfesoresComponent implements OnInit {
 
   filtered() {
     const q = this.search.toLowerCase().trim();
-    if (!q) return this.users();
-    return this.users().filter(u =>
+    const teachers = this.users().filter(u => this.isTeacherRoleId(u.role_id));
+    if (!q) return teachers;
+    return teachers.filter(u =>
       u.name.toLowerCase().includes(q) || (u.email ?? '').toLowerCase().includes(q)
     );
   }
 
   initials(u: User) { return (u.name?.[0] ?? '').toUpperCase(); }
-  roleName(id: number) { return this.roles().find(r => r.id === id)?.name ?? '—'; }
-  programName(id: string | null) { return this.programs().find(c => c.id === id)?.name ?? '—'; }
+  roleName(id: number) { return this.roles().find(r => r.id === id)?.name ?? '-'; }
+  programName(id: string | null) { return this.programs().find(c => c.id === id)?.name ?? '-'; }
+
+  private isTeacherRole(role: Role): boolean {
+    return role.name.trim().toLowerCase().startsWith('profesor');
+  }
+
+  private isTeacherRoleId(roleId: number): boolean {
+    const role = this.roles().find(r => r.id === roleId);
+    return role ? this.isTeacherRole(role) : false;
+  }
 }

@@ -51,7 +51,10 @@ def _service(repository_class: type[Any], db: Session) -> CatalogService:
 
 # ── Perfiles (roles) — admin: USER_CRUD ─────────────────────
 @router.get("/roles", response_model=list[RoleResponse])
-def list_roles(db: Session = Depends(db_session), _=Depends(require_permission("USER_CRUD"))):
+def list_roles(db: Session = Depends(db_session), current_user=Depends(get_current_user)):
+    permissions = set(getattr(current_user, "permissions", []))
+    if not ({"USER_CRUD", "TEACHER_CRUD"} & permissions):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions.")
     return _service(RoleRepository, db).list()
 
 
@@ -173,6 +176,14 @@ def delete_program(entity_id: str, db: Session = Depends(db_session), _=Depends(
 @router.get("/periods", response_model=list[PeriodResponse])
 def list_periods(db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
     return _service(PeriodRepository, db).list()
+
+
+@router.get("/periods/{entity_id}", response_model=PeriodResponse)
+def get_period(entity_id: int, db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
+    try:
+        return _service(PeriodRepository, db).get(entity_id)
+    except EntityNotFoundError as exc:
+        raise map_repository_error(exc) from exc
 
 
 @router.post("/periods", response_model=PeriodResponse, status_code=status.HTTP_201_CREATED)

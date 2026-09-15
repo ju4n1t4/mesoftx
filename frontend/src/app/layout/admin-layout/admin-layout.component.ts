@@ -72,6 +72,7 @@ export class AdminLayoutComponent {
   navItems: NavItem[] = [
     { label: 'Perfiles y permisos', icon: 'pi-shield', route: '/admin/perfiles' },
     { label: 'Usuarios',            icon: 'pi-users',  route: '/admin/usuarios' },
+    { label: 'Periodos',            icon: 'pi-calendar', route: '/admin/periodos' },
   ];
   constructor(private auth: AuthService) {}
   fullName() { return this.auth.user()?.name?.trim() || 'Administrador'; }

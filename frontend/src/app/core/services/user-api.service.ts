@@ -82,5 +82,8 @@ export class UserApiService {
 
   // ── Periodos ──────────────────────────────────────────────
   getPeriods(): Observable<Period[]> { return this.http.get<Period[]>(`${this.base}/periods`); }
+  getPeriod(id: number): Observable<Period> { return this.http.get<Period>(`${this.base}/periods/${id}`); }
   createPeriod(p: { code: string }): Observable<Period> { return this.http.post<Period>(`${this.base}/periods`, p); }
+  updatePeriod(id: number, p: { code?: string }): Observable<Period> { return this.http.put<Period>(`${this.base}/periods/${id}`, p); }
+  deletePeriod(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/periods/${id}`); }
 }

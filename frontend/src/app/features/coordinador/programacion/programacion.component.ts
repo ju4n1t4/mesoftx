@@ -162,19 +162,14 @@ export class ProgramacionComponent implements OnInit {
   private sos = signal<StudentOutcome[]>([]);
   private rowsSig = signal<ScheduleRow[]>([]);
   private nrcTarget = signal<ScheduleRow | null>(null);
+  private nrcSubjectOptions = signal<{ label: string; value: number }[]>([]);
 
   periodOptions = computed(() => this.periods().map(p => ({ label: p.code, value: p.id })));
   soOptions = computed(() => this.sos().map(s => ({ label: `${s.id} · ${s.description}`, value: s.id })));
   rows = computed(() => this.rowsSig());
 
   // Materias del mismo periodo de la programación abierta en el diálogo NRC.
-  periodSubjectOptions = computed(() => {
-    const pid = this.periodCtrl.value == null ? null : Number(this.periodCtrl.value);
-    if (pid == null) return [];
-    return this.allSubjects()
-      .filter(s => Number(s.periods_id) === pid)
-      .map(s => ({ label: `${s.nrc} · ${s.materia_curso} — ${s.name}`, value: s.nrc }));
-  });
+  periodSubjectOptions = computed(() => this.nrcSubjectOptions());
 
   constructor(
     private userApi: UserApiService,
@@ -241,19 +236,29 @@ export class ProgramacionComponent implements OnInit {
   openNrc(r: ScheduleRow): void {
     this.nrcTarget.set(r);
     this.nrcCtrl.reset([]);
+    this.nrcSubjectOptions.set([]);
     this.busy.set(true);
     forkJoin({
       subjects: this.userApi.getSubjects(),
       assigned: this.assesment.getScheduleSubjects(r.id),
     }).subscribe({
       next: ({ subjects, assigned }) => {
-        this.allSubjects.set(subjects ?? []);
+        const list = subjects ?? [];
+        this.allSubjects.set(list);
+        this.nrcSubjectOptions.set(this.subjectOptionsForPeriod(list, r.period_id));
         this.nrcCtrl.setValue(assigned ?? []);
         this.nrcVisible = true;
         this.busy.set(false);
       },
       error: e => { this.busy.set(false); this.showError(e); },
     });
+  }
+
+  private subjectOptionsForPeriod(subjects: Subject[], periodId: number): { label: string; value: number }[] {
+    const pid = Number(periodId);
+    return subjects
+      .filter(s => Number(s.periods_id) === pid)
+      .map(s => ({ label: `${s.nrc} · ${s.materia_curso} — ${s.name}`, value: s.nrc }));
   }
 
   saveNrc(): void {

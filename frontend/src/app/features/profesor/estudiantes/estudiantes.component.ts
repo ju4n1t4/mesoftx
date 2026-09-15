@@ -32,7 +32,7 @@ interface PreviewRow {
     <p-toast></p-toast>
     <div class="content-area">
       <div class="page-header">
-        <h1>Cargar estudiantes</h1>
+        <h1>Listado de Estudiantes</h1>
         <p *ngIf="subject() as s">{{ s.materia_curso }} · {{ s.name }} (NRC {{ s.nrc }})</p>
       </div>
 
@@ -48,10 +48,16 @@ interface PreviewRow {
         </div>
 
         <div class="upload-card">
-          <div class="uc-title">Archivo CSV (encabezados: <code>document_number,name</code>)</div>
-          <p-fileUpload mode="basic" chooseLabel="Elegir CSV" [auto]="true" accept=".csv"
-                        [customUpload]="true" (uploadHandler)="onFile($event)" (onSelect)="onFile($event)">
-          </p-fileUpload>
+          <div class="upload-row">
+            <div class="uc-title">Archivo CSV (encabezados: <code>document_number,name</code>)</div>
+            <div class="upload-actions">
+              <button pButton type="button" label="Descargar plantilla CSV" icon="pi pi-download"
+                      class="p-button-sm p-button-secondary" (click)="downloadTemplate()"></button>
+              <p-fileUpload mode="basic" chooseLabel="Elegir CSV" [auto]="true" accept=".csv"
+                            [customUpload]="true" (uploadHandler)="onFile($event)" (onSelect)="onFile($event)">
+              </p-fileUpload>
+            </div>
+          </div>
           <small class="parse-err" *ngIf="parseError()">{{ parseError() }}</small>
         </div>
 
@@ -92,8 +98,10 @@ interface PreviewRow {
     .block-msg, .explain { display: block; margin-bottom: 16px; }
     .link { color: var(--primary); font-weight: 600; }
     .explain { background: rgba(255,165,2,0.08); border: 1px solid rgba(255,165,2,0.25); border-radius: var(--radius-md); padding: 12px 16px; font-size: 13px; color: var(--text-muted); line-height: 1.5; }
-    .upload-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 16px; }
-    .uc-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+    .upload-card { width: 100%; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 16px; }
+    .upload-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .upload-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .uc-title { font-size: 13px; font-weight: 600; }
     .uc-title code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
     .parse-err { color: var(--badge-expired, #dc2626); display: block; margin-top: 8px; }
     .preview, .enrolled { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 16px; }
@@ -127,9 +135,16 @@ export class EstudiantesComponent implements OnInit {
   ngOnInit(): void {
     const nrc = Number(this.route.snapshot.paramMap.get('nrc'));
     this.nrc.set(nrc);
-    this.userApi.getSubject(nrc).subscribe({
-      next: s => this.subject.set(s),
-      error: e => this.showError(e),
+    this.userApi.getMySubjects().subscribe({
+      next: subjects => {
+        const assigned = (subjects ?? []).find(s => s.nrc === nrc);
+        if (assigned) this.subject.set(assigned);
+        else this.forbidden.set(true);
+      },
+      error: e => {
+        if (e.status === 403) this.forbidden.set(true);
+        else this.showError(e);
+      },
     });
     this.loadEnrolled();
   }
@@ -184,6 +199,17 @@ export class EstudiantesComponent implements OnInit {
 
   private splitRow(row: string): string[] {
     return row.split(/[,;]/).map(c => c.replace(/^"|"$/g, '').trim());
+  }
+
+  downloadTemplate(): void {
+    const csv = '\ufeffdocument_number,name\r\n';
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'plantilla_estudiantes.csv';
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   submit(): void {

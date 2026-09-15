@@ -51,7 +51,6 @@ interface NavItem { label: string; icon: string; route: string; }
         <div class="sys-status">
           <div class="sys-label">ESTADO DEL SISTEMA</div>
           <div class="sys-row"><span>Base de datos</span><span class="ok">Operativo</span></div>
-          <div class="sys-row"><span>Power BI</span><span class="ok">Conectado</span></div>
         </div>
       </aside>
 

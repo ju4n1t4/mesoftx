@@ -13,7 +13,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { UserApiService } from '../../../core/services/user-api.service';
-import { User, Subject, TeacherSubjectDetail } from '../../../core/models/abet.models';
+import { User, Subject, TeacherSubjectDetail, Role } from '../../../core/models/abet.models';
 
 @Component({
   selector: 'app-asignacion-materias',
@@ -131,7 +131,7 @@ export class AsignacionMateriasComponent implements OnInit {
   busy = signal(false);
 
   private users = signal<User[]>([]);
-  private profesorRoleId = signal<number | null>(null);
+  private profesorRoleIds = signal<Set<number>>(new Set());
   private allSubjects = signal<Subject[]>([]);
   private assignmentsSig = signal<TeacherSubjectDetail[]>([]);
   private selectedSig = signal<User | null>(null);
@@ -139,8 +139,8 @@ export class AsignacionMateriasComponent implements OnInit {
   toAdd = new FormControl<number[]>([], { nonNullable: true });
 
   teachers = computed(() => {
-    const rid = this.profesorRoleId();
-    return rid == null ? [] : this.users().filter(u => u.role_id === rid);
+    const roleIds = this.profesorRoleIds();
+    return this.users().filter(u => u.active && roleIds.has(u.role_id));
   });
   selected = computed(() => this.selectedSig());
   assignments = computed(() => this.assignmentsSig());
@@ -168,7 +168,7 @@ export class AsignacionMateriasComponent implements OnInit {
       next: ({ users, roles, subjects }) => {
         this.users.set(users ?? []);
         this.allSubjects.set(subjects ?? []);
-        this.profesorRoleId.set(roles?.find(r => r.name === 'Profesor')?.id ?? null);
+        this.profesorRoleIds.set(new Set((roles ?? []).filter(r => this.isTeacherRole(r)).map(r => r.id)));
         this.loading.set(false);
       },
       error: e => { this.showError(e); this.loading.set(false); },
@@ -236,5 +236,9 @@ export class AsignacionMateriasComponent implements OnInit {
     else if (err.status === 404) detail = 'No encontrado';
     else detail = typeof err.error?.detail === 'string' ? err.error.detail : 'Ocurrió un error inesperado';
     this.messageService.add({ severity: 'error', summary: `Error ${err.status}`, detail });
+  }
+
+  private isTeacherRole(role: Role): boolean {
+    return role.name.trim().toLowerCase().startsWith('profesor');
   }
 }

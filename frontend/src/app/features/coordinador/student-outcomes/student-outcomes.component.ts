@@ -131,7 +131,7 @@ interface SoNode { so: StudentOutcome; performances: PerfNode[]; }
             <small class="err" *ngIf="soForm.controls['description'].invalid && soForm.controls['description'].touched">Requerida (máx 255).</small>
           </label>
           <label>Facultad
-            <p-select formControlName="college_id" [options]="colleges()" optionLabel="name" optionValue="id"
+            <p-select formControlName="college_id" [options]="activeColleges()" optionLabel="name" optionValue="id"
                       placeholder="Selecciona la facultad" appendTo="body"></p-select>
             <small class="err" *ngIf="soForm.controls['college_id'].invalid && soForm.controls['college_id'].touched">Requerida.</small>
           </label>
@@ -242,6 +242,7 @@ export class StudentOutcomesComponent implements OnInit {
   saving = signal(false);
   tree = signal<SoNode[]>([]);
   colleges = signal<College[]>([]);
+  activeColleges = computed(() => this.colleges().filter(c => c.active));
 
   private editingSoId = signal<string | null>(null);
   private editingPerfId = signal<string | null>(null);
@@ -346,7 +347,7 @@ export class StudentOutcomesComponent implements OnInit {
       this.soForm.controls['id'].disable();
     } else {
       this.editingSoId.set(null);
-      this.soForm.reset({ id: `S.O.${this.tree().length + 1}`, description: '', college_id: '' });
+      this.soForm.reset({ id: this.nextSoId(), description: '', college_id: this.activeColleges()[0]?.id ?? '' });
       this.soForm.controls['id'].enable();
     }
     this.soDialog = true;
@@ -359,7 +360,7 @@ export class StudentOutcomesComponent implements OnInit {
     const editing = this.editingSoId();
     const req = editing
       ? this.assesment.updateStudentOutcome(editing, { description: raw.description, college_id: raw.college_id })
-      : this.assesment.createStudentOutcome({ id: raw.id, description: raw.description, college_id: raw.college_id });
+      : this.assesment.createStudentOutcome({ id: String(raw.id).trim().toUpperCase(), description: raw.description, college_id: raw.college_id });
     req.subscribe({
       next: () => {
         this.saving.set(false);
@@ -369,6 +370,13 @@ export class StudentOutcomesComponent implements OnInit {
       },
       error: e => { this.saving.set(false); this.showError(e); },
     });
+  }
+
+  private nextSoId(): string {
+    const used = new Set(this.tree().map(node => node.so.id.trim().toUpperCase()));
+    let i = this.tree().length + 1;
+    while (used.has(`S.O.${i}`)) i++;
+    return `S.O.${i}`;
   }
 
   confirmDeleteSo(node: SoNode): void {

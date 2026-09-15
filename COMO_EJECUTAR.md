@@ -109,6 +109,19 @@ curl http://localhost:8002/health
 
 ## 4. Levantar el frontend
 
+### Opcion A: Docker
+
+```bash
+cd /Users/julianaramirezarenas/Documents/UNIR/TFM/mesoftx/deployment/frontend
+docker compose up -d --build
+```
+
+Abre **http://localhost:8083**. El Nginx del contenedor enruta
+`/user-api/v1` a `user-ms:8001/api/v1` y `/assesment-api/v1` a
+`assesment-ms:8002/api/v1` dentro de `mesoftx-network`.
+
+### Opcion B: Angular dev server
+
 ```bash
 cd /Users/julianaramirezarenas/Documents/UNIR/TFM/mesoftx/frontend
 npm install

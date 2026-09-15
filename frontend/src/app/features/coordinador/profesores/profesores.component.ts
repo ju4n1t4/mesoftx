@@ -18,7 +18,7 @@ interface ProfesorForm {
     <div class="content-area">
       <div class="page-header">
         <h1>Profesores y roles</h1>
-        <p>Asigna roles, programa acadÃ©mico y supervisa el avance de valoraciÃ³n de cada profesor.</p>
+        <p>Asigna roles, programa académico y supervisa el avance de valoración de cada profesor.</p>
       </div>
 
       <div class="notice" *ngIf="error()"><i class="pi pi-info-circle"></i> <span>{{ error() }}</span></div>
@@ -28,7 +28,7 @@ interface ProfesorForm {
         <div class="toolbar">
           <div class="search-wrap">
             <i class="pi pi-search"></i>
-            <input [(ngModel)]="search" placeholder="Buscar profesorâ€¦" class="search-input" />
+            <input [(ngModel)]="search" placeholder="Buscar profesor..." class="search-input" />
           </div>
           <button class="btn-new" (click)="openForm()">
             <i class="pi pi-plus"></i> Nuevo profesor
@@ -38,7 +38,7 @@ interface ProfesorForm {
         <div class="empty-state" *ngIf="filtered().length === 0">
           <div class="empty-icon"><i class="pi pi-users"></i></div>
           <div class="empty-title">No hay usuarios registrados</div>
-          <div class="empty-desc">Crea el primer profesor con el botÃ³n "Nuevo profesor".</div>
+          <div class="empty-desc">Crea el primer profesor con el botón "Nuevo profesor".</div>
         </div>
 
         <div class="table-card" *ngIf="filtered().length > 0">
@@ -46,7 +46,7 @@ interface ProfesorForm {
             <thead>
               <tr>
                 <th>Usuario</th>
-                <th>CÃ³digo</th>
+                <th>Código</th>
                 <th>Correo</th>
                 <th>Programa</th>
                 <th>Rol</th>
@@ -78,7 +78,7 @@ interface ProfesorForm {
         </div>
       </ng-container>
 
-      <!-- â”€â”€ Modal Nuevo profesor â”€â”€ -->
+      <!-- Modal Nuevo profesor -->
       <div class="modal-overlay" *ngIf="showForm()" (click)="closeForm()">
         <div class="modal" (click)="$event.stopPropagation()">
           <div class="modal-header">
@@ -90,7 +90,7 @@ interface ProfesorForm {
             <div class="form-grid">
               <div class="form-field span-2">
                 <label>Nombre completo</label>
-                <input [(ngModel)]="form.name" class="fc" placeholder="Juliana RamÃ­rez" />
+                <input [(ngModel)]="form.name" class="fc" placeholder="Juliana Ramírez" />
               </div>
               <div class="form-field">
                 <label>Documento</label>
@@ -101,22 +101,22 @@ interface ProfesorForm {
                 <input [(ngModel)]="form.email" type="email" class="fc" placeholder="jramirez@unab.edu.co" />
               </div>
               <div class="form-field">
-                <label>ContraseÃ±a</label>
-                <input [(ngModel)]="form.password" type="password" class="fc" [placeholder]="editing() ? 'Dejar vacia para conservarla' : 'Minimo 8 caracteres'" />
+                <label>Contraseña</label>
+                <input [(ngModel)]="form.password" type="password" class="fc" [placeholder]="editing() ? 'Dejar vacía para conservarla' : 'Mínimo 8 caracteres'" />
               </div>
               <div class="form-field">
                 <label>Rol</label>
                 <input class="fc fc-locked" value="Profesor" readonly />
-                <span class="field-hint">Los usuarios creados aquÃ­ se registran siempre con el rol Profesor.</span>
+                <span class="field-hint">Los usuarios creados aquí se registran siempre con el rol Profesor.</span>
               </div>
-              <!-- â­ Campo Programa -->
+              <!-- Campo Programa -->
               <div class="form-field span-2">
-                <label>Programa acadÃ©mico <span class="req">*</span></label>
+                <label>Programa académico <span class="req">*</span></label>
                 <select [(ngModel)]="form.program_id" class="fc">
                   <option value="" disabled>Selecciona el programa del profesor</option>
                   <option *ngFor="let c of programs()" [ngValue]="c.id">{{ c.name }} ({{ c.id }})</option>
                 </select>
-                <span class="field-hint">Identifica a quÃ© programa pertenece este profesor.</span>
+                <span class="field-hint">Identifica a qué programa pertenece este profesor.</span>
               </div>
               <div class="form-field span-2">
                 <label class="check-row">
@@ -268,7 +268,7 @@ export class ProfesoresComponent implements OnInit {
   }
 
   private showConnHint() {
-    this.error.set('Algunos catÃ¡logos requieren una sesiÃ³n autenticada. Inicia sesiÃ³n con tus credenciales para ver y gestionar usuarios.');
+    this.error.set('Algunos catálogos requieren una sesión autenticada. Inicia sesión con tus credenciales para ver y gestionar usuarios.');
   }
 
   private emptyForm(): ProfesorForm {

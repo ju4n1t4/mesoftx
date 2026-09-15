@@ -280,6 +280,14 @@ class DashboardRepository:
         )
         return [(str(a), int(b), int(c)) for a, b, c in self.db.execute(stmt).all()]
 
+    def scheduled_so_ids(self, period_id: int) -> list[str]:
+        stmt = (
+            select(SoScheduleModel.so_id)
+            .where(SoScheduleModel.period_id == period_id)
+            .order_by(SoScheduleModel.so_id)
+        )
+        return [str(so_id) for so_id in self.db.scalars(stmt).all()]
+
     def progress_by_so(self, period_id: int) -> list[tuple[str, int]]:
         stmt = (
             select(SoScheduleModel.so_id, func.count(RubricModel.id))

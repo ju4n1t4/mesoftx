@@ -82,11 +82,11 @@ interface TabData {
     <ng-template #tabTpl let-data let-unit="unit">
       <ng-container *ngIf="data as d">
         <!-- expected == 0 => sin programación -->
-        <div class="empty" *ngIf="d.totalExpected === 0">
+        <div class="empty" *ngIf="d.rows.length === 0">
           Sin programación en este periodo. Programa un student outcome y ábrelo para empezar a medir el avance.
         </div>
 
-        <ng-container *ngIf="d.totalExpected > 0">
+        <ng-container *ngIf="d.rows.length > 0">
           <div class="total-card">
             <div class="total-head">Avance del periodo</div>
             <div class="total-pct" [class]="pctClass(d.totalPct)">{{ d.totalPct }} %</div>

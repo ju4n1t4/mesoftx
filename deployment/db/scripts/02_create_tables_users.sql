@@ -3,7 +3,8 @@
 -- Facultad. Ej: ING = Facultad de Ingeniería
 CREATE TABLE college (
     id      varchar(3)   PRIMARY KEY,
-    name    varchar(255) NOT NULL UNIQUE
+    name    varchar(255) NOT NULL UNIQUE,
+    active  boolean      NOT NULL DEFAULT true
 );
 
 -- Programa académico. Ej: ISI = Ingeniería de Sistemas
@@ -12,7 +13,8 @@ CREATE TABLE program (
     name                    varchar(255) NOT NULL UNIQUE,
     college_id              varchar(3)   NOT NULL REFERENCES college(id) ON DELETE CASCADE,
     accredited              boolean      NOT NULL DEFAULT false,
-    accreditation_end_year  integer
+    accreditation_end_year  integer,
+    active                  boolean      NOT NULL DEFAULT true
 );
 
 -- Periodo académico. Ej: 202610

@@ -44,7 +44,17 @@ import { Subject, Period, Program } from '../../../core/models/abet.models';
           [showClear]="true"
           styleClass="filter-select">
         </p-select>
-        <button pButton type="button" label="Nueva materia" icon="pi pi-plus" (click)="openCreate()"></button>
+        <button pButton type="button" label="Nueva materia" icon="pi pi-plus" (click)="openCreate()" [disabled]="periods().length === 0 || programs().length === 0"></button>
+      </div>
+
+      <div class="notice" *ngIf="!loading() && periods().length === 0">
+        <i class="pi pi-info-circle"></i>
+        <span>No hay periodos registrados. Crea un periodo antes de registrar materias.</span>
+      </div>
+
+      <div class="notice" *ngIf="!loading() && programs().length === 0">
+        <i class="pi pi-info-circle"></i>
+        <span>No hay programas activos registrados. Crea y activa un programa antes de registrar materias.</span>
       </div>
 
       <div class="loading-wrap" *ngIf="loading()">
@@ -109,6 +119,8 @@ import { Subject, Period, Program } from '../../../core/models/abet.models';
   `,
   styles: [`
     .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .notice { display: flex; align-items: center; gap: 10px; background: rgba(255,165,2,0.08); border: 1px solid rgba(255,165,2,0.25); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: var(--text-muted); }
+    .notice i { color: var(--primary); flex-shrink: 0; }
     .loading-wrap { display: flex; justify-content: center; padding: 48px; }
     .empty-cell { text-align: center; color: var(--text-muted); padding: 24px; }
     .dialog-form { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
@@ -125,14 +137,16 @@ export class MateriasComponent implements OnInit {
   periodFilter = new FormControl<number | null>(null);
 
   private subjects = signal<Subject[]>([]);
-  private periods = signal<Period[]>([]);
-  private programs = signal<Program[]>([]);
+  periods = signal<Period[]>([]);
+  programs = signal<Program[]>([]);
   private periodFilterValue = signal<number | null>(null);
 
   form: FormGroup;
 
   periodOptions = computed(() => this.periods().map(p => ({ label: p.code, value: p.id })));
-  programOptions = computed(() => this.programs().map(p => ({ label: `${p.id} · ${p.name}`, value: p.id })));
+  programOptions = computed(() => this.programs()
+    .filter(p => p.active || p.id === this.form?.getRawValue().program_id)
+    .map(p => ({ label: `${p.id} - ${p.name}${p.active ? '' : ' (inactivo)'}`, value: p.id })));
 
   filtered = computed(() => {
     const f = this.periodFilterValue();
@@ -157,7 +171,7 @@ export class MateriasComponent implements OnInit {
   ngOnInit(): void {
     this.periodFilter.valueChanges.subscribe(v => this.periodFilterValue.set(v ?? null));
     this.userApi.getPeriods().subscribe({ next: p => this.periods.set(p ?? []), error: e => this.showError(e) });
-    this.userApi.getPrograms().subscribe({ next: p => this.programs.set(p ?? []), error: e => this.showError(e) });
+    this.userApi.getPrograms().subscribe({ next: p => this.programs.set((p ?? []).filter(program => program.active)), error: e => this.showError(e) });
     this.reload();
   }
 

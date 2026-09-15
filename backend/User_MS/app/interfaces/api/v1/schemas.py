@@ -114,10 +114,12 @@ class RolePermissionsUpdate(BaseModel):
 class CollegeCreate(BaseModel):
     id: str = Field(..., max_length=3)
     name: str = Field(..., max_length=255)
+    active: bool = True
 
 
 class CollegeUpdate(BaseModel):
     name: str | None = Field(default=None, max_length=255)
+    active: bool | None = None
 
 
 class CollegeResponse(CollegeCreate):
@@ -131,6 +133,7 @@ class ProgramCreate(BaseModel):
     college_id: str = Field(..., max_length=3)
     accredited: bool = False
     accreditation_end_year: int | None = Field(default=None, ge=1900, le=2200)
+    active: bool = True
 
 
 class ProgramUpdate(BaseModel):
@@ -138,6 +141,7 @@ class ProgramUpdate(BaseModel):
     college_id: str | None = Field(default=None, max_length=3)
     accredited: bool | None = None
     accreditation_end_year: int | None = Field(default=None, ge=1900, le=2200)
+    active: bool | None = None
 
 
 class ProgramResponse(ProgramCreate):

@@ -122,6 +122,14 @@ def list_colleges(db: Session = Depends(db_session), _=Depends(require_permissio
     return _service(CollegeRepository, db).list()
 
 
+@router.get("/colleges/{entity_id}", response_model=CollegeResponse)
+def get_college(entity_id: str, db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
+    try:
+        return _service(CollegeRepository, db).get(entity_id)
+    except EntityNotFoundError as exc:
+        raise map_repository_error(exc) from exc
+
+
 @router.post("/colleges", response_model=CollegeResponse, status_code=status.HTTP_201_CREATED)
 def create_college(payload: CollegeCreate, db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
     try:
@@ -148,6 +156,14 @@ def delete_college(entity_id: str, db: Session = Depends(db_session), _=Depends(
 @router.get("/programs", response_model=list[ProgramResponse])
 def list_programs(db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
     return _service(ProgramRepository, db).list()
+
+
+@router.get("/programs/{entity_id}", response_model=ProgramResponse)
+def get_program(entity_id: str, db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
+    try:
+        return _service(ProgramRepository, db).get(entity_id)
+    except EntityNotFoundError as exc:
+        raise map_repository_error(exc) from exc
 
 
 @router.post("/programs", response_model=ProgramResponse, status_code=status.HTTP_201_CREATED)

@@ -17,8 +17,8 @@ export interface CurrentUser {
 export interface Role     { id: number; name: string; description?: string; }
 export interface Permission { id: number; code: string; name: string; description?: string | null; }
 export interface Period   { id: number; code: string; }
-export interface College  { id: string; name: string; }
-export interface Program  { id: string; name: string; college_id: string; accredited: boolean; accreditation_end_year?: number | null; }
+export interface College  { id: string; name: string; active: boolean; }
+export interface Program  { id: string; name: string; college_id: string; accredited: boolean; accreditation_end_year?: number | null; active: boolean; }
 export interface Subject  { nrc: number; materia_curso: string; name: string; periods_id: number; program_id: string; }
 
 export interface User {

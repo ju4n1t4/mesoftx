@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+﻿import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserApiService } from '../../../core/services/user-api.service';
@@ -7,7 +7,7 @@ import { User, Role, Program, UserCreate } from '../../../core/models/abet.model
 /** Datos del formulario de alta de profesor (modelo v13). */
 interface ProfesorForm {
   name: string; document_number: string; email: string; password: string;
-  role_id: number; program_id: string;
+  role_id: number; program_id: string; active: boolean;
 }
 
 @Component({
@@ -18,7 +18,7 @@ interface ProfesorForm {
     <div class="content-area">
       <div class="page-header">
         <h1>Profesores y roles</h1>
-        <p>Asigna roles, programa académico y supervisa el avance de valoración de cada profesor.</p>
+        <p>Asigna roles, programa acadÃ©mico y supervisa el avance de valoraciÃ³n de cada profesor.</p>
       </div>
 
       <div class="notice" *ngIf="error()"><i class="pi pi-info-circle"></i> <span>{{ error() }}</span></div>
@@ -28,7 +28,7 @@ interface ProfesorForm {
         <div class="toolbar">
           <div class="search-wrap">
             <i class="pi pi-search"></i>
-            <input [(ngModel)]="search" placeholder="Buscar profesor…" class="search-input" />
+            <input [(ngModel)]="search" placeholder="Buscar profesorâ€¦" class="search-input" />
           </div>
           <button class="btn-new" (click)="openForm()">
             <i class="pi pi-plus"></i> Nuevo profesor
@@ -38,7 +38,7 @@ interface ProfesorForm {
         <div class="empty-state" *ngIf="filtered().length === 0">
           <div class="empty-icon"><i class="pi pi-users"></i></div>
           <div class="empty-title">No hay usuarios registrados</div>
-          <div class="empty-desc">Crea el primer profesor con el botón "Nuevo profesor".</div>
+          <div class="empty-desc">Crea el primer profesor con el botÃ³n "Nuevo profesor".</div>
         </div>
 
         <div class="table-card" *ngIf="filtered().length > 0">
@@ -46,11 +46,12 @@ interface ProfesorForm {
             <thead>
               <tr>
                 <th>Usuario</th>
-                <th>Código</th>
+                <th>CÃ³digo</th>
                 <th>Correo</th>
                 <th>Programa</th>
                 <th>Rol</th>
                 <th>Estado</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -66,17 +67,22 @@ interface ProfesorForm {
                 <td><span class="prog-tag">{{ programName(u.program_id) }}</span></td>
                 <td><span class="role-tag">{{ roleName(u.role_id) }}</span></td>
                 <td><span class="status-badge" [class]="u.active ? 'open' : 'expired'">{{ u.active ? 'Activo' : 'Inactivo' }}</span></td>
+                <td>
+                  <button class="btn-icon" title="Editar profesor" (click)="openEdit(u)">
+                    <i class="pi pi-pencil"></i>
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
       </ng-container>
 
-      <!-- ── Modal Nuevo profesor ── -->
+      <!-- â”€â”€ Modal Nuevo profesor â”€â”€ -->
       <div class="modal-overlay" *ngIf="showForm()" (click)="closeForm()">
         <div class="modal" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h2>Nuevo profesor</h2>
+            <h2>{{ editing() ? 'Editar profesor' : 'Nuevo profesor' }}</h2>
             <button class="modal-close" (click)="closeForm()"><i class="pi pi-times"></i></button>
           </div>
 
@@ -84,7 +90,7 @@ interface ProfesorForm {
             <div class="form-grid">
               <div class="form-field span-2">
                 <label>Nombre completo</label>
-                <input [(ngModel)]="form.name" class="fc" placeholder="Juliana Ramírez" />
+                <input [(ngModel)]="form.name" class="fc" placeholder="Juliana RamÃ­rez" />
               </div>
               <div class="form-field">
                 <label>Documento</label>
@@ -95,22 +101,28 @@ interface ProfesorForm {
                 <input [(ngModel)]="form.email" type="email" class="fc" placeholder="jramirez@unab.edu.co" />
               </div>
               <div class="form-field">
-                <label>Contraseña</label>
-                <input [(ngModel)]="form.password" type="password" class="fc" placeholder="Mínimo 8 caracteres" />
+                <label>ContraseÃ±a</label>
+                <input [(ngModel)]="form.password" type="password" class="fc" [placeholder]="editing() ? 'Dejar vacia para conservarla' : 'Minimo 8 caracteres'" />
               </div>
               <div class="form-field">
                 <label>Rol</label>
                 <input class="fc fc-locked" value="Profesor" readonly />
-                <span class="field-hint">Los usuarios creados aquí se registran siempre con el rol Profesor.</span>
+                <span class="field-hint">Los usuarios creados aquÃ­ se registran siempre con el rol Profesor.</span>
               </div>
-              <!-- ⭐ Campo Programa -->
+              <!-- â­ Campo Programa -->
               <div class="form-field span-2">
-                <label>Programa académico <span class="req">*</span></label>
+                <label>Programa acadÃ©mico <span class="req">*</span></label>
                 <select [(ngModel)]="form.program_id" class="fc">
                   <option value="" disabled>Selecciona el programa del profesor</option>
                   <option *ngFor="let c of programs()" [ngValue]="c.id">{{ c.name }} ({{ c.id }})</option>
                 </select>
-                <span class="field-hint">Identifica a qué programa pertenece este profesor.</span>
+                <span class="field-hint">Identifica a quÃ© programa pertenece este profesor.</span>
+              </div>
+              <div class="form-field span-2">
+                <label class="check-row">
+                  <input type="checkbox" [(ngModel)]="form.active" />
+                  <span>Profesor activo</span>
+                </label>
               </div>
             </div>
 
@@ -123,7 +135,7 @@ interface ProfesorForm {
             <button class="btn-cancel" (click)="closeForm()">Cancelar</button>
             <button class="btn-save" (click)="save()" [disabled]="saving()">
               <i class="pi pi-spin pi-spinner" *ngIf="saving()"></i>
-              {{ saving() ? 'Guardando…' : 'Crear profesor' }}
+              {{ saving() ? 'Guardando...' : (editing() ? 'Guardar cambios' : 'Crear profesor') }}
             </button>
           </div>
         </div>
@@ -166,6 +178,8 @@ interface ProfesorForm {
     .status-badge { display: inline-flex; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
     .status-badge.open { background: var(--badge-open-bg); color: var(--badge-open); }
     .status-badge.expired { background: var(--badge-expired-bg); color: var(--badge-expired); }
+    .btn-icon { width: 32px; height: 32px; border: none; border-radius: var(--radius-sm); background: transparent; color: var(--primary); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+    .btn-icon:hover { background: rgba(255,165,2,0.12); color: var(--primary-dark); }
 
     /* Modal */
     .modal-overlay {
@@ -193,6 +207,8 @@ interface ProfesorForm {
     .fc:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,165,2,0.12); }
     .fc-locked { background: var(--surface-2); color: var(--text-muted); cursor: not-allowed; font-weight: 600; }
     .field-hint { font-size: 12px; color: var(--text-muted); }
+    .check-row { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text); }
+    .check-row input { width: auto; }
     .form-error {
       display: flex; align-items: center; gap: 8px; margin-top: 16px;
       background: var(--n1-bg); border: 1px solid #FECACA; color: var(--n1-color);
@@ -222,6 +238,8 @@ export class ProfesoresComponent implements OnInit {
   programs = signal<Program[]>([]);
 
   showForm  = signal(false);
+  editing   = signal(false);
+  editId    = signal<number | null>(null);
   saving    = signal(false);
   formError = signal('');
   form: ProfesorForm = this.emptyForm();
@@ -250,17 +268,17 @@ export class ProfesoresComponent implements OnInit {
   }
 
   private showConnHint() {
-    this.error.set('Algunos catálogos requieren una sesión autenticada. Inicia sesión con tus credenciales para ver y gestionar usuarios.');
+    this.error.set('Algunos catÃ¡logos requieren una sesiÃ³n autenticada. Inicia sesiÃ³n con tus credenciales para ver y gestionar usuarios.');
   }
 
   private emptyForm(): ProfesorForm {
-    return { name: '', document_number: '', email: '', password: '', role_id: 0, program_id: '' };
+    return { name: '', document_number: '', email: '', password: '', role_id: 0, program_id: '', active: true };
   }
 
   openForm() {
     this.form = this.emptyForm();
-    // El rol siempre es Profesor: es el único tipo de usuario que gestiona el
-    // coordinador desde esta pantalla. Se resuelve desde el catálogo de roles.
+    this.editing.set(false);
+    this.editId.set(null);
     const profesor = this.roles().find(r => this.isTeacherRole(r));
     if (!profesor) {
       this.formError.set('No existe un rol de profesor en el sistema. Pide al administrador que lo cree antes de registrar profesores.');
@@ -268,6 +286,22 @@ export class ProfesoresComponent implements OnInit {
       return;
     }
     this.form.role_id = profesor.id;
+    this.formError.set('');
+    this.showForm.set(true);
+  }
+
+  openEdit(user: User) {
+    this.editing.set(true);
+    this.editId.set(user.id);
+    this.form = {
+      name: user.name,
+      document_number: user.document_number,
+      email: user.email ?? '',
+      password: '',
+      role_id: user.role_id,
+      program_id: user.program_id ?? '',
+      active: user.active,
+    };
     this.formError.set('');
     this.showForm.set(true);
   }
@@ -280,32 +314,41 @@ export class ProfesoresComponent implements OnInit {
       return;
     }
     if (!this.form.role_id) { this.formError.set('Selecciona un rol.'); return; }
-    if (!this.form.program_id) { this.formError.set('Selecciona el programa académico del profesor.'); return; }
-    if (this.form.password.length < 8) { this.formError.set('La contraseña debe tener al menos 8 caracteres.'); return; }
+    if (!this.form.program_id) { this.formError.set('Selecciona el programa academico del profesor.'); return; }
+    if (!this.editing() && this.form.password.length < 8) { this.formError.set('La contrasena debe tener al menos 8 caracteres.'); return; }
+    if (this.editing() && this.form.password && this.form.password.length < 8) { this.formError.set('La contrasena debe tener al menos 8 caracteres.'); return; }
 
     this.saving.set(true);
     this.formError.set('');
-    const payload: UserCreate = {
+    const payload: Partial<UserCreate> & { active?: boolean } = {
       document_number: this.form.document_number,
       name: this.form.name,
       email: this.form.email,
-      password: this.form.password,
       role_id: this.form.role_id,
       program_id: this.form.program_id,
+      active: this.form.active,
     };
-    this.userApi.createUser(payload).subscribe({
-      next: (created) => {
-        this.users.set([...this.users(), created]);
+    if (this.form.password) payload.password = this.form.password;
+
+    const id = this.editId();
+    const request = this.editing() && id != null
+      ? this.userApi.updateUser(id, payload)
+      : this.userApi.createUser(payload as UserCreate);
+
+    request.subscribe({
+      next: (saved) => {
+        this.users.set(this.editing()
+          ? this.users().map(u => u.id === saved.id ? saved : u)
+          : [...this.users(), saved]);
         this.saving.set(false);
         this.showForm.set(false);
       },
       error: (err) => {
         this.saving.set(false);
-        this.formError.set(err?.error?.detail ?? 'No se pudo crear el profesor. Revisa los datos e inténtalo de nuevo.');
+        this.formError.set(err?.error?.detail ?? 'No se pudo guardar el profesor. Revisa los datos e intentalo de nuevo.');
       },
     });
   }
-
   filtered() {
     const q = this.search.toLowerCase().trim();
     const teachers = this.users().filter(u => this.isTeacherRoleId(u.role_id));

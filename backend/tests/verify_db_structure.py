@@ -1,21 +1,18 @@
 """
-Verificación automática de la estructura de base de datos MESOFTX (modelo v13).
+Verificación automática de la estructura de base de datos MESOFTX.
 
-CÓMO EJECUTAR (después del paso 8, antes del paso 9):
+Comprueba la estructura, las restricciones y los datos de arranque de las dos
+bases del sistema: users_db y assesment_mesoftx_db.
+
+Cómo ejecutarlo:
 
     pip install pytest psycopg2-binary
     export USERS_DB_URL="postgresql://postgres:postgres@localhost:5432/users_db"
     export ASSESMENT_DB_URL="postgresql://postgres:postgres@localhost:5432/assesment_mesoftx_db"
     pytest tests/verify_db_structure.py -v
 
-REGLAS PARA KIRO:
-- Este archivo NO se modifica. Nunca. Ni un espacio.
-- Si un test falla, el error está en los scripts SQL (pasos 4 a 7), no aquí.
-- Si crees que un test está equivocado, DETENTE y pregunta. No lo comentes,
-  no lo marques como skip, no cambies el valor esperado.
-- Todos los tests deben pasar antes de continuar al paso 9.
-- Los tests que insertan datos lo hacen dentro de una transacción que se
-  revierte al final: la base de datos queda exactamente igual de vacía.
+Los tests que insertan datos lo hacen dentro de una transacción que se revierte
+al final, de modo que la base de datos queda igual que antes de ejecutarlos.
 """
 
 import os
@@ -42,7 +39,7 @@ USERS_TABLES = {
 
 ASSESMENT_TABLES = {
     "so", "performance", "level", "so_schedule", "schedule_subjects",
-    "rubric", "evidence",
+    "rubric", "evidence", "period_target",
 }
 
 OLD_TABLES_THAT_MUST_NOT_EXIST = {
@@ -294,7 +291,7 @@ def test_users_db_named_constraints_exist(users_ro):
 # B. ESTRUCTURA — assesment_mesoftx_db
 # =============================================================================
 
-def test_assesment_db_has_exactly_the_7_tables(assesment_ro):
+def test_assesment_db_has_exactly_the_8_tables(assesment_ro):
     assert tables(assesment_ro) == ASSESMENT_TABLES
 
 

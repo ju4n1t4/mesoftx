@@ -44,6 +44,19 @@ CREATE TABLE so_schedule (
     CONSTRAINT ck_schedule_status CHECK (status IN ('PLANIFICADO','EN_CURSO','CERRADO'))
 );
 
+-- META DE LOGRO DEL PERIODO.
+-- Porcentaje mínimo de estudiantes en niveles altos (Bueno + Supera) que el
+-- coordinador fija para considerar cumplido un indicador en el periodo. Una
+-- fila por periodo; sirve de línea de referencia en las gráficas de
+-- indicadores de todas las vistas (pública, profesor, coordinador y auditor).
+CREATE TABLE period_target (
+    period_id   integer   PRIMARY KEY,          -- cross-service -> users_db.periods.id
+    target_pct  smallint  NOT NULL,
+    updated_by  integer   NOT NULL,             -- cross-service -> users_db.users.id
+    updated_at  timestamp NOT NULL DEFAULT current_timestamp,
+    CONSTRAINT ck_period_target_pct CHECK (target_pct BETWEEN 1 AND 100)
+);
+
 -- QUÉ MATERIAS (NRC) VALORAN CADA SO PROGRAMADO.
 -- El coordinador, al programar "SO 2 en 202660", le asigna los NRC que lo
 -- miden. Sin esta tabla no se sabe qué debe valorar cada profesor.

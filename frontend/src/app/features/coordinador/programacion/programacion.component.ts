@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
 
@@ -13,6 +13,7 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { UserApiService } from '../../../core/services/user-api.service';
@@ -32,7 +33,7 @@ interface ScheduleRow extends SoSchedule {
   imports: [
     CommonModule, ReactiveFormsModule,
     TableModule, ButtonModule, DialogModule, SelectModule, MultiSelectModule,
-    TagModule, ToastModule, ProgressSpinnerModule, ConfirmDialogModule,
+    TagModule, ToastModule, ProgressSpinnerModule, ConfirmDialogModule, InputNumberModule,
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -51,6 +52,21 @@ interface ScheduleRow extends SoSchedule {
                   placeholder="Selecciona un periodo" styleClass="filter-select"></p-select>
         <button pButton type="button" label="Programar SO" icon="pi pi-plus"
                 [disabled]="periodCtrl.value == null" (click)="openProgram()"></button>
+      </div>
+
+      <div class="target-box" *ngIf="periodCtrl.value != null">
+        <div class="target-head">
+          <span class="target-title">Meta de logro del periodo</span>
+          <small class="muted" *ngIf="!targetLoading() && !targetConfigured()">Sin meta configurada</small>
+        </div>
+        <div class="target-row">
+          <p-inputNumber [formControl]="targetCtrl" [min]="1" [max]="100" suffix=" %"
+                         [showButtons]="false" placeholder="1 a 100" inputStyleClass="target-input"></p-inputNumber>
+          <button pButton type="button" label="Guardar" icon="pi pi-save" class="p-button-sm"
+                  [disabled]="targetCtrl.invalid || targetSaving() || targetLoading()"
+                  (click)="saveTarget()"></button>
+        </div>
+        <small class="target-hint">Porcentaje mínimo de estudiantes en niveles Bueno y Supera para considerar cumplido un indicador.</small>
       </div>
 
       <div class="loading-wrap" *ngIf="loading()">
@@ -145,6 +161,11 @@ interface ScheduleRow extends SoSchedule {
     .dialog-form { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
     .dialog-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text); }
     .muted { color: var(--text-muted); font-weight: 400; }
+    .target-box { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .target-head { display: flex; align-items: center; gap: 10px; }
+    .target-title { font-size: 14px; font-weight: 700; color: var(--text); }
+    .target-row { display: flex; align-items: center; gap: 10px; }
+    .target-hint { color: var(--text-muted); font-size: 12px; }
   `],
 })
 export class ProgramacionComponent implements OnInit {
@@ -156,6 +177,13 @@ export class ProgramacionComponent implements OnInit {
   periodCtrl = new FormControl<number | null>(null);
   soCtrl = new FormControl<string | null>(null);
   nrcCtrl = new FormControl<number[]>([], { nonNullable: true });
+  targetCtrl = new FormControl<number | null>(null, [Validators.required, Validators.min(1), Validators.max(100)]);
+
+  targetLoading = signal(false);
+  targetSaving = signal(false);
+  targetConfigured = signal(false);
+  // Valor confirmado por el backend; sirve para restaurar el campo tras un 409.
+  private lastSavedTarget = signal<number | null>(null);
 
   private periods = signal<Period[]>([]);
   private allSubjects = signal<Subject[]>([]);
@@ -179,7 +207,7 @@ export class ProgramacionComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.periodCtrl.valueChanges.subscribe(() => this.reloadSchedules());
+    this.periodCtrl.valueChanges.subscribe(() => { this.reloadSchedules(); this.loadTarget(); });
     forkJoin({
       periods: this.userApi.getPeriods(),
       subjects: this.userApi.getSubjects(),
@@ -217,6 +245,50 @@ export class ProgramacionComponent implements OnInit {
         });
       },
       error: e => this.showError(e),
+    });
+  }
+
+  private loadTarget(): void {
+    const pid = this.periodCtrl.value;
+    this.targetConfigured.set(false);
+    this.lastSavedTarget.set(null);
+    this.targetCtrl.setValue(null, { emitEvent: false });
+    if (pid == null) return;
+    this.targetLoading.set(true);
+    this.assesment.getPeriodTarget(pid).subscribe({
+      next: t => {
+        this.targetCtrl.setValue(t.target_pct, { emitEvent: false });
+        this.lastSavedTarget.set(t.target_pct);
+        this.targetConfigured.set(true);
+        this.targetLoading.set(false);
+      },
+      // 404 = periodo sin meta: campo vacío y "Sin meta configurada".
+      error: e => {
+        this.targetLoading.set(false);
+        if (e.status !== 404) this.showError(e);
+      },
+    });
+  }
+
+  saveTarget(): void {
+    const pid = this.periodCtrl.value;
+    const value = this.targetCtrl.value;
+    if (pid == null || value == null || this.targetCtrl.invalid) return;
+    this.targetSaving.set(true);
+    this.assesment.updatePeriodTarget(pid, value).subscribe({
+      next: t => {
+        this.targetSaving.set(false);
+        this.targetCtrl.setValue(t.target_pct, { emitEvent: false });
+        this.lastSavedTarget.set(t.target_pct);
+        this.targetConfigured.set(true);
+        this.messageService.add({ severity: 'success', summary: 'Meta guardada', detail: `Meta de logro: ${t.target_pct} %` });
+      },
+      // 409 = periodo con cierres: muestra el detail y restaura el valor previo.
+      error: e => {
+        this.targetSaving.set(false);
+        this.targetCtrl.setValue(this.lastSavedTarget(), { emitEvent: false });
+        this.showError(e);
+      },
     });
   }
 

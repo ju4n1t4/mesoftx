@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import delete as sa_delete
@@ -9,6 +10,7 @@ from app.infrastructure.database.models import (
     EvidenceModel,
     LevelModel,
     PerformanceModel,
+    PeriodTargetModel,
     RubricModel,
     ScheduleSubjectModel,
     SoScheduleModel,
@@ -139,6 +141,15 @@ class SoScheduleRepository(SqlAlchemyRepository):
         row = self.db.scalar(select(RubricModel.id).where(RubricModel.schedule_id == schedule_id))
         return row is not None
 
+    def has_closed_in_period(self, period_id: int) -> bool:
+        """Indica si el periodo tiene alguna programación en estado CERRADO."""
+        stmt = (
+            select(SoScheduleModel.id)
+            .where(SoScheduleModel.period_id == period_id, SoScheduleModel.status == "CERRADO")
+            .limit(1)
+        )
+        return self.db.scalar(stmt) is not None
+
     def replace_subjects(self, schedule_id: int, nrcs: list[int]) -> None:
         self.db.execute(sa_delete(ScheduleSubjectModel).where(ScheduleSubjectModel.schedule_id == schedule_id))
         for nrc in nrcs:
@@ -150,6 +161,32 @@ class SoScheduleRepository(SqlAlchemyRepository):
             select(ScheduleSubjectModel.subjects_id).where(ScheduleSubjectModel.schedule_id == schedule_id)
         ).all()
         return list(rows)
+
+
+class PeriodTargetRepository:
+    """Meta de logro por periodo. Una fila por periodo (period_id es la PK)."""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get(self, period_id: int) -> PeriodTargetModel | None:
+        """Devuelve la meta del periodo, o None si no está configurada."""
+        return self.db.get(PeriodTargetModel, period_id)
+
+    def upsert(self, period_id: int, target_pct: int, user_id: int) -> PeriodTargetModel:
+        """Crea la meta del periodo o actualiza la existente. Registra quién y
+        cuándo la cambió."""
+        target = self.db.get(PeriodTargetModel, period_id)
+        if target is None:
+            target = PeriodTargetModel(period_id=period_id, target_pct=target_pct, updated_by=user_id)
+            self.db.add(target)
+        else:
+            target.target_pct = target_pct
+            target.updated_by = user_id
+            target.updated_at = datetime.now(timezone.utc)
+        self.db.commit()
+        self.db.refresh(target)
+        return target
 
 
 class RubricRepository(SqlAlchemyRepository):

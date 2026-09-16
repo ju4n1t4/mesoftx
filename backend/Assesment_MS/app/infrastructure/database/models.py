@@ -76,6 +76,21 @@ class SoScheduleModel(Base):
     )
 
 
+class PeriodTargetModel(Base):
+    """Meta de logro del periodo: porcentaje mínimo (Bueno + Supera)."""
+    __tablename__ = "period_target"
+    __table_args__ = (
+        CheckConstraint("target_pct BETWEEN 1 AND 100", name="ck_period_target_pct"),
+    )
+
+    period_id: Mapped[int] = mapped_column(Integer, primary_key=True)   # cross-service
+    target_pct: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    updated_by: Mapped[int] = mapped_column(Integer, nullable=False)    # cross-service
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.current_timestamp()
+    )
+
+
 class ScheduleSubjectModel(Base):
     """Qué NRC valoran cada SO programado."""
     __tablename__ = "schedule_subjects"

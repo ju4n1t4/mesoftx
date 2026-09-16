@@ -132,6 +132,13 @@ export interface MyAssessment {
   period_id: number;
 }
 
+export interface PeriodTarget {
+  period_id: number;
+  target_pct: number;
+  updated_by: number;
+  updated_at: string | null;
+}
+
 export interface ChartLevelItem {
   performance_id: string;
   rank: number;

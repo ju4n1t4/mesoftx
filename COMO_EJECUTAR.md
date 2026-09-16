@@ -76,6 +76,27 @@ Para volver a ejecutarlos desde cero hay que borrar el volumen:
 docker compose down -v && docker compose up -d --build
 ```
 
+### Añadir la tabla `period_target` a una base ya inicializada
+
+Los scripts SQL solo se ejecutan en el primer arranque (volumen vacío). Si tu
+base ya existe y no quieres recrearla, crea la tabla de la meta de logro a mano
+contra `assesment_mesoftx_db`:
+
+```bash
+docker exec -i mesoftx-db psql -U postgres -d assesment_mesoftx_db <<'SQL'
+CREATE TABLE IF NOT EXISTS period_target (
+    period_id   integer   PRIMARY KEY,
+    target_pct  smallint  NOT NULL,
+    updated_by  integer   NOT NULL,
+    updated_at  timestamp NOT NULL DEFAULT current_timestamp,
+    CONSTRAINT ck_period_target_pct CHECK (target_pct BETWEEN 1 AND 100)
+);
+SQL
+```
+
+Si prefieres recrear todo desde cero, borra el volumen con el comando de arriba
+y la tabla se crea sola con el resto del esquema.
+
 ---
 
 ## 3. Levantar los microservicios backend

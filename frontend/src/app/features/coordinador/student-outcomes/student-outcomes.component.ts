@@ -94,7 +94,7 @@ interface SoNode { so: StudentOutcome; performances: PerfNode[]; }
 
             <div class="perf-card" *ngFor="let pn of node.performances">
               <div class="perf-head">
-                <span class="perf-id">{{ pn.perf.id }}</span>
+                <span class="perf-id">{{ perfCode(pn.perf) }}</span>
                 <span class="perf-desc">{{ pn.perf.description }}</span>
                 <p-tag *ngIf="pn.levels.length < 4" severity="warn"
                        [value]="'Faltan ' + (4 - pn.levels.length) + ' niveles'"></p-tag>
@@ -339,6 +339,10 @@ export class StudentOutcomesComponent implements OnInit {
     return LEVEL_DEFS.find(d => d.rank === rank)?.name ?? '';
   }
 
+  perfCode(perf: Performance): string {
+    return perf.code || perf.id;
+  }
+
   // ── Student Outcome ───────────────────────────────────────
   openSoForm(so?: StudentOutcome): void {
     if (so) {
@@ -412,7 +416,7 @@ export class StudentOutcomesComponent implements OnInit {
     const levels = this.perfForm.get('levels') as FormArray;
     if (perf) {
       this.editingPerfId.set(perf.id);
-      this.perfForm.reset({ id: perf.id, description: perf.description });
+      this.perfForm.reset({ id: this.perfCode(perf), description: perf.description });
       this.perfForm.controls['id'].disable();
     } else {
       this.editingPerfId.set(null);
@@ -460,11 +464,11 @@ export class StudentOutcomesComponent implements OnInit {
     this.saving.set(true);
     const raw = this.perfForm.getRawValue();
     this.assesment.createPerformance({ id: raw.id, description: raw.description, so_id: so.id }).subscribe({
-      next: () => {
+      next: created => {
         // Indicador creado: ahora los 4 niveles. Si alguno falla, se informa y
         // el indicador queda visible con aviso "faltan N niveles".
         const levelBodies = (raw.levels as { id: string; description: string; rank: number }[]).map(l => ({
-          id: l.id, description: l.description, rank: l.rank, performance_id: raw.id,
+          id: l.id, description: l.description, rank: l.rank, performance_id: created.id,
         }));
         forkJoin(levelBodies.map(b => this.assesment.createLevel(b).pipe())).subscribe({
           next: () => { this.saving.set(false); this.perfDialog = false; this.messageService.add({ severity: 'success', summary: 'Indicador', detail: 'Indicador y 4 niveles creados.' }); this.reload(); },
@@ -478,11 +482,11 @@ export class StudentOutcomesComponent implements OnInit {
   confirmDeletePerf(node: SoNode, pn: PerfNode): void {
     this.confirmationService.confirm({
       header: 'Borrar indicador',
-      message: `Borrar ${pn.perf.id} eliminará sus ${pn.levels.length} niveles y las valoraciones asociadas. Esta acción no se puede deshacer.`,
+      message: `Borrar ${this.perfCode(pn.perf)} eliminará sus ${pn.levels.length} niveles y las valoraciones asociadas. Esta acción no se puede deshacer.`,
       acceptLabel: 'Borrar', rejectLabel: 'Cancelar',
       accept: () => {
         this.assesment.deletePerformance(pn.perf.id).subscribe({
-          next: () => { this.messageService.add({ severity: 'success', summary: 'Borrado', detail: `${pn.perf.id} eliminado.` }); this.reload(); },
+          next: () => { this.messageService.add({ severity: 'success', summary: 'Borrado', detail: `${this.perfCode(pn.perf)} eliminado.` }); this.reload(); },
           error: e => this.showError(e),
         });
       },
@@ -498,7 +502,7 @@ export class StudentOutcomesComponent implements OnInit {
     arr.clear();
     missing.forEach(def => arr.push(this.fb.group({
       rank: [def.rank], name: [def.name], suffix: [def.suffix],
-      id: [`${so.id}${pn.perf.id}${def.suffix}`, [Validators.required, Validators.maxLength(100)]],
+      id: [`${so.id}${this.perfCode(pn.perf)}${def.suffix}`, [Validators.required, Validators.maxLength(100)]],
       description: ['', [Validators.required, Validators.maxLength(255)]],
     })));
     this.completeDialog = true;
@@ -522,3 +526,4 @@ export class StudentOutcomesComponent implements OnInit {
     this.messageService.add({ severity: 'error', summary: `Error ${err.status}`, detail });
   }
 }
+

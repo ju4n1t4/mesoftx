@@ -1,7 +1,7 @@
 from typing import Any
 
 from sqlalchemy import delete as sa_delete
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -89,11 +89,32 @@ class StudentOutcomeRepository(SqlAlchemyRepository):
 class PerformanceRepository(SqlAlchemyRepository):
     model = PerformanceModel
 
+    def create(self, data: dict[str, Any]) -> PerformanceModel:
+        visible_code = str(data.pop("id")).strip()
+        data["id"] = self._next_internal_id()
+        data["code"] = visible_code
+        return super().create(data)
+
     def list_by_so(self, so_id: str) -> list[PerformanceModel]:
-        return list(self.db.scalars(select(PerformanceModel).where(PerformanceModel.so_id == so_id)).all())
+        return list(
+            self.db.scalars(
+                select(PerformanceModel)
+                .where(PerformanceModel.so_id == so_id)
+                .order_by(PerformanceModel.code, PerformanceModel.id)
+            ).all()
+        )
 
     def count_by_so(self, so_id: str) -> int:
         return int(self.db.scalar(select(func.count()).select_from(PerformanceModel).where(PerformanceModel.so_id == so_id)) or 0)
+
+    def _next_internal_id(self) -> str:
+        try:
+            candidate = int(self.db.scalar(text("SELECT nextval('performance_internal_id_seq')")) or 1)
+        except Exception:
+            candidate = int(self.db.scalar(select(func.count()).select_from(PerformanceModel)) or 0) + 1
+        while self.get_by_id(str(candidate)) is not None:
+            candidate += 1
+        return str(candidate)
 
 
 class LevelRepository(SqlAlchemyRepository):

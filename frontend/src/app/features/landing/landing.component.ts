@@ -33,32 +33,6 @@ import { RouterLink } from '@angular/router';
             <a routerLink="/publico" class="lnd-btn-ghost lg">Ver indicadores públicos</a>
           </div>
         </div>
-        <div class="hero-right">
-          <div class="preview-card">
-            <div class="preview-header">
-              <span class="preview-title">Escala de valoración</span>
-            </div>
-            <div class="preview-rows">
-              <div class="preview-row">
-                <span class="preview-label">Nivel 4 — supera las expectativas</span>
-                <span class="level-chip n4">Supera</span>
-              </div>
-              <div class="preview-row">
-                <span class="preview-label">Nivel 3 — desempeño satisfactorio</span>
-                <span class="level-chip n3">Bueno</span>
-              </div>
-              <div class="preview-row">
-                <span class="preview-label">Nivel 2 — desempeño en desarrollo</span>
-                <span class="level-chip n2">En desarrollo</span>
-              </div>
-              <div class="preview-row">
-                <span class="preview-label">Nivel 1 — desempeño insatisfactorio</span>
-                <span class="level-chip n1">Insatisfactorio</span>
-              </div>
-            </div>
-            <div class="preview-footer">Rúbrica de 4 niveles según criterios ABET</div>
-          </div>
-        </div>
       </section>
 
       <section class="features">
@@ -130,8 +104,8 @@ import { RouterLink } from '@angular/router';
     /* Hero */
     .hero {
       max-width: 1200px; margin: 0 auto; padding: 80px 32px 60px;
-      display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
     }
+    .hero-left { max-width: 720px; }
     .hero-tag {
       font-size: 12px; font-weight: 700; color: var(--primary);
       text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 18px;
@@ -143,36 +117,6 @@ import { RouterLink } from '@angular/router';
     .hero-left h1 span { color: var(--primary); }
     .hero-left p { font-size: 15px; color: var(--text-muted); line-height: 1.7; margin-bottom: 32px; }
     .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
-
-    /* Preview card */
-    .hero-right { display: flex; justify-content: center; }
-    .preview-card {
-      background: #fff; border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 24px; width: 320px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.08);
-    }
-    .preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .preview-title  { font-size: 14px; font-weight: 700; color: var(--text); }
-    .lnd-chip { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
-    .lnd-chip.open { background: var(--badge-open-bg); color: var(--badge-open); }
-    .preview-rows { display: flex; flex-direction: column; gap: 0; }
-    .preview-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 10px 0; border-bottom: 1px solid var(--border);
-    }
-    .preview-row:last-child { border-bottom: none; }
-    .preview-label { font-size: 12px; color: var(--text-muted); max-width: 160px; line-height: 1.4; }
-    .preview-footer { margin-top: 14px; font-size: 11px; color: var(--text-light); text-align: center; }
-
-    /* Level chips */
-    .level-chip {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
-    }
-    .level-chip.n1 { background: var(--n1-bg); color: var(--n1-color); }
-    .level-chip.n2 { background: var(--n2-bg); color: var(--n2-color); }
-    .level-chip.n3 { background: var(--n3-bg); color: var(--n3-color); }
-    .level-chip.n4 { background: var(--n4-bg); color: var(--n4-color); }
 
     /* Features */
     .features { background: #fff; border-top: 1px solid var(--border); padding: 60px 32px; }
@@ -196,8 +140,7 @@ import { RouterLink } from '@angular/router';
     }
 
     @media (max-width: 900px) {
-      .hero { grid-template-columns: 1fr; padding: 48px 24px; }
-      .hero-right { display: none; }
+      .hero { padding: 48px 24px; }
       .hero-left h1 { font-size: 30px; }
       .features-inner { grid-template-columns: repeat(2,1fr); }
     }

@@ -28,7 +28,7 @@ Acceso de demostración sin backend: en el login, botones **"entrar como Docente
 | Acceso (login) | `/auth/login` | Formulario reactivo con validación, estado de carga y error de credenciales; redirección por rol |
 | Módulo docente | `/docente/*` | Dashboard · Registrar valoración (cursos + carga de lista + **rúbrica interactiva**) · Mis indicadores (radar) · Ayuda y soporte |
 | Vista pública ABET | `/publico` | Indicadores consolidados por programa y Student Outcome, sin autenticación |
-| Panel coordinador/admin | `/coordinador/*` | Dashboard · Programas · Docentes y roles · **Parametrización de la rúbrica** · Valoraciones por curso · Auditoría (filtrable) · Análisis e informes (contenedor Power BI) · Vista pública (gestión) · Periodos · Configuración |
+| Panel coordinador/admin | `/coordinador/*` | Dashboard · Programas · Docentes y roles · **Parametrización de la rúbrica** · Valoraciones por curso · Auditoría (filtrable) · Vista pública (gestión) · Periodos · Configuración |
 
 ## Componentes UI clave (sección 6 del Brief)
 
@@ -36,22 +36,24 @@ Acceso de demostración sin backend: en el login, botones **"entrar como Docente
 - **Parametrización de catálogos** (`coordinador/student-outcomes`): CRUD editable de SO, identificadores (ID) y descriptores por nivel; "Publicar cambios" refleja la rúbrica que ve el docente.
 - **Chips de nivel de logro** y **badges de estado** (abierto/pendiente/vencido/validada/borrador) coherentes en todas las vistas, sin depender solo del color (texto + icono).
 - **Tablas** de docentes, valoraciones y auditoría (con búsqueda y filtro por SO).
-- **Contenedor de Power BI** con estado de carga (`coordinador/informes`).
 - **Carga de lista de estudiantes** con autocompletado (reemplazo del BUSCARV).
 
 ## Estructura
 
 ```
 src/app/
-  core/        services (auth), guards (auth/role), interceptors (jwt), models (abet.models.ts)
-  layout/      docente-layout, coordinador-layout (sidebar + topbar + breadcrumb por ruta)
+  core/        services (auth, user-api, assesment-api), guards (auth, role), interceptors (jwt), models (abet.models.ts)
+  layout/      profesor-layout, coordinador-layout, auditor-layout, admin-layout (sidebar + topbar + breadcrumb por ruta)
   features/
-    auth/      login (+ alias docente/coordinador)
-    landing/   portada
-    publico/   vista pública ABET
-    docente/   dashboard, valoraciones (cursos/registrar), indicadores, soporte
-    coordinador/ dashboard, programas, docentes, student-outcomes, valoraciones,
-                 auditoria, informes, vista-publica, periodos, configuracion
+    auth/        login
+    landing/     portada
+    publico/     vista pública ABET
+    profesor/    dashboard, mis-cursos, valorar, valoraciones, indicadores, estudiantes, inicio-acreditacion, soporte
+    coordinador/ dashboard, programas, materias, asignacion-materias, profesores, periodos,
+                 programacion, student-outcomes, valoraciones, avance, indicadores, configuracion
+    auditor/     indicadores
+    admin/       usuarios, perfiles
+  shared/      indicators-chart
 ```
 
 ## Verificación

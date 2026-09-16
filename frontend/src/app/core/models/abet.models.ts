@@ -47,6 +47,7 @@ export interface StudentOutcome {
 
 export interface Performance {
   id: string;
+  code: string;
   description: string;
   so_id: string;
 }

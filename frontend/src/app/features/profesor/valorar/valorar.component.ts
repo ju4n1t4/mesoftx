@@ -154,13 +154,13 @@ interface StudentEvalRow extends Student {
               <div class="rubric-row" *ngFor="let ind of indicators(); let i = index">
                 <div class="performance-cell">
                   <div class="ind-head">
-                    <span class="ind-id">{{ ind.performance.id }}</span>
+                    <span class="ind-id">{{ performanceCode(ind.performance) }}</span>
                     <p-tag *ngIf="ind.alreadyRated" severity="success" value="Ya valorado"></p-tag>
                   </div>
                   <p>{{ ind.performance.description }}</p>
                 </div>
 
-                <div class="level-grid" role="radiogroup" [attr.aria-label]="'Categorías de ' + ind.performance.id">
+                <div class="level-grid" role="radiogroup" [attr.aria-label]="'Categorías de ' + performanceCode(ind.performance)">
                   <button type="button" class="level-card"
                           *ngFor="let level of ind.levels"
                           [class.selected]="levelControl(i).value === level.id"
@@ -336,6 +336,10 @@ export class ValorarComponent implements OnInit {
       : rank === 3 ? 'Bueno'
       : rank === 4 ? 'Supera las expectativas'
       : `Nivel ${rank}`;
+  }
+
+  performanceCode(performance: Performance): string {
+    return performance.code || performance.id;
   }
 
   chooseLevel(index: number, levelId: string): void {

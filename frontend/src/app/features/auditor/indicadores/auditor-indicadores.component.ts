@@ -28,8 +28,8 @@ import { IndicatorsChartComponent } from '../../../shared/indicators-chart/indic
     <p-toast></p-toast>
     <div class="content-area">
       <div class="page-header">
-        <h1>Indicadores y resultados de rúbricas</h1>
-        <p>Consulta de solo lectura del desempeño por indicador y de las valoraciones registradas.</p>
+        <h1>Indicadores y resultados de rÃºbricas</h1>
+        <p>Consulta de solo lectura del desempeÃ±o por indicador y de las valoraciones registradas.</p>
       </div>
 
       <div class="toolbar">
@@ -38,7 +38,7 @@ import { IndicatorsChartComponent } from '../../../shared/indicators-chart/indic
       </div>
 
       <p-message *ngIf="periodCtrl.value == null" severity="info" styleClass="block">
-        <span>Selecciona un periodo para ver la gráfica de indicadores y las rúbricas.</span>
+        <span>Selecciona un periodo para ver la grÃ¡fica de indicadores y las rÃºbricas.</span>
       </p-message>
 
       <div class="loading-wrap" *ngIf="loading()">
@@ -46,15 +46,11 @@ import { IndicatorsChartComponent } from '../../../shared/indicators-chart/indic
       </div>
 
       <ng-container *ngIf="periodCtrl.value != null && !loading()">
-        <!-- Gráfica de indicadores: componente compartido con el coordinador -->
-        <div class="card">
-          <h2>Distribución por nivel de desempeño</h2>
-          <app-indicators-chart [periodId]="periodCtrl.value"></app-indicators-chart>
-        </div>
+        <app-indicators-chart [periodId]="periodCtrl.value"></app-indicators-chart>
 
-        <!-- Resultados de rúbricas -->
+        <!-- Resultados de rÃºbricas -->
         <div class="card">
-          <h2>Resultados de rúbricas</h2>
+          <h2>Resultados de rÃºbricas</h2>
           <p-table [value]="rubrics()" styleClass="p-datatable-sm" [paginator]="true" [rows]="10">
             <ng-template pTemplate="header"><tr><th>Estudiante</th><th>NRC</th><th>Indicador</th><th>Nivel</th><th>Evaluador</th></tr></ng-template>
             <ng-template pTemplate="body" let-r>
@@ -63,7 +59,7 @@ import { IndicatorsChartComponent } from '../../../shared/indicators-chart/indic
                 <td>{{ r.performance_id }}</td><td>{{ r.level_id }}</td><td>{{ r.evaluator_user_id }}</td>
               </tr>
             </ng-template>
-            <ng-template pTemplate="emptymessage"><tr><td colspan="5" class="empty-cell">Sin rúbricas en este periodo.</td></tr></ng-template>
+            <ng-template pTemplate="emptymessage"><tr><td colspan="5" class="empty-cell">Sin rÃºbricas en este periodo.</td></tr></ng-template>
           </p-table>
         </div>
       </ng-container>
@@ -94,14 +90,21 @@ export class AuditorIndicadoresComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.userApi.getPeriods().subscribe({ next: p => this.periods.set(p ?? []), error: e => this.showError(e) });
+    this.userApi.getPeriods().subscribe({
+      next: p => {
+        const periods = p ?? [];
+        this.periods.set(periods);
+        this.periodCtrl.setValue(periods[0]?.id ?? null);
+      },
+      error: e => this.showError(e),
+    });
     this.periodCtrl.valueChanges.subscribe(v => this.load(v));
   }
 
   private load(periodId: number | null): void {
     if (periodId == null) { this.rubrics.set([]); return; }
     this.loading.set(true);
-    // La gráfica la carga el componente compartido; aquí solo las rúbricas.
+    // La grÃ¡fica la carga el componente compartido; aquÃ­ solo las rÃºbricas.
     this.assesment.getRubrics({ period_id: periodId }).subscribe({
       next: r => { this.rubrics.set(r ?? []); this.loading.set(false); },
       error: e => { this.showError(e); this.loading.set(false); },
@@ -112,7 +115,7 @@ export class AuditorIndicadoresComponent implements OnInit {
     let detail: string;
     if (err.status === 503) detail = 'Servicio no disponible, intenta en unos segundos';
     else if (err.status === 404) detail = 'No encontrado';
-    else detail = typeof err.error?.detail === 'string' ? err.error.detail : 'Ocurrió un error inesperado';
+    else detail = typeof err.error?.detail === 'string' ? err.error.detail : 'OcurriÃ³ un error inesperado';
     this.messageService.add({ severity: 'error', summary: `Error ${err.status}`, detail });
   }
 }

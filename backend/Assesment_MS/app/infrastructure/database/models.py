@@ -20,7 +20,8 @@ class StudentOutcomeModel(Base):
 class PerformanceModel(Base):
     __tablename__ = "performance"
 
-    id: Mapped[str] = mapped_column(String(3), primary_key=True)
+    id: Mapped[str] = mapped_column(String(20), primary_key=True)
+    code: Mapped[str] = mapped_column(String(20), nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
     so_id: Mapped[str] = mapped_column(
         ForeignKey("so.id", ondelete="CASCADE"), nullable=False
@@ -142,7 +143,7 @@ class RubricModel(Base):
     evaluator_user_id: Mapped[int] = mapped_column(Integer, nullable=False)  # cross-service (profesor)
     student_id: Mapped[int] = mapped_column(Integer, nullable=False)         # cross-service (students.id)
     subjects_id: Mapped[int] = mapped_column(Integer, nullable=False)        # cross-service (NRC)
-    performance_id: Mapped[str] = mapped_column(String(3), nullable=False)
+    performance_id: Mapped[str] = mapped_column(String(20), nullable=False)
     level_id: Mapped[str] = mapped_column(String(100), nullable=False)
     evidence_id: Mapped[int | None] = mapped_column(Integer)   # FK compuesta arriba
     created_at: Mapped[datetime] = mapped_column(

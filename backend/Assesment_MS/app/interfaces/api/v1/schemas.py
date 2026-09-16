@@ -25,7 +25,7 @@ class StudentOutcomeResponse(StudentOutcomeCreate):
 
 # ── Indicador de desempeño ──────────────────────────────────
 class PerformanceCreate(BaseModel):
-    id: str = Field(..., max_length=3)
+    id: str = Field(..., max_length=20)
     description: str = Field(..., max_length=255)
     so_id: str = Field(..., max_length=5)
 
@@ -35,7 +35,11 @@ class PerformanceUpdate(BaseModel):
     so_id: str | None = Field(default=None, max_length=5)
 
 
-class PerformanceResponse(PerformanceCreate):
+class PerformanceResponse(BaseModel):
+    id: str = Field(..., max_length=20)
+    code: str = Field(..., max_length=20)
+    description: str = Field(..., max_length=255)
+    so_id: str = Field(..., max_length=5)
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -44,7 +48,7 @@ class LevelCreate(BaseModel):
     id: str = Field(..., max_length=100)
     description: str = Field(..., max_length=255)
     rank: int = Field(..., ge=1, le=4)
-    performance_id: str = Field(..., max_length=3)
+    performance_id: str = Field(..., max_length=20)
 
 
 class LevelUpdate(BaseModel):
@@ -101,13 +105,13 @@ class RubricCreate(BaseModel):
     schedule_id: int = Field(..., gt=0)
     student_id: int = Field(..., gt=0)
     subjects_id: int = Field(..., gt=0)
-    performance_id: str = Field(..., max_length=3)
+    performance_id: str = Field(..., max_length=20)
     level_id: str = Field(..., max_length=100)
     evidence_id: int | None = Field(default=None, gt=0)
 
 
 class RubricUpdate(BaseModel):
-    performance_id: str | None = Field(default=None, max_length=3)
+    performance_id: str | None = Field(default=None, max_length=20)
     level_id: str | None = Field(default=None, max_length=100)
     evidence_id: int | None = Field(default=None, gt=0)
 

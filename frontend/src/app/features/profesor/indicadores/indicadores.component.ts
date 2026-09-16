@@ -8,6 +8,7 @@ import { SelectModule } from 'primeng/select';
 import { ChartModule } from 'primeng/chart';
 import { MessageModule } from 'primeng/message';
 import { ToastModule } from 'primeng/toast';
+import { ButtonModule } from 'primeng/button';
 import { MessageService } from 'primeng/api';
 
 import { AssesmentApiService } from '../../../core/services/assesment-api.service';
@@ -29,7 +30,7 @@ const TARGET = 80;
 @Component({
   selector: 'app-indicadores',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SelectModule, ChartModule, MessageModule, ToastModule, IndicatorsChartComponent],
+  imports: [CommonModule, ReactiveFormsModule, SelectModule, ChartModule, MessageModule, ToastModule, ButtonModule, IndicatorsChartComponent],
   providers: [MessageService],
   template: `
     <p-toast></p-toast>
@@ -52,18 +53,7 @@ const TARGET = 80;
         <span>Aún no tienes Student Outcomes abiertos para valorar.</span>
       </p-message>
 
-      <div class="type-cards" *ngIf="periodCtrl.value != null">
-        <button type="button" class="type-card" [class.selected]="viewMode() === 'so'" (click)="setMode('so')">
-          <span>Por Student Outcome</span>
-          <small>Cumplimiento frente a la meta institucional.</small>
-        </button>
-        <button type="button" class="type-card" [class.selected]="viewMode() === 'id'" (click)="setMode('id')">
-          <span>Por Identificador de Desempeño</span>
-          <small>Distribución por nivel en cada ID.</small>
-        </button>
-      </div>
-
-      <div class="so-dashboard" *ngIf="periodCtrl.value != null && viewMode() === 'so'">
+      <div class="so-dashboard" *ngIf="periodCtrl.value != null && !selectedDetailSo()">
         <section class="radar-card">
           <h2>Cumplimiento por Outcome</h2>
           <div class="empty" *ngIf="soRows().length === 0">Sin valoraciones registradas para los SO de este periodo.</div>
@@ -95,12 +85,18 @@ const TARGET = 80;
               <strong>{{ row.pct }}%</strong>
               <span [class.ok]="row.pct >= target">{{ row.pct >= target ? 'Cumple' : 'En riesgo' }}</span>
             </div>
+            <button pButton type="button" label="Ver Detalle" class="p-button-sm p-button-secondary"
+                    (click)="selectedDetailSo.set(row.so_id)"></button>
           </div>
         </section>
       </div>
 
-      <div class="card" *ngIf="periodCtrl.value != null && viewMode() === 'id'">
-        <app-indicators-chart [periodId]="periodCtrl.value"></app-indicators-chart>
+      <div class="card" *ngIf="periodCtrl.value != null && selectedDetailSo()">
+        <div class="detail-toolbar">
+          <button pButton type="button" label="Volver" icon="pi pi-arrow-left" class="p-button-text"
+                  (click)="selectedDetailSo.set(null)"></button>
+        </div>
+        <app-indicators-chart [periodId]="periodCtrl.value" [detailSoId]="selectedDetailSo()" [detailOnly]="true"></app-indicators-chart>
       </div>
     </div>
   `,
@@ -108,19 +104,13 @@ const TARGET = 80;
     .toolbar { margin-bottom: 16px; }
     .block { display: block; margin-bottom: 16px; }
     .card, .radar-card, .detail-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px 20px; }
-    .type-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 16px; }
-    .type-card { text-align: left; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; cursor: pointer; font-family: inherit; }
-    .type-card:hover { border-color: var(--primary); }
-    .type-card.selected { border-color: var(--primary); background: rgba(16,185,129,.08); box-shadow: inset 0 0 0 1px var(--primary); }
-    .type-card span { display: block; font-weight: 800; color: var(--text); margin-bottom: 4px; }
-    .type-card small { color: var(--text-muted); line-height: 1.4; }
     .so-dashboard { display: grid; grid-template-columns: minmax(260px, 360px) minmax(0, 1fr); gap: 16px; }
     .radar-card h2, .detail-card h2 { margin: 0 0 16px; font-size: 14px; font-weight: 800; color: var(--text); }
     .empty { color: var(--text-muted); font-size: 14px; padding: 16px 0; }
     .legend { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; margin-top: 12px; font-size: 12px; color: var(--text-muted); }
     .dot.mine { width: 8px; height: 8px; border-radius: 999px; display: inline-block; margin-right: 6px; background: #7C3AED; }
     .line-target { width: 14px; border-top: 2px dashed #F59E0B; display: inline-block; margin-right: 6px; vertical-align: middle; }
-    .outcome-row { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(240px, 1.8fr) 70px; gap: 16px; align-items: center; padding: 10px 0; }
+    .outcome-row { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(240px, 1.8fr) 70px auto; gap: 16px; align-items: center; padding: 10px 0; }
     .outcome-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .so-badge { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; font-size: 10px; font-weight: 800; flex-shrink: 0; }
     .outcome-copy { min-width: 0; }
@@ -136,6 +126,7 @@ const TARGET = 80;
     .outcome-state span { display: inline-flex; margin-top: 4px; padding: 3px 8px; border-radius: 4px; background: #FEE2E2; color: #DC2626; font-size: 10px; font-weight: 800; }
     .outcome-state span.ok { background: #DCFCE7; color: #16A34A; }
     .outcome-state:has(span.ok) strong { color: #16A34A; }
+    .detail-toolbar { display: flex; justify-content: flex-start; margin-bottom: 8px; }
     @media (max-width: 900px) {
       .so-dashboard, .outcome-row { grid-template-columns: 1fr; }
       .outcome-state { text-align: left; }
@@ -145,7 +136,7 @@ const TARGET = 80;
 export class IndicadoresComponent implements OnInit {
   loading = signal(true);
   periodCtrl = new FormControl<number | null>(null);
-  viewMode = signal<'so' | 'id'>('so');
+  selectedDetailSo = signal<string | null>(null);
   private periods = signal<{ label: string; value: number }[]>([]);
   private assessments = signal<MyAssessment[]>([]);
   soRows = signal<SoIndicatorRow[]>([]);
@@ -178,6 +169,7 @@ export class IndicadoresComponent implements OnInit {
 
   ngOnInit(): void {
     this.periodCtrl.valueChanges.subscribe(periodId => {
+      this.selectedDetailSo.set(null);
       if (periodId != null) this.loadSoChart(periodId);
       else { this.soRows.set([]); this.soRadarData.set({}); }
     });
@@ -197,10 +189,6 @@ export class IndicadoresComponent implements OnInit {
         this.showError(e, 'No se pudieron cargar los periodos disponibles');
       },
     });
-  }
-
-  setMode(mode: 'so' | 'id'): void {
-    this.viewMode.set(mode);
   }
 
   barWidth(pct: number): number {

@@ -38,15 +38,12 @@ import { IndicatorsChartComponent } from '../../../shared/indicators-chart/indic
         <span>Selecciona un periodo para ver la gráfica.</span>
       </p-message>
 
-      <div class="card" *ngIf="periodCtrl.value != null">
-        <app-indicators-chart [periodId]="periodCtrl.value"></app-indicators-chart>
-      </div>
+      <app-indicators-chart *ngIf="periodCtrl.value != null" [periodId]="periodCtrl.value"></app-indicators-chart>
     </div>
   `,
   styles: [`
     .toolbar { margin-bottom: 16px; }
     .block { display: block; margin-bottom: 16px; }
-    .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px 20px; }
   `],
 })
 export class CoordIndicadoresComponent implements OnInit {
@@ -58,7 +55,11 @@ export class CoordIndicadoresComponent implements OnInit {
 
   ngOnInit(): void {
     this.userApi.getPeriods().subscribe({
-      next: p => this.periods.set(p ?? []),
+      next: p => {
+        const periods = p ?? [];
+        this.periods.set(periods);
+        this.periodCtrl.setValue(periods[0]?.id ?? null);
+      },
       error: (e: HttpErrorResponse) => this.messageService.add({
         severity: 'error', summary: `Error ${e.status}`,
         detail: typeof e.error?.detail === 'string' ? e.error.detail : 'No se pudieron cargar los periodos',

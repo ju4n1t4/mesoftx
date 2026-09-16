@@ -28,7 +28,7 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard],
     data: { roles: ['Profesor'] },
     children: [
-      { path: '', redirectTo: 'mis-cursos', pathMatch: 'full' },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
         path: 'mis-cursos',
         loadComponent: () => import('./features/profesor/mis-cursos/mis-cursos.component').then(m => m.MisCursosComponent),
@@ -123,6 +123,10 @@ export const routes: Routes = [
         path: 'configuracion',
         loadComponent: () => import('./features/coordinador/configuracion/configuracion.component').then(m => m.ConfiguracionComponent),
       },
+      {
+        path: 'soporte',
+        loadComponent: () => import('./features/profesor/soporte/soporte.component').then(m => m.SoporteComponent),
+      },
     ],
   },
 
@@ -133,11 +137,13 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard],
     data: { roles: ['Administrativo'] },
     children: [
-      { path: '', redirectTo: 'perfiles', pathMatch: 'full' },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'dashboard', loadComponent: () => import('./features/admin/dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent) },
       { path: 'perfiles', loadComponent: () => import('./features/admin/perfiles/perfiles.component').then(m => m.PerfilesComponent) },
       { path: 'usuarios', loadComponent: () => import('./features/admin/usuarios/usuarios.component').then(m => m.UsuariosComponent) },
       { path: 'periodos', loadComponent: () => import('./features/admin/periodos/periodos.component').then(m => m.PeriodosComponent) },
       { path: 'facultades', loadComponent: () => import('./features/admin/facultades/facultades.component').then(m => m.FacultadesComponent) },
+      { path: 'soporte', loadComponent: () => import('./features/profesor/soporte/soporte.component').then(m => m.SoporteComponent) },
     ],
   },
 
@@ -148,8 +154,10 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard],
     data: { roles: ['Auditor'] },
     children: [
-      { path: '', redirectTo: 'indicadores', pathMatch: 'full' },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'dashboard', loadComponent: () => import('./features/auditor/indicadores/auditor-indicadores.component').then(m => m.AuditorIndicadoresComponent) },
       { path: 'indicadores', loadComponent: () => import('./features/auditor/indicadores/auditor-indicadores.component').then(m => m.AuditorIndicadoresComponent) },
+      { path: 'soporte', loadComponent: () => import('./features/profesor/soporte/soporte.component').then(m => m.SoporteComponent) },
     ],
   },
 

@@ -29,8 +29,13 @@ interface NavItem { label: string; icon: string; route: string; }
           <a *ngFor="let item of navItems" [routerLink]="item.route" routerLinkActive="active" class="nav-item">
             <i [class]="'pi ' + item.icon"></i><span>{{ item.label }}</span>
           </a>
-          <button class="nav-item logout-item" (click)="logout()"><i class="pi pi-sign-out"></i><span>Cerrar sesión</span></button>
         </nav>
+        <div class="sidebar-bottom">
+          <a [routerLink]="'/admin/soporte'" routerLinkActive="active" class="nav-item">
+            <i class="pi pi-question-circle"></i><span>Ayuda y soporte</span>
+          </a>
+          <button class="nav-item logout-item" (click)="logout()"><i class="pi pi-sign-out"></i><span>Cerrar sesión</span></button>
+        </div>
       </aside>
       <div class="main-wrapper">
         <header class="topbar">
@@ -55,6 +60,7 @@ interface NavItem { label: string; icon: string; route: string; }
     .profile-name { font-size: 12px; font-weight: 600; color: #fff; }
     .sidebar-section-label { font-size: 9px; font-weight: 700; color: #4B5563; letter-spacing: 0.08em; padding: 14px 16px 5px; }
     .sidebar-nav { flex: 1; padding: 0 8px; display: flex; flex-direction: column; gap: 1px; }
+    .sidebar-bottom { padding: 0 8px 10px; display: flex; flex-direction: column; gap: 1px; }
     .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius-sm); color: var(--sidebar-text); font-size: 13px; font-weight: 500; text-decoration: none; }
     .nav-item i { font-size: 14px; }
     .nav-item:hover { background: var(--sidebar-hover); color: #fff; }
@@ -70,6 +76,7 @@ interface NavItem { label: string; icon: string; route: string; }
 })
 export class AdminLayoutComponent {
   navItems: NavItem[] = [
+    { label: 'Dashboard', icon: 'pi-home', route: '/admin/dashboard' },
     { label: 'Perfiles y permisos', icon: 'pi-shield', route: '/admin/perfiles' },
     { label: 'Usuarios',            icon: 'pi-users',  route: '/admin/usuarios' },
     { label: 'Periodos',            icon: 'pi-calendar', route: '/admin/periodos' },

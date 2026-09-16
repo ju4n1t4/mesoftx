@@ -40,11 +40,18 @@ interface NavItem { label: string; icon: string; route: string; }
             <i [class]="'pi ' + item.icon"></i>
             <span>{{ item.label }}</span>
           </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <a [routerLink]="'/profesor/soporte'" routerLinkActive="active" class="nav-item">
+            <i class="pi pi-question-circle"></i>
+            <span>Ayuda y soporte</span>
+          </a>
           <button class="nav-item logout-item" (click)="logout()">
             <i class="pi pi-sign-out"></i>
             <span>Cerrar sesión</span>
           </button>
-        </nav>
+        </div>
 
         <div class="sidebar-period">
           <div class="period-label">PERIODO ACTIVO</div>
@@ -56,7 +63,7 @@ interface NavItem { label: string; icon: string; route: string; }
       <div class="main-wrapper">
         <header class="topbar">
           <div class="topbar-breadcrumb">
-            <span class="bc-item">Inicio</span>
+            <span class="bc-item">Dashboard</span>
             <i class="pi pi-chevron-right bc-sep"></i>
             <span class="bc-current">Panel</span>
           </div>
@@ -112,6 +119,9 @@ interface NavItem { label: string; icon: string; route: string; }
       letter-spacing: 0.08em; padding: 14px 16px 5px;
     }
     .sidebar-nav { flex: 1; padding: 0 8px; display: flex; flex-direction: column; gap: 1px; }
+    .sidebar-bottom {
+      padding: 0 8px 10px; display: flex; flex-direction: column; gap: 1px;
+    }
     .nav-item {
       display: flex; align-items: center; gap: 10px;
       padding: 9px 10px; border-radius: var(--radius-sm);
@@ -166,11 +176,11 @@ interface NavItem { label: string; icon: string; route: string; }
 export class ProfesorLayoutComponent {
 
   navItems: (NavItem & { exact?: boolean })[] = [
+    { label: 'Dashboard',            icon: 'pi-home',             route: '/profesor/dashboard',    exact: true  },
     { label: 'Mis cursos',            icon: 'pi-book',             route: '/profesor/mis-cursos',   exact: false },
     { label: 'Valorar',               icon: 'pi-check-square',     route: '/profesor/valorar',      exact: false },
     { label: 'Mis indicadores',       icon: 'pi-chart-line',       route: '/profesor/indicadores',   exact: false },
-    { label: 'Inicio · Acreditación', icon: 'pi-globe',            route: '/profesor/inicio',        exact: true  },
-    { label: 'Ayuda y soporte',       icon: 'pi-question-circle',  route: '/profesor/soporte',       exact: false },
+    { label: 'Acreditación',          icon: 'pi-globe',            route: '/profesor/inicio',        exact: true  },
   ];
 
   constructor(private auth: AuthService) {}

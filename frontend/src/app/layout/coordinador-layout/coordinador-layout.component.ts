@@ -42,11 +42,18 @@ interface NavItem { label: string; icon: string; route: string; }
             <i [class]="'pi ' + item.icon"></i>
             <span>{{ item.label }}</span>
           </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <a [routerLink]="'/coordinador/soporte'" routerLinkActive="active" class="nav-item">
+            <i class="pi pi-question-circle"></i>
+            <span>Ayuda y soporte</span>
+          </a>
           <button class="nav-item logout-item" (click)="logout()">
             <i class="pi pi-sign-out"></i>
             <span>Cerrar sesión</span>
           </button>
-        </nav>
+        </div>
 
         <div class="sys-status">
           <div class="sys-label">ESTADO DEL SISTEMA</div>
@@ -120,6 +127,9 @@ interface NavItem { label: string; icon: string; route: string; }
       letter-spacing: 0.08em; padding: 14px 16px 5px;
     }
     .sidebar-nav { flex: 1; padding: 0 8px; display: flex; flex-direction: column; gap: 1px; }
+    .sidebar-bottom {
+      padding: 0 8px 10px; display: flex; flex-direction: column; gap: 1px;
+    }
     .nav-item {
       display: flex; align-items: center; gap: 10px;
       padding: 9px 10px; border-radius: var(--radius-sm);

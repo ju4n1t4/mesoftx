@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { firstValueFrom, forkJoin } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 
 import { TableModule } from 'primeng/table';
@@ -16,6 +16,8 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { UserApiService } from '../../../core/services/user-api.service';
 import { Program, College } from '../../../core/models/abet.models';
+import { BulkExcelService, BulkImportSummary } from '../../../shared/bulk-import/bulk-excel.service';
+import { BulkResultDialogComponent } from '../../../shared/bulk-import/bulk-result-dialog.component';
 
 interface ProgramView extends Program { collegeName: string; }
 
@@ -25,7 +27,7 @@ interface ProgramView extends Program { collegeName: string; }
   imports: [
     CommonModule, ReactiveFormsModule,
     TableModule, ButtonModule, DialogModule, InputTextModule, SelectModule,
-    ToastModule, ProgressSpinnerModule, ConfirmDialogModule,
+    ToastModule, ProgressSpinnerModule, ConfirmDialogModule, BulkResultDialogComponent,
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -34,8 +36,8 @@ interface ProgramView extends Program { collegeName: string; }
 
     <div class="content-area">
       <div class="page-header">
-        <h1>Programas academicos</h1>
-        <p>Gestiona los programas academicos asociados a cada facultad.</p>
+        <h1>Programas académicos</h1>
+        <p>Gestiona los programas académicos asociados a cada facultad.</p>
       </div>
 
       <div class="notice" *ngIf="error()">
@@ -44,6 +46,9 @@ interface ProgramView extends Program { collegeName: string; }
       </div>
 
       <div class="toolbar">
+        <button pButton type="button" label="Descargar plantilla" icon="pi pi-download" class="p-button-secondary" (click)="downloadTemplate()"></button>
+        <button pButton type="button" label="Cargar Excel" icon="pi pi-upload" class="p-button-secondary" (click)="bulkInput.click()" [disabled]="colleges().length === 0"></button>
+        <input #bulkInput type="file" accept=".xlsx" hidden (change)="onBulkFile($event)" />
         <button pButton type="button" label="Nuevo programa" icon="pi pi-plus" (click)="openCreate()" [disabled]="colleges().length === 0"></button>
       </div>
 
@@ -59,10 +64,10 @@ interface ProgramView extends Program { collegeName: string; }
       <p-table *ngIf="!loading()" [value]="programs()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm" [rowHover]="true">
         <ng-template pTemplate="header">
           <tr>
-            <th>Codigo</th>
+            <th>Código</th>
             <th>Nombre</th>
             <th>Facultad</th>
-            <th>Acreditacion</th>
+            <th>Acreditación</th>
             <th>Estado</th>
             <th style="width:10rem">Acciones</th>
           </tr>
@@ -95,9 +100,9 @@ interface ProgramView extends Program { collegeName: string; }
 
     <p-dialog [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '520px' }" [header]="editing() ? 'Editar programa' : 'Nuevo programa'">
       <form [formGroup]="form" class="dialog-form">
-        <label>Codigo
+        <label>Código
           <input pInputText formControlName="id" maxlength="3" placeholder="Ej. ISI" />
-          <small class="err" *ngIf="showErr('id')">Codigo requerido, maximo 3 caracteres.</small>
+          <small class="err" *ngIf="showErr('id')">Código requerido, máximo 3 caracteres.</small>
         </label>
         <label>Nombre
           <input pInputText formControlName="name" maxlength="255" placeholder="Ej. Ingenieria de Sistemas" />
@@ -111,7 +116,7 @@ interface ProgramView extends Program { collegeName: string; }
           <input type="checkbox" formControlName="accredited" />
           <span>Programa acreditado</span>
         </label>
-        <label>Anio fin de acreditacion
+        <label>Año fin de acreditación
           <input pInputText type="number" formControlName="accreditation_end_year" placeholder="Ej. 2030" />
         </label>
         <label class="check-row">
@@ -124,9 +129,15 @@ interface ProgramView extends Program { collegeName: string; }
         <button pButton type="button" [label]="saving() ? 'Guardando...' : 'Guardar'" [disabled]="saving()" (click)="save()"></button>
       </ng-template>
     </p-dialog>
+
+    <app-bulk-result-dialog
+      title="Resultado cargue masivo de programas"
+      [(visible)]="bulkVisible"
+      [summary]="bulkSummary">
+    </app-bulk-result-dialog>
   `,
   styles: [`
-    .toolbar { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+    .toolbar { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
     .notice { display: flex; align-items: center; gap: 10px; background: rgba(255,165,2,0.08); border: 1px solid rgba(255,165,2,0.25); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: var(--text-muted); }
     .notice i { color: var(--primary); flex-shrink: 0; }
     .loading-wrap { display: flex; justify-content: center; padding: 48px; }
@@ -153,6 +164,8 @@ export class ProgramasComponent implements OnInit {
   saving = signal(false);
   editing = signal(false);
   dialogVisible = false;
+  bulkVisible = false;
+  bulkSummary: BulkImportSummary = { success: [], skipped: [], errors: [] };
   error = signal('');
   programs = signal<ProgramView[]>([]);
   colleges = signal<College[]>([]);
@@ -167,6 +180,7 @@ export class ProgramasComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private userApi: UserApiService,
+    private bulkExcel: BulkExcelService,
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
   ) {
@@ -181,6 +195,85 @@ export class ProgramasComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.reload();
+  }
+
+  downloadTemplate(): void {
+    this.bulkExcel.downloadTemplate(
+      'plantilla_programas.xlsx',
+      ['id', 'name', 'college_id', 'accredited', 'accreditation_end_year', 'active'],
+      'Programas',
+    );
+  }
+
+  async onBulkFile(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    const summary: BulkImportSummary = { success: [], skipped: [], errors: [] };
+    try {
+      const rows = await this.bulkExcel.readRows(file);
+      const existing = new Set(this.programs().map(p => p.id.toUpperCase()));
+      const colleges = new Map(this.colleges().map(c => [c.id.toUpperCase(), c]));
+      const seen = new Set<string>();
+
+      for (let index = 0; index < rows.length; index++) {
+        const rowNumber = index + 2;
+        const id = this.bulkExcel.value(rows[index], 'id').toUpperCase();
+        const name = this.bulkExcel.value(rows[index], 'name');
+        const collegeId = this.bulkExcel.value(rows[index], 'college_id').toUpperCase();
+        const accredited = this.bulkExcel.boolValue(rows[index], 'accredited', false);
+        const yearText = this.bulkExcel.value(rows[index], 'accreditation_end_year');
+        const active = this.bulkExcel.boolValue(rows[index], 'active', true);
+        const label = id || `Fila ${rowNumber}`;
+        const year = yearText ? Number(yearText) : null;
+
+        if (!id || id.length > 3) {
+          summary.errors.push({ row: rowNumber, label, detail: 'El id es requerido y debe tener máximo 3 caracteres.' });
+          continue;
+        }
+        if (!name || name.length > 255) {
+          summary.errors.push({ row: rowNumber, label, detail: 'El nombre es requerido y debe tener máximo 255 caracteres.' });
+          continue;
+        }
+        if (!collegeId || !colleges.has(collegeId)) {
+          summary.errors.push({ row: rowNumber, label, detail: 'La facultad indicada no existe.' });
+          continue;
+        }
+        if (!colleges.get(collegeId)?.active) {
+          summary.errors.push({ row: rowNumber, label, detail: 'La facultad indicada está inactiva.' });
+          continue;
+        }
+        if (yearText && (!Number.isInteger(year) || year! < 1900 || year! > 2200)) {
+          summary.errors.push({ row: rowNumber, label, detail: 'El año fin de acreditación no es válido.' });
+          continue;
+        }
+        if (existing.has(id)) {
+          summary.skipped.push({ row: rowNumber, label, detail: 'Ya existe un programa con ese id.' });
+          continue;
+        }
+        if (seen.has(id)) {
+          summary.skipped.push({ row: rowNumber, label, detail: 'Registro repetido dentro del archivo.' });
+          continue;
+        }
+
+        seen.add(id);
+        try {
+          await firstValueFrom(this.userApi.createProgram({ id, name, college_id: collegeId, accredited, accreditation_end_year: year, active }));
+          existing.add(id);
+          summary.success.push({ row: rowNumber, label, detail: name });
+        } catch (err) {
+          summary.errors.push({ row: rowNumber, label, detail: this.errorText(err) });
+        }
+      }
+    } catch (err) {
+      summary.errors.push({ row: 0, label: file.name, detail: this.errorText(err) });
+    }
+
+    this.bulkSummary = summary;
+    this.bulkVisible = true;
     this.reload();
   }
 
@@ -267,7 +360,7 @@ export class ProgramasComponent implements OnInit {
   confirmDelete(program: Program): void {
     this.confirmationService.confirm({
       header: 'Borrar programa',
-      message: `Borrar el programa ${program.id}? Esta accion no se puede deshacer.`,
+      message: `¿Borrar el programa ${program.id}? Esta acción no se puede deshacer.`,
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'Borrar',
       rejectLabel: 'Cancelar',
@@ -286,12 +379,16 @@ export class ProgramasComponent implements OnInit {
   }
 
   private showError(err: HttpErrorResponse): void {
-    let detail: string;
-    if (err.status === 401) detail = 'El catalogo de programas requiere una sesion autenticada.';
-    else if (err.status === 503) detail = 'Servicio no disponible, intenta en unos segundos';
-    else if (err.status === 404) detail = 'No encontrado';
-    else detail = typeof err.error?.detail === 'string' ? err.error.detail : 'Ocurrio un error inesperado';
+    const detail = this.errorText(err);
     this.error.set(detail);
     this.messageService.add({ severity: 'error', summary: `Error ${err.status}`, detail });
+  }
+
+  private errorText(err: unknown): string {
+    const http = err as HttpErrorResponse;
+    if (http?.status === 401) return 'El catálogo de programas requiere una sesión autenticada.';
+    if (http?.status === 503) return 'Servicio no disponible, intenta en unos segundos';
+    if (http?.status === 404) return 'No encontrado';
+    return typeof http?.error?.detail === 'string' ? http.error.detail : 'Ocurrió un error inesperado';
   }
 }

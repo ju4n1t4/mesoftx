@@ -1,11 +1,13 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { FileUploadModule } from 'primeng/fileupload';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { ToastModule } from 'primeng/toast';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
@@ -13,19 +15,16 @@ import { MessageService } from 'primeng/api';
 
 import { UserApiService } from '../../../core/services/user-api.service';
 import { Subject, Student, StudentUploadRow } from '../../../core/models/abet.models';
-
-interface PreviewRow {
-  document_number: string;
-  name: string;
-  error: string | null;
-}
+import { BulkExcelService, BulkImportSummary } from '../../../shared/bulk-import/bulk-excel.service';
+import { BulkResultDialogComponent } from '../../../shared/bulk-import/bulk-result-dialog.component';
 
 @Component({
   selector: 'app-estudiantes',
   standalone: true,
   imports: [
-    CommonModule, RouterLink,
-    TableModule, ButtonModule, FileUploadModule, MessageModule, ToastModule, ProgressSpinnerModule,
+    CommonModule, RouterLink, FormsModule,
+    TableModule, ButtonModule, DialogModule, InputTextModule, MessageModule, ToastModule, ProgressSpinnerModule,
+    BulkResultDialogComponent,
   ],
   providers: [MessageService],
   template: `
@@ -49,36 +48,20 @@ interface PreviewRow {
 
         <div class="upload-card">
           <div class="upload-row">
-            <div class="uc-title">Archivo CSV (encabezados: <code>document_number,name</code>)</div>
+            <div>
+              <div class="uc-title">Carga masiva de estudiantes</div>
+              <div class="uc-subtitle">Archivo Excel con encabezados <code>document_number</code> y <code>name</code>.</div>
+            </div>
             <div class="upload-actions">
-              <button pButton type="button" label="Descargar plantilla CSV" icon="pi pi-download"
+              <button pButton type="button" label="Nuevo estudiante" icon="pi pi-user-plus"
+                      class="p-button-sm" (click)="openCreate()"></button>
+              <button pButton type="button" label="Descargar plantilla Excel" icon="pi pi-download"
                       class="p-button-sm p-button-secondary" (click)="downloadTemplate()"></button>
-              <p-fileUpload mode="basic" chooseLabel="Elegir CSV" [auto]="true" accept=".csv"
-                            [customUpload]="true" (uploadHandler)="onFile($event)" (onSelect)="onFile($event)">
-              </p-fileUpload>
+              <button pButton type="button" label="Cargar Excel" icon="pi pi-upload"
+                      class="p-button-sm p-button-secondary" (click)="bulkInput.click()" [disabled]="saving()"></button>
+              <input #bulkInput type="file" accept=".xlsx" hidden (change)="onBulkFile($event)" />
             </div>
           </div>
-          <small class="parse-err" *ngIf="parseError()">{{ parseError() }}</small>
-        </div>
-
-        <div class="preview" *ngIf="preview().length > 0">
-          <div class="pv-head">
-            <span>{{ preview().length }} fila(s) leída(s)</span>
-            <button pButton type="button" [label]="'Cargar ' + validCount() + ' estudiantes'" icon="pi pi-check"
-                    [disabled]="validCount() === 0 || hasErrors() || saving()" (click)="submit()"></button>
-          </div>
-          <small class="pv-warn" *ngIf="hasErrors()">Corrige o quita las filas con error antes de cargar.</small>
-          <p-table [value]="preview()" styleClass="p-datatable-sm">
-            <ng-template pTemplate="header"><tr><th>#</th><th>Documento</th><th>Nombre</th><th>Estado</th></tr></ng-template>
-            <ng-template pTemplate="body" let-r let-i="rowIndex">
-              <tr [class.row-error]="r.error">
-                <td>{{ i + 1 }}</td>
-                <td>{{ r.document_number }}</td>
-                <td>{{ r.name }}</td>
-                <td><span class="ok" *ngIf="!r.error"><i class="pi pi-check"></i> OK</span><span class="bad" *ngIf="r.error">{{ r.error }}</span></td>
-              </tr>
-            </ng-template>
-          </p-table>
         </div>
 
         <div class="enrolled">
@@ -93,25 +76,45 @@ interface PreviewRow {
         </div>
       </ng-container>
     </div>
+
+    <p-dialog [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '440px' }" header="Nuevo estudiante">
+      <div class="dialog-form">
+        <label>Documento
+          <input pInputText [(ngModel)]="studentForm.document_number" maxlength="25" placeholder="Ej. 100200300" />
+        </label>
+        <label>Nombre
+          <input pInputText [(ngModel)]="studentForm.name" maxlength="255" placeholder="Ej. Juan Lozada" />
+        </label>
+        <small class="err" *ngIf="formError()">{{ formError() }}</small>
+      </div>
+      <ng-template pTemplate="footer">
+        <button pButton type="button" label="Cancelar" class="p-button-text" (click)="dialogVisible = false"></button>
+        <button pButton type="button" [label]="saving() ? 'Guardando...' : 'Guardar'" [disabled]="saving()" (click)="saveManual()"></button>
+      </ng-template>
+    </p-dialog>
+
+    <app-bulk-result-dialog
+      title="Resultado cargue masivo de estudiantes"
+      [(visible)]="bulkVisible"
+      [summary]="bulkSummary">
+    </app-bulk-result-dialog>
   `,
   styles: [`
     .block-msg, .explain { display: block; margin-bottom: 16px; }
     .link { color: var(--primary); font-weight: 600; }
     .explain { background: rgba(255,165,2,0.08); border: 1px solid rgba(255,165,2,0.25); border-radius: var(--radius-md); padding: 12px 16px; font-size: 13px; color: var(--text-muted); line-height: 1.5; }
-    .upload-card { width: 100%; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 16px; }
+    .upload-card, .enrolled { width: 100%; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 16px; }
     .upload-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-    .upload-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .uc-title { font-size: 13px; font-weight: 600; }
-    .uc-title code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
-    .parse-err { color: var(--badge-expired, #dc2626); display: block; margin-top: 8px; }
-    .preview, .enrolled { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 16px; }
-    .pv-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .pv-warn { color: var(--badge-expired, #dc2626); display: block; margin-bottom: 8px; }
+    .upload-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+    .uc-title { font-size: 14px; font-weight: 800; color: var(--text); }
+    .uc-subtitle { margin-top: 4px; font-size: 13px; color: var(--text-muted); }
+    .uc-subtitle code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
     .en-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
-    .row-error { background: rgba(220,38,38,0.05); }
-    .ok { color: var(--badge-open, #16a34a); font-weight: 600; }
-    .bad { color: var(--badge-expired, #dc2626); font-weight: 600; }
     .empty-cell { text-align: center; color: var(--text-muted); padding: 20px; }
+    .dialog-form { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
+    .dialog-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text); }
+    .dialog-form input { width: 100%; }
+    .err { color: var(--badge-expired, #dc2626); font-size: 12px; }
   `],
 })
 export class EstudiantesComponent implements OnInit {
@@ -119,16 +122,17 @@ export class EstudiantesComponent implements OnInit {
   subject = signal<Subject | null>(null);
   forbidden = signal(false);
   saving = signal(false);
-  parseError = signal<string | null>(null);
-  preview = signal<PreviewRow[]>([]);
+  formError = signal('');
   enrolled = signal<Student[]>([]);
-
-  validCount = computed(() => this.preview().filter(r => !r.error).length);
-  hasErrors = computed(() => this.preview().some(r => r.error));
+  dialogVisible = false;
+  bulkVisible = false;
+  bulkSummary: BulkImportSummary = { success: [], skipped: [], errors: [] };
+  studentForm: StudentUploadRow = { document_number: '', name: '' };
 
   constructor(
     private route: ActivatedRoute,
     private userApi: UserApiService,
+    private bulkExcel: BulkExcelService,
     private messageService: MessageService,
   ) {}
 
@@ -149,9 +153,111 @@ export class EstudiantesComponent implements OnInit {
     this.loadEnrolled();
   }
 
+  openCreate(): void {
+    this.studentForm = { document_number: '', name: '' };
+    this.formError.set('');
+    this.dialogVisible = true;
+  }
+
+  downloadTemplate(): void {
+    this.bulkExcel.downloadTemplate('plantilla_estudiantes.xlsx', ['document_number', 'name'], 'Estudiantes');
+  }
+
+  async onBulkFile(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    const summary: BulkImportSummary = { success: [], skipped: [], errors: [] };
+    try {
+      const rows = await this.bulkExcel.readRows(file);
+      const enrolledDocs = new Set(this.enrolled().map(s => s.document_number));
+      const seen = new Set<string>();
+      const validRows: StudentUploadRow[] = [];
+
+      for (let index = 0; index < rows.length; index++) {
+        const rowNumber = index + 2;
+        const document_number = this.bulkExcel.value(rows[index], 'document_number');
+        const name = this.bulkExcel.value(rows[index], 'name');
+        const label = document_number || `Fila ${rowNumber}`;
+
+        if (!document_number || document_number.length > 25) {
+          summary.errors.push({ row: rowNumber, label, detail: 'El documento es requerido y debe tener máximo 25 caracteres.' });
+          continue;
+        }
+        if (!name || name.length > 255) {
+          summary.errors.push({ row: rowNumber, label, detail: 'El nombre es requerido y debe tener máximo 255 caracteres.' });
+          continue;
+        }
+        if (enrolledDocs.has(document_number)) {
+          summary.skipped.push({ row: rowNumber, label, detail: 'El estudiante ya está matriculado en este curso.' });
+          continue;
+        }
+        if (seen.has(document_number)) {
+          summary.skipped.push({ row: rowNumber, label, detail: 'Documento repetido dentro del archivo.' });
+          continue;
+        }
+
+        seen.add(document_number);
+        validRows.push({ document_number, name });
+        summary.success.push({ row: rowNumber, label, detail: name });
+      }
+
+      if (validRows.length > 0) {
+        this.saving.set(true);
+        await this.uploadRows(validRows);
+        this.saving.set(false);
+      }
+    } catch (err) {
+      this.saving.set(false);
+      summary.errors.push({ row: 0, label: file.name, detail: this.errorText(err) });
+    }
+
+    this.bulkSummary = summary;
+    this.bulkVisible = true;
+    this.loadEnrolled();
+  }
+
+  saveManual(): void {
+    const row: StudentUploadRow = {
+      document_number: this.studentForm.document_number.trim(),
+      name: this.studentForm.name.trim(),
+    };
+    const error = this.validateRow(row);
+    if (error) { this.formError.set(error); return; }
+    if (this.enrolled().some(s => s.document_number === row.document_number)) {
+      this.formError.set('El estudiante ya está matriculado en este curso.');
+      return;
+    }
+
+    this.saving.set(true);
+    this.uploadRows([row]).then(() => {
+      this.saving.set(false);
+      this.dialogVisible = false;
+      this.messageService.add({ severity: 'success', summary: 'Guardado', detail: 'Estudiante matriculado en este curso.' });
+      this.loadEnrolled();
+    }).catch(err => {
+      this.saving.set(false);
+      this.formError.set(this.errorText(err));
+    });
+  }
+
+  private validateRow(row: StudentUploadRow): string | null {
+    if (!row.document_number || row.document_number.length > 25) return 'El documento es requerido y debe tener máximo 25 caracteres.';
+    if (!row.name || row.name.length > 255) return 'El nombre es requerido y debe tener máximo 255 caracteres.';
+    return null;
+  }
+
+  private uploadRows(rows: StudentUploadRow[]): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.userApi.uploadStudents(this.nrc(), rows).subscribe({ next: () => resolve(), error: reject });
+    });
+  }
+
   private loadEnrolled(): void {
     this.userApi.getSubjectStudents(this.nrc()).subscribe({
-      next: s => this.enrolled.set(s ?? []),
+      next: s => this.enrolled.set((s ?? []).sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }))),
       error: e => {
         if (e.status === 403) this.forbidden.set(true);
         else this.showError(e);
@@ -159,89 +265,14 @@ export class EstudiantesComponent implements OnInit {
     });
   }
 
-  onFile(event: { files: File[] }): void {
-    const file = event.files?.[0];
-    if (!file) return;
-    this.parseError.set(null);
-    const reader = new FileReader();
-    reader.onload = () => this.parseCsv(String(reader.result ?? ''));
-    reader.onerror = () => this.parseError.set('No se pudo leer el archivo.');
-    reader.readAsText(file);
-  }
-
-  private parseCsv(text: string): void {
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    if (lines.length < 2) { this.parseError.set('El archivo no tiene filas de datos.'); this.preview.set([]); return; }
-    const headers = this.splitRow(lines[0]).map(h => h.toLowerCase());
-    const iDoc = headers.findIndex(h => h.includes('document'));
-    const iName = headers.findIndex(h => h.includes('name') || h.includes('nombre'));
-    if (iDoc < 0 || iName < 0) {
-      this.parseError.set('El archivo debe tener las columnas document_number y name.');
-      this.preview.set([]);
-      return;
-    }
-    const seen = new Set<string>();
-    const rows: PreviewRow[] = lines.slice(1).map(line => {
-      const cols = this.splitRow(line);
-      const document_number = (cols[iDoc] ?? '').trim();
-      const name = (cols[iName] ?? '').trim();
-      let error: string | null = null;
-      if (!document_number) error = 'Documento vacío';
-      else if (document_number.length > 25) error = 'Documento > 25 caracteres';
-      else if (!name) error = 'Nombre vacío';
-      else if (name.length > 255) error = 'Nombre > 255 caracteres';
-      else if (seen.has(document_number)) error = 'Documento duplicado en el archivo';
-      seen.add(document_number);
-      return { document_number, name, error };
-    });
-    this.preview.set(rows);
-  }
-
-  private splitRow(row: string): string[] {
-    return row.split(/[,;]/).map(c => c.replace(/^"|"$/g, '').trim());
-  }
-
-  downloadTemplate(): void {
-    const csv = '\ufeffdocument_number,name\r\n';
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'plantilla_estudiantes.csv';
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
-  submit(): void {
-    if (this.hasErrors() || this.validCount() === 0) return;
-    const rows: StudentUploadRow[] = this.preview()
-      .filter(r => !r.error)
-      .map(r => ({ document_number: r.document_number, name: r.name }));
-    this.saving.set(true);
-    this.userApi.uploadStudents(this.nrc(), rows).subscribe({
-      next: res => {
-        this.saving.set(false);
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Cargados',
-          detail: `${res.created} estudiantes nuevos, ${res.already_existed} ya existían, ${res.enrolled} matriculados en este curso.`,
-        });
-        this.preview.set([]);
-        this.loadEnrolled();
-      },
-      error: e => {
-        this.saving.set(false);
-        if (e.status === 403) this.forbidden.set(true);
-        this.showError(e);
-      },
-    });
-  }
-
   private showError(err: HttpErrorResponse): void {
-    let detail: string;
-    if (err.status === 503) detail = 'Servicio no disponible, intenta en unos segundos';
-    else if (err.status === 404) detail = 'No encontrado';
-    else detail = typeof err.error?.detail === 'string' ? err.error.detail : 'Ocurrió un error inesperado';
-    this.messageService.add({ severity: 'error', summary: `Error ${err.status}`, detail });
+    this.messageService.add({ severity: 'error', summary: `Error ${err.status}`, detail: this.errorText(err) });
+  }
+
+  private errorText(err: unknown): string {
+    const http = err as HttpErrorResponse;
+    if (http?.status === 503) return 'Servicio no disponible, intenta en unos segundos';
+    if (http?.status === 404) return 'No encontrado';
+    return typeof http?.error?.detail === 'string' ? http.error.detail : 'Ocurrió un error inesperado';
   }
 }

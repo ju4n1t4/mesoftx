@@ -2,6 +2,7 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -15,6 +16,8 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { UserApiService } from '../../../core/services/user-api.service';
 import { Subject, Period, Program } from '../../../core/models/abet.models';
+import { BulkExcelService, BulkImportSummary } from '../../../shared/bulk-import/bulk-excel.service';
+import { BulkResultDialogComponent } from '../../../shared/bulk-import/bulk-result-dialog.component';
 
 @Component({
   selector: 'app-materias',
@@ -22,7 +25,7 @@ import { Subject, Period, Program } from '../../../core/models/abet.models';
   imports: [
     CommonModule, ReactiveFormsModule,
     TableModule, ButtonModule, DialogModule, InputTextModule, SelectModule,
-    ToastModule, ProgressSpinnerModule, ConfirmDialogModule,
+    ToastModule, ProgressSpinnerModule, ConfirmDialogModule, BulkResultDialogComponent,
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -44,6 +47,10 @@ import { Subject, Period, Program } from '../../../core/models/abet.models';
           [showClear]="true"
           styleClass="filter-select">
         </p-select>
+        <span class="toolbar-spacer"></span>
+        <button pButton type="button" label="Descargar plantilla" icon="pi pi-download" class="p-button-secondary" (click)="downloadTemplate()"></button>
+        <button pButton type="button" label="Cargar Excel" icon="pi pi-upload" class="p-button-secondary" (click)="bulkInput.click()" [disabled]="periods().length === 0 || programs().length === 0"></button>
+        <input #bulkInput type="file" accept=".xlsx" hidden (change)="onBulkFile($event)" />
         <button pButton type="button" label="Nueva materia" icon="pi pi-plus" (click)="openCreate()" [disabled]="periods().length === 0 || programs().length === 0"></button>
       </div>
 
@@ -96,11 +103,11 @@ import { Subject, Period, Program } from '../../../core/models/abet.models';
         </label>
         <label>Código institucional (materia_curso)
           <input pInputText formControlName="materia_curso" maxlength="25" placeholder="Ej. ISI-2301" />
-          <small class="err" *ngIf="showErr('materia_curso')">Requerido, máx 25 caracteres.</small>
+          <small class="err" *ngIf="showErr('materia_curso')">Requerido, máximo 25 caracteres.</small>
         </label>
         <label>Nombre
           <input pInputText formControlName="name" maxlength="255" placeholder="Ej. Bases de Datos" />
-          <small class="err" *ngIf="showErr('name')">Requerido, máx 255 caracteres.</small>
+          <small class="err" *ngIf="showErr('name')">Requerido, máximo 255 caracteres.</small>
         </label>
         <label>Periodo
           <p-select appendTo="body" formControlName="periods_id" [options]="periodOptions()" optionLabel="label" optionValue="value" placeholder="Selecciona un periodo"></p-select>
@@ -113,12 +120,19 @@ import { Subject, Period, Program } from '../../../core/models/abet.models';
       </form>
       <ng-template pTemplate="footer">
         <button pButton type="button" label="Cancelar" class="p-button-text" (click)="dialogVisible = false"></button>
-        <button pButton type="button" [label]="saving() ? 'Guardando…' : 'Guardar'" [disabled]="saving()" (click)="save()"></button>
+        <button pButton type="button" [label]="saving() ? 'Guardando...' : 'Guardar'" [disabled]="saving()" (click)="save()"></button>
       </ng-template>
     </p-dialog>
+
+    <app-bulk-result-dialog
+      title="Resultado cargue masivo de materias"
+      [(visible)]="bulkVisible"
+      [summary]="bulkSummary">
+    </app-bulk-result-dialog>
   `,
   styles: [`
-    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .toolbar { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .toolbar-spacer { flex: 1 1 auto; }
     .notice { display: flex; align-items: center; gap: 10px; background: rgba(255,165,2,0.08); border: 1px solid rgba(255,165,2,0.25); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: var(--text-muted); }
     .notice i { color: var(--primary); flex-shrink: 0; }
     .loading-wrap { display: flex; justify-content: center; padding: 48px; }
@@ -134,6 +148,8 @@ export class MateriasComponent implements OnInit {
   saving = signal(false);
   editing = signal(false);
   dialogVisible = false;
+  bulkVisible = false;
+  bulkSummary: BulkImportSummary = { success: [], skipped: [], errors: [] };
   periodFilter = new FormControl<number | null>(null);
 
   private subjects = signal<Subject[]>([]);
@@ -156,6 +172,7 @@ export class MateriasComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private userApi: UserApiService,
+    private bulkExcel: BulkExcelService,
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
   ) {
@@ -175,6 +192,92 @@ export class MateriasComponent implements OnInit {
     this.reload();
   }
 
+  downloadTemplate(): void {
+    this.bulkExcel.downloadTemplate(
+      'plantilla_materias.xlsx',
+      ['nrc', 'materia_curso', 'name', 'period_code', 'program_id'],
+      'Materias',
+    );
+  }
+
+  async onBulkFile(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    const summary: BulkImportSummary = { success: [], skipped: [], errors: [] };
+    try {
+      const rows = await this.bulkExcel.readRows(file);
+      const existing = new Set(this.subjects().map(s => s.nrc));
+      const periodsByCode = new Map(this.periods().map(p => [p.code, p]));
+      const activePrograms = new Map(this.programs().filter(p => p.active).map(p => [p.id.toUpperCase(), p]));
+      const seen = new Set<number>();
+
+      for (let index = 0; index < rows.length; index++) {
+        const rowNumber = index + 2;
+        const nrcText = this.bulkExcel.value(rows[index], 'nrc');
+        const nrc = Number(nrcText);
+        const materiaCurso = this.bulkExcel.value(rows[index], 'materia_curso');
+        const name = this.bulkExcel.value(rows[index], 'name');
+        const periodCode = this.bulkExcel.value(rows[index], 'period_code');
+        const programId = this.bulkExcel.value(rows[index], 'program_id').toUpperCase();
+        const label = nrcText || `Fila ${rowNumber}`;
+        const period = periodsByCode.get(periodCode);
+
+        if (!Number.isInteger(nrc) || nrc <= 0) {
+          summary.errors.push({ row: rowNumber, label, detail: 'El NRC es requerido y debe ser un entero positivo.' });
+          continue;
+        }
+        if (!materiaCurso || materiaCurso.length > 25) {
+          summary.errors.push({ row: rowNumber, label, detail: 'El código institucional es requerido y debe tener máximo 25 caracteres.' });
+          continue;
+        }
+        if (!name || name.length > 255) {
+          summary.errors.push({ row: rowNumber, label, detail: 'El nombre es requerido y debe tener máximo 255 caracteres.' });
+          continue;
+        }
+        if (!period) {
+          summary.errors.push({ row: rowNumber, label, detail: 'El periodo indicado no existe.' });
+          continue;
+        }
+        if (!activePrograms.has(programId)) {
+          summary.errors.push({ row: rowNumber, label, detail: 'El programa indicado no existe o está inactivo.' });
+          continue;
+        }
+        if (existing.has(nrc)) {
+          summary.skipped.push({ row: rowNumber, label, detail: 'Ya existe una materia con ese NRC.' });
+          continue;
+        }
+        if (seen.has(nrc)) {
+          summary.skipped.push({ row: rowNumber, label, detail: 'Registro repetido dentro del archivo.' });
+          continue;
+        }
+
+        seen.add(nrc);
+        try {
+          await firstValueFrom(this.userApi.createSubject({
+            nrc,
+            materia_curso: materiaCurso,
+            name,
+            periods_id: period.id,
+            program_id: programId,
+          }));
+          existing.add(nrc);
+          summary.success.push({ row: rowNumber, label: String(nrc), detail: `${materiaCurso} - ${name}` });
+        } catch (err) {
+          summary.errors.push({ row: rowNumber, label: String(nrc), detail: this.errorText(err) });
+        }
+      }
+    } catch (err) {
+      summary.errors.push({ row: 0, label: file.name, detail: this.errorText(err) });
+    }
+
+    this.bulkSummary = summary;
+    this.bulkVisible = true;
+    this.reload();
+  }
+
   private reload(): void {
     this.loading.set(true);
     this.userApi.getSubjects().subscribe({
@@ -183,7 +286,7 @@ export class MateriasComponent implements OnInit {
     });
   }
 
-  periodCode(id: number): string { return this.periods().find(p => p.id === id)?.code ?? '—'; }
+  periodCode(id: number): string { return this.periods().find(p => p.id === id)?.code ?? '-'; }
 
   showErr(ctrl: string): boolean {
     const c = this.form.get(ctrl);
@@ -200,7 +303,7 @@ export class MateriasComponent implements OnInit {
   openEdit(s: Subject): void {
     this.editing.set(true);
     this.form.reset({ nrc: s.nrc, materia_curso: s.materia_curso, name: s.name, periods_id: s.periods_id, program_id: s.program_id });
-    this.form.get('nrc')?.disable();   // el NRC es la PK: no editable
+    this.form.get('nrc')?.disable();
     this.dialogVisible = true;
   }
 
@@ -210,10 +313,10 @@ export class MateriasComponent implements OnInit {
     const raw = this.form.getRawValue();
     const body: Subject = {
       nrc: Number(raw.nrc),
-      materia_curso: raw.materia_curso as string,
-      name: raw.name as string,
+      materia_curso: String(raw.materia_curso).trim(),
+      name: String(raw.name).trim(),
       periods_id: Number(raw.periods_id),
-      program_id: raw.program_id as string,
+      program_id: String(raw.program_id).trim().toUpperCase(),
     };
 
     const done = () => { this.saving.set(false); this.dialogVisible = false; this.reload(); };
@@ -247,16 +350,19 @@ export class MateriasComponent implements OnInit {
         this.messageService.add({ severity: 'success', summary: 'Borrada', detail: `Materia ${s.materia_curso} borrada.` });
         this.reload();
       },
-      // 409 (rúbricas en periodo cerrado) o 503: se muestra el detail y NO se quita la fila.
+      // 409 (rubricas en periodo cerrado) o 503: se muestra el detail y no se quita la fila.
       error: e => this.showError(e),
     });
   }
 
   private showError(err: HttpErrorResponse): void {
-    let detail: string;
-    if (err.status === 503) detail = 'Servicio no disponible, intenta en unos segundos';
-    else if (err.status === 404) detail = 'No encontrado';
-    else detail = typeof err.error?.detail === 'string' ? err.error.detail : 'Ocurrió un error inesperado';
-    this.messageService.add({ severity: 'error', summary: `Error ${err.status}`, detail });
+    this.messageService.add({ severity: 'error', summary: `Error ${err.status}`, detail: this.errorText(err) });
+  }
+
+  private errorText(err: unknown): string {
+    const http = err as HttpErrorResponse;
+    if (http?.status === 503) return 'Servicio no disponible, intenta en unos segundos';
+    if (http?.status === 404) return 'No encontrado';
+    return typeof http?.error?.detail === 'string' ? http.error.detail : 'Ocurrió un error inesperado';
   }
 }

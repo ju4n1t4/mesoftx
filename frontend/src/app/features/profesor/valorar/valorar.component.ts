@@ -47,14 +47,27 @@ interface StudentEvalRow extends Student {
       </div>
 
       <ng-container *ngIf="!loading()">
+        <section class="step" *ngIf="nrcOptions().length > 0 && !student()">
+          <div class="step-title">Seleccione el NRC a evaluar.</div>
+          <div class="nrc-cards">
+            <button class="nrc-card" *ngFor="let s of nrcOptions()"
+                    [class.selected]="selectedNrc() === s.nrc"
+                    (click)="pickNrc(s.nrc)">
+              <span class="ac-so">NRC {{ s.nrc }}</span>
+              <span class="ac-desc">{{ s.materia_curso }} · {{ s.name }}</span>
+              <span class="ac-nrc">Programa {{ s.program_id }}</span>
+            </button>
+          </div>
+        </section>
+
         <div class="valuation-grid" *ngIf="!student()">
           <section class="step">
             <div class="step-title">Seleccione el SO a evaluar.</div>
-            <div class="empty-box" *ngIf="assessments().length === 0">
+            <div class="empty-box" *ngIf="assessmentsForSelectedNrc().length === 0">
               No tienes valoraciones pendientes. El coordinador aún no ha abierto ningún Student Outcome para tus cursos.
             </div>
-            <div class="cards" *ngIf="assessments().length > 0">
-              <button class="ass-card" *ngFor="let a of assessments()"
+            <div class="cards" *ngIf="assessmentsForSelectedNrc().length > 0">
+              <button class="ass-card" *ngFor="let a of assessmentsForSelectedNrc()"
                       [class.selected]="assessment()?.schedule_id === a.schedule_id && assessment()?.nrc === a.nrc"
                       (click)="pickAssessment(a)">
                 <span class="ac-so">{{ a.so_id }}</span>
@@ -85,7 +98,7 @@ interface StudentEvalRow extends Student {
             </p-table>
           </section>
 
-          <section class="step placeholder-step" *ngIf="!assessment() && assessments().length > 0">
+          <section class="step placeholder-step" *ngIf="!assessment() && assessmentsForSelectedNrc().length > 0">
             <div class="step-title">Estudiantes a evaluar</div>
             <div class="empty-box">Selecciona un Student Outcome para ver sus estudiantes.</div>
           </section>
@@ -172,10 +185,13 @@ interface StudentEvalRow extends Student {
     .ctx { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
     .empty-box { color: var(--text-muted); font-size: 14px; padding: 20px; background: var(--surface-2); border-radius: var(--radius-sm); }
     .valuation-grid { display: grid; grid-template-columns: minmax(280px, 420px) minmax(0, 1fr); gap: 16px; align-items: start; }
-    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    .cards, .nrc-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
     .ass-card { display: flex; flex-direction: column; gap: 4px; text-align: left; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; cursor: pointer; font-family: inherit; }
     .ass-card:hover { border-color: var(--primary); }
     .ass-card.selected { border-color: var(--primary); background: rgba(16, 185, 129, .08); box-shadow: inset 0 0 0 1px var(--primary); }
+    .nrc-card { display: flex; flex-direction: column; gap: 4px; text-align: left; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; cursor: pointer; font-family: inherit; }
+    .nrc-card:hover { border-color: var(--primary); }
+    .nrc-card.selected { border-color: var(--primary); background: rgba(16, 185, 129, .08); box-shadow: inset 0 0 0 1px var(--primary); }
     .ac-so { font-weight: 800; color: var(--accent); }
     .ac-desc { font-size: 13px; color: var(--text); }
     .ac-nrc { font-size: 12px; color: var(--text-muted); }
@@ -222,6 +238,7 @@ export class ValorarComponent implements OnInit {
 
   assessments = signal<MyAssessment[]>([]);
   private mySubjects = signal<Subject[]>([]);
+  selectedNrc = signal<number | null>(null);
   private assessmentSig = signal<MyAssessment | null>(null);
   students = signal<StudentEvalRow[]>([]);
   private studentSig = signal<StudentEvalRow | null>(null);
@@ -233,6 +250,16 @@ export class ValorarComponent implements OnInit {
   assessment = computed(() => this.assessmentSig());
   student = computed(() => this.studentSig());
   canSave = computed(() => this.canSaveSig());
+  nrcOptions = computed(() => {
+    const openNrcs = new Set(this.assessments().map(a => a.nrc));
+    return this.mySubjects()
+      .filter(s => openNrcs.has(s.nrc))
+      .sort((a, b) => String(a.materia_curso).localeCompare(String(b.materia_curso), 'es', { sensitivity: 'base' }));
+  });
+  assessmentsForSelectedNrc = computed(() => {
+    const nrc = this.selectedNrc();
+    return nrc == null ? [] : this.assessments().filter(a => a.nrc === nrc);
+  });
 
   levelControl(i: number): FormControl<string | null> {
     return this.levelsForm.at(i) as FormControl<string | null>;
@@ -256,6 +283,8 @@ export class ValorarComponent implements OnInit {
       next: ({ assessments, subjects }) => {
         this.assessments.set(assessments ?? []);
         this.mySubjects.set(subjects ?? []);
+        const firstNrc = this.nrcOptions()[0]?.nrc ?? (assessments ?? [])[0]?.nrc ?? null;
+        this.selectedNrc.set(firstNrc);
         this.loading.set(false);
       },
       error: e => { this.showError(e); this.loading.set(false); },
@@ -264,6 +293,12 @@ export class ValorarComponent implements OnInit {
 
   reset(): void { this.assessmentSig.set(null); this.studentSig.set(null); this.students.set([]); this.indicators.set([]); this.clearForm(); }
   backToStudents(): void { this.studentSig.set(null); this.indicators.set([]); this.clearForm(); }
+
+  pickNrc(nrc: number): void {
+    if (this.selectedNrc() === nrc) return;
+    this.selectedNrc.set(nrc);
+    this.reset();
+  }
 
   private clearForm(): void { this.levelsForm.clear(); this.canSaveSig.set(false); }
 
@@ -322,7 +357,7 @@ export class ValorarComponent implements OnInit {
     forkJoin({
       students: this.userApi.getSubjectStudents(a.nrc),
       performances: this.assesment.getPerformances(a.so_id),
-      rubrics: this.assesment.getRubrics({ schedule_id: a.schedule_id }),
+      rubrics: this.assesment.getRubrics({ schedule_id: a.schedule_id, subjects_id: a.nrc }),
     }).subscribe({
       next: ({ students, performances, rubrics }) => {
         const performanceTotal = (performances ?? []).length;
@@ -352,7 +387,7 @@ export class ValorarComponent implements OnInit {
     // Indicadores del SO + niveles (ordenados por rank) + rúbricas ya hechas.
     forkJoin({
       performances: this.assesment.getPerformances(a.so_id),
-      rubrics: this.assesment.getRubrics({ schedule_id: a.schedule_id }),
+      rubrics: this.assesment.getRubrics({ schedule_id: a.schedule_id, subjects_id: a.nrc }),
     }).subscribe({
       next: ({ performances, rubrics }) => {
         const mine = (rubrics ?? []).filter(r => r.student_id === s.id);

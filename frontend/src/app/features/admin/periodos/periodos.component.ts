@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -14,6 +15,8 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { UserApiService } from '../../../core/services/user-api.service';
 import { Period } from '../../../core/models/abet.models';
+import { BulkExcelService, BulkImportSummary } from '../../../shared/bulk-import/bulk-excel.service';
+import { BulkResultDialogComponent } from '../../../shared/bulk-import/bulk-result-dialog.component';
 
 @Component({
   selector: 'app-admin-periodos',
@@ -21,7 +24,7 @@ import { Period } from '../../../core/models/abet.models';
   imports: [
     CommonModule, ReactiveFormsModule,
     TableModule, ButtonModule, DialogModule, InputTextModule,
-    ToastModule, ProgressSpinnerModule, ConfirmDialogModule,
+    ToastModule, ProgressSpinnerModule, ConfirmDialogModule, BulkResultDialogComponent,
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -31,10 +34,13 @@ import { Period } from '../../../core/models/abet.models';
     <div class="content-area">
       <div class="page-header">
         <h1>Periodos</h1>
-        <p>Gestiona los periodos academicos utilizados por materias, programacion y reportes.</p>
+        <p>Gestiona los periodos académicos utilizados por materias, programación y reportes.</p>
       </div>
 
       <div class="toolbar">
+        <button pButton type="button" label="Descargar plantilla" icon="pi pi-download" class="p-button-secondary" (click)="downloadTemplate()"></button>
+        <button pButton type="button" label="Cargar Excel" icon="pi pi-upload" class="p-button-secondary" (click)="bulkInput.click()"></button>
+        <input #bulkInput type="file" accept=".xlsx" hidden (change)="onBulkFile($event)" />
         <button pButton type="button" label="Nuevo periodo" icon="pi pi-plus" (click)="openCreate()"></button>
       </div>
 
@@ -44,7 +50,7 @@ import { Period } from '../../../core/models/abet.models';
 
       <p-table *ngIf="!loading()" [value]="periods()" styleClass="p-datatable-sm" [rowHover]="true">
         <ng-template pTemplate="header">
-          <tr><th>ID</th><th>Codigo</th><th>Anio</th><th>Periodo</th><th style="width:9rem">Acciones</th></tr>
+          <tr><th>ID</th><th>Código</th><th>Año</th><th>Periodo</th><th style="width:9rem">Acciones</th></tr>
         </ng-template>
         <ng-template pTemplate="body" let-p>
           <tr>
@@ -66,9 +72,9 @@ import { Period } from '../../../core/models/abet.models';
 
     <p-dialog [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '440px' }" [header]="editing() ? 'Editar periodo' : 'Nuevo periodo'">
       <form [formGroup]="form" class="dialog-form">
-        <label>Codigo
+        <label>Código
           <input pInputText formControlName="code" maxlength="6" placeholder="Ej. 202610" />
-          <small class="err" *ngIf="showErr('code')">Codigo requerido, maximo 6 caracteres.</small>
+          <small class="err" *ngIf="showErr('code')">Código requerido, máximo 6 caracteres.</small>
         </label>
       </form>
       <ng-template pTemplate="footer">
@@ -76,9 +82,15 @@ import { Period } from '../../../core/models/abet.models';
         <button pButton type="button" [label]="saving() ? 'Guardando...' : 'Guardar'" [disabled]="saving()" (click)="save()"></button>
       </ng-template>
     </p-dialog>
+
+    <app-bulk-result-dialog
+      title="Resultado cargue masivo de periodos"
+      [(visible)]="bulkVisible"
+      [summary]="bulkSummary">
+    </app-bulk-result-dialog>
   `,
   styles: [`
-    .toolbar { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+    .toolbar { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
     .loading-wrap { display: flex; justify-content: center; padding: 48px; }
     .actions { display: flex; gap: 6px; }
     .empty-cell { text-align: center; color: var(--text-muted); padding: 24px; }
@@ -94,6 +106,8 @@ export class PeriodosComponent implements OnInit {
   saving = signal(false);
   editing = signal(false);
   dialogVisible = false;
+  bulkVisible = false;
+  bulkSummary: BulkImportSummary = { success: [], skipped: [], errors: [] };
   periods = signal<Period[]>([]);
   private editId = signal<number | null>(null);
 
@@ -102,6 +116,7 @@ export class PeriodosComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private userApi: UserApiService,
+    private bulkExcel: BulkExcelService,
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
   ) {
@@ -111,6 +126,58 @@ export class PeriodosComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.reload();
+  }
+
+  downloadTemplate(): void {
+    this.bulkExcel.downloadTemplate('plantilla_periodos.xlsx', ['code'], 'Periodos');
+  }
+
+  async onBulkFile(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    const summary: BulkImportSummary = { success: [], skipped: [], errors: [] };
+    try {
+      const rows = await this.bulkExcel.readRows(file);
+      const existing = new Set(this.periods().map(p => p.code));
+      const seen = new Set<string>();
+
+      for (let index = 0; index < rows.length; index++) {
+        const rowNumber = index + 2;
+        const code = this.bulkExcel.value(rows[index], 'code');
+        const label = code || `Fila ${rowNumber}`;
+
+        if (!/^\d{6}$/.test(code)) {
+          summary.errors.push({ row: rowNumber, label, detail: 'El código es requerido y debe tener 6 dígitos. Ejemplo: 202610.' });
+          continue;
+        }
+        if (existing.has(code)) {
+          summary.skipped.push({ row: rowNumber, label, detail: 'Ya existe un periodo con ese código.' });
+          continue;
+        }
+        if (seen.has(code)) {
+          summary.skipped.push({ row: rowNumber, label, detail: 'Registro repetido dentro del archivo.' });
+          continue;
+        }
+
+        seen.add(code);
+        try {
+          await firstValueFrom(this.userApi.createPeriod({ code }));
+          existing.add(code);
+          summary.success.push({ row: rowNumber, label, detail: 'Periodo creado.' });
+        } catch (err) {
+          summary.errors.push({ row: rowNumber, label, detail: this.errorText(err) });
+        }
+      }
+    } catch (err) {
+      summary.errors.push({ row: 0, label: file.name, detail: this.errorText(err) });
+    }
+
+    this.bulkSummary = summary;
+    this.bulkVisible = true;
     this.reload();
   }
 
@@ -176,7 +243,7 @@ export class PeriodosComponent implements OnInit {
   confirmDelete(period: Period): void {
     this.confirmationService.confirm({
       header: 'Borrar periodo',
-      message: `Borrar el periodo ${period.code}? Esta accion no se puede deshacer.`,
+      message: `¿Borrar el periodo ${period.code}? Esta acción no se puede deshacer.`,
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'Borrar',
       rejectLabel: 'Cancelar',
@@ -195,10 +262,13 @@ export class PeriodosComponent implements OnInit {
   }
 
   private showError(err: HttpErrorResponse): void {
-    let detail: string;
-    if (err.status === 503) detail = 'Servicio no disponible, intenta en unos segundos';
-    else if (err.status === 404) detail = 'No encontrado';
-    else detail = typeof err.error?.detail === 'string' ? err.error.detail : 'Ocurrio un error inesperado';
-    this.messageService.add({ severity: 'error', summary: `Error ${err.status}`, detail });
+    this.messageService.add({ severity: 'error', summary: `Error ${err.status}`, detail: this.errorText(err) });
+  }
+
+  private errorText(err: unknown): string {
+    const http = err as HttpErrorResponse;
+    if (http?.status === 503) return 'Servicio no disponible, intenta en unos segundos';
+    if (http?.status === 404) return 'No encontrado';
+    return typeof http?.error?.detail === 'string' ? http.error.detail : 'Ocurrió un error inesperado';
   }
 }

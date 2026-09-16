@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -14,6 +15,8 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { UserApiService } from '../../../core/services/user-api.service';
 import { College } from '../../../core/models/abet.models';
+import { BulkExcelService, BulkImportSummary } from '../../../shared/bulk-import/bulk-excel.service';
+import { BulkResultDialogComponent } from '../../../shared/bulk-import/bulk-result-dialog.component';
 
 @Component({
   selector: 'app-facultades',
@@ -21,7 +24,7 @@ import { College } from '../../../core/models/abet.models';
   imports: [
     CommonModule, ReactiveFormsModule,
     TableModule, ButtonModule, DialogModule, InputTextModule,
-    ToastModule, ProgressSpinnerModule, ConfirmDialogModule,
+    ToastModule, ProgressSpinnerModule, ConfirmDialogModule, BulkResultDialogComponent,
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -35,6 +38,9 @@ import { College } from '../../../core/models/abet.models';
       </div>
 
       <div class="toolbar">
+        <button pButton type="button" label="Descargar plantilla" icon="pi pi-download" class="p-button-secondary" (click)="downloadTemplate()"></button>
+        <button pButton type="button" label="Cargar Excel" icon="pi pi-upload" class="p-button-secondary" (click)="bulkInput.click()"></button>
+        <input #bulkInput type="file" accept=".xlsx" hidden (change)="onBulkFile($event)" />
         <button pButton type="button" label="Nueva facultad" icon="pi pi-plus" (click)="openCreate()"></button>
       </div>
 
@@ -45,7 +51,7 @@ import { College } from '../../../core/models/abet.models';
       <p-table *ngIf="!loading()" [value]="colleges()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm" [rowHover]="true">
         <ng-template pTemplate="header">
           <tr>
-            <th>Codigo</th>
+            <th>Código</th>
             <th>Nombre</th>
             <th>Estado</th>
             <th style="width:10rem">Acciones</th>
@@ -74,9 +80,9 @@ import { College } from '../../../core/models/abet.models';
 
     <p-dialog [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '460px' }" [header]="editing() ? 'Editar facultad' : 'Nueva facultad'">
       <form [formGroup]="form" class="dialog-form">
-        <label>Codigo
+        <label>Código
           <input pInputText formControlName="id" maxlength="3" placeholder="Ej. ING" />
-          <small class="err" *ngIf="showErr('id')">Codigo requerido, maximo 3 caracteres.</small>
+          <small class="err" *ngIf="showErr('id')">Código requerido, máximo 3 caracteres.</small>
         </label>
         <label>Nombre
           <input pInputText formControlName="name" maxlength="255" placeholder="Ej. Facultad de Ingenieria" />
@@ -92,9 +98,15 @@ import { College } from '../../../core/models/abet.models';
         <button pButton type="button" [label]="saving() ? 'Guardando...' : 'Guardar'" [disabled]="saving()" (click)="save()"></button>
       </ng-template>
     </p-dialog>
+
+    <app-bulk-result-dialog
+      title="Resultado cargue masivo de facultades"
+      [(visible)]="bulkVisible"
+      [summary]="bulkSummary">
+    </app-bulk-result-dialog>
   `,
   styles: [`
-    .toolbar { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+    .toolbar { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
     .loading-wrap { display: flex; justify-content: center; padding: 48px; }
     .empty-cell { text-align: center; color: var(--text-muted); padding: 24px; }
     .actions { display: flex; gap: 6px; }
@@ -116,6 +128,8 @@ export class FacultadesComponent implements OnInit {
   saving = signal(false);
   editing = signal(false);
   dialogVisible = false;
+  bulkVisible = false;
+  bulkSummary: BulkImportSummary = { success: [], skipped: [], errors: [] };
   colleges = signal<College[]>([]);
   private editId = signal<string | null>(null);
 
@@ -124,6 +138,7 @@ export class FacultadesComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private userApi: UserApiService,
+    private bulkExcel: BulkExcelService,
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
   ) {
@@ -132,6 +147,64 @@ export class FacultadesComponent implements OnInit {
       name: ['', [Validators.required, Validators.maxLength(255)]],
       active: [true],
     });
+  }
+
+  downloadTemplate(): void {
+    this.bulkExcel.downloadTemplate('plantilla_facultades.xlsx', ['id', 'name', 'active'], 'Facultades');
+  }
+
+  async onBulkFile(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    const summary: BulkImportSummary = { success: [], skipped: [], errors: [] };
+    try {
+      const rows = await this.bulkExcel.readRows(file);
+      const existing = new Set(this.colleges().map(c => c.id.toUpperCase()));
+      const seen = new Set<string>();
+
+      for (let index = 0; index < rows.length; index++) {
+        const rowNumber = index + 2;
+        const id = this.bulkExcel.value(rows[index], 'id').toUpperCase();
+        const name = this.bulkExcel.value(rows[index], 'name');
+        const active = this.bulkExcel.boolValue(rows[index], 'active', true);
+        const label = id || `Fila ${rowNumber}`;
+
+        if (!id || id.length > 3) {
+          summary.errors.push({ row: rowNumber, label, detail: 'El id es requerido y debe tener máximo 3 caracteres.' });
+          continue;
+        }
+        if (!name || name.length > 255) {
+          summary.errors.push({ row: rowNumber, label, detail: 'El nombre es requerido y debe tener máximo 255 caracteres.' });
+          continue;
+        }
+        if (existing.has(id)) {
+          summary.skipped.push({ row: rowNumber, label, detail: 'Ya existe una facultad con ese id.' });
+          continue;
+        }
+        if (seen.has(id)) {
+          summary.skipped.push({ row: rowNumber, label, detail: 'Registro repetido dentro del archivo.' });
+          continue;
+        }
+
+        seen.add(id);
+        try {
+          await firstValueFrom(this.userApi.createCollege({ id, name, active }));
+          existing.add(id);
+          summary.success.push({ row: rowNumber, label, detail: name });
+        } catch (err) {
+          summary.errors.push({ row: rowNumber, label, detail: this.errorText(err) });
+        }
+      }
+    } catch (err) {
+      summary.errors.push({ row: 0, label: file.name, detail: this.errorText(err) });
+    }
+
+    this.bulkSummary = summary;
+    this.bulkVisible = true;
+    this.reload();
   }
 
   ngOnInit(): void {
@@ -202,7 +275,7 @@ export class FacultadesComponent implements OnInit {
   confirmDelete(college: College): void {
     this.confirmationService.confirm({
       header: 'Borrar facultad',
-      message: `Borrar la facultad ${college.id}? Esta accion tambien puede afectar programas relacionados.`,
+      message: `¿Borrar la facultad ${college.id}? Esta acción también puede afectar programas relacionados.`,
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'Borrar',
       rejectLabel: 'Cancelar',
@@ -221,10 +294,14 @@ export class FacultadesComponent implements OnInit {
   }
 
   private showError(err: HttpErrorResponse): void {
-    let detail: string;
-    if (err.status === 503) detail = 'Servicio no disponible, intenta en unos segundos';
-    else if (err.status === 404) detail = 'No encontrado';
-    else detail = typeof err.error?.detail === 'string' ? err.error.detail : 'Ocurrio un error inesperado';
+    const detail = this.errorText(err);
     this.messageService.add({ severity: 'error', summary: `Error ${err.status}`, detail });
+  }
+
+  private errorText(err: unknown): string {
+    const http = err as HttpErrorResponse;
+    if (http?.status === 503) return 'Servicio no disponible, intenta en unos segundos';
+    if (http?.status === 404) return 'No encontrado';
+    return typeof http?.error?.detail === 'string' ? http.error.detail : 'Ocurrió un error inesperado';
   }
 }

@@ -218,7 +218,7 @@ export class UsuariosComponent implements OnInit {
     let detail: string;
     if (err.status === 503) detail = 'Servicio no disponible, intenta en unos segundos';
     else if (err.status === 404) detail = 'No encontrado';
-    else detail = typeof err.error?.detail === 'string' ? err.error.detail : 'Ocurrio un error inesperado';
+    else detail = typeof err.error?.detail === 'string' ? err.error.detail : 'Ocurrió un error inesperado';
     this.messageService.add({ severity: 'error', summary: `Error ${err.status}`, detail });
   }
 }

@@ -36,6 +36,7 @@ class PeriodModel(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     code: Mapped[str] = mapped_column(String(6), unique=True, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 class RoleModel(Base):

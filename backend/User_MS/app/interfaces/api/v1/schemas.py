@@ -151,15 +151,18 @@ class ProgramResponse(ProgramCreate):
 # ── Periodo ─────────────────────────────────────────────────
 class PeriodCreate(BaseModel):
     code: str = Field(..., max_length=6)
+    active: bool = False
 
 
 class PeriodUpdate(BaseModel):
     code: str | None = Field(default=None, max_length=6)
+    active: bool | None = None
 
 
 class PeriodResponse(BaseModel):
     id: int
     code: str
+    active: bool
     model_config = ConfigDict(from_attributes=True)
 
 

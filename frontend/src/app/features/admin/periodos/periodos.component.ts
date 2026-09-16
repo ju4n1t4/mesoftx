@@ -50,7 +50,14 @@ import { BulkResultDialogComponent } from '../../../shared/bulk-import/bulk-resu
 
       <p-table *ngIf="!loading()" [value]="periods()" styleClass="p-datatable-sm" [rowHover]="true">
         <ng-template pTemplate="header">
-          <tr><th>ID</th><th>Código</th><th>Año</th><th>Periodo</th><th style="width:9rem">Acciones</th></tr>
+          <tr>
+            <th>ID</th>
+            <th>Código</th>
+            <th>Año</th>
+            <th>Periodo</th>
+            <th>Estado</th>
+            <th style="width:9rem">Acciones</th>
+          </tr>
         </ng-template>
         <ng-template pTemplate="body" let-p>
           <tr>
@@ -58,6 +65,13 @@ import { BulkResultDialogComponent } from '../../../shared/bulk-import/bulk-resu
             <td><span class="period-code">{{ p.code }}</span></td>
             <td>{{ periodYear(p.code) }}</td>
             <td>{{ periodTerm(p.code) }}</td>
+            <td>
+              <button type="button" class="state-switch" [class.is-active]="p.active"
+                      (click)="activatePeriod(p)"
+                      [attr.aria-label]="p.active ? 'Periodo activo' : 'Activar periodo'">
+                <span></span>
+              </button>
+            </td>
             <td class="actions">
               <button pButton type="button" icon="pi pi-pencil" class="p-button-sm p-button-text" (click)="openEdit(p)"></button>
               <button pButton type="button" icon="pi pi-trash" class="p-button-sm p-button-text p-button-danger" (click)="confirmDelete(p)"></button>
@@ -65,7 +79,7 @@ import { BulkResultDialogComponent } from '../../../shared/bulk-import/bulk-resu
           </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
-          <tr><td colspan="5" class="empty-cell">No hay periodos registrados.</td></tr>
+          <tr><td colspan="6" class="empty-cell">No hay periodos registrados.</td></tr>
         </ng-template>
       </p-table>
     </div>
@@ -95,6 +109,10 @@ import { BulkResultDialogComponent } from '../../../shared/bulk-import/bulk-resu
     .actions { display: flex; gap: 6px; }
     .empty-cell { text-align: center; color: var(--text-muted); padding: 24px; }
     .period-code { color: var(--accent); font-weight: 700; }
+    .state-switch { border: 0; display: inline-flex; align-items: center; width: 40px; height: 22px; padding: 2px; border-radius: 999px; background: #d1d5db; vertical-align: middle; cursor: pointer; }
+    .state-switch span { width: 18px; height: 18px; border-radius: 999px; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .18); transition: transform .18s ease; }
+    .state-switch.is-active { background: #10b981; }
+    .state-switch.is-active span { transform: translateX(18px); }
     .dialog-form { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
     .dialog-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text); }
     .dialog-form input { width: 100%; }
@@ -130,7 +148,7 @@ export class PeriodosComponent implements OnInit {
   }
 
   downloadTemplate(): void {
-    this.bulkExcel.downloadTemplate('plantilla_periodos.xlsx', ['code'], 'Periodos');
+    this.bulkExcel.downloadTemplate('plantilla_periodos.xlsx', ['code', 'active'], 'Periodos');
   }
 
   async onBulkFile(event: Event): Promise<void> {
@@ -148,6 +166,7 @@ export class PeriodosComponent implements OnInit {
       for (let index = 0; index < rows.length; index++) {
         const rowNumber = index + 2;
         const code = this.bulkExcel.value(rows[index], 'code');
+        const active = this.bulkExcel.boolValue(rows[index], 'active', false);
         const label = code || `Fila ${rowNumber}`;
 
         if (!/^\d{6}$/.test(code)) {
@@ -165,9 +184,9 @@ export class PeriodosComponent implements OnInit {
 
         seen.add(code);
         try {
-          await firstValueFrom(this.userApi.createPeriod({ code }));
+          await firstValueFrom(this.userApi.createPeriod({ code, active }));
           existing.add(code);
-          summary.success.push({ row: rowNumber, label, detail: 'Periodo creado.' });
+          summary.success.push({ row: rowNumber, label, detail: active ? 'Periodo creado y activado.' : 'Periodo creado.' });
         } catch (err) {
           summary.errors.push({ row: rowNumber, label, detail: this.errorText(err) });
         }
@@ -223,7 +242,7 @@ export class PeriodosComponent implements OnInit {
     const id = this.editId();
     const request = this.editing() && id != null
       ? this.userApi.updatePeriod(id, { code })
-      : this.userApi.createPeriod({ code });
+      : this.userApi.createPeriod({ code, active: this.periods().length === 0 });
 
     request.subscribe({
       next: () => {
@@ -237,6 +256,20 @@ export class PeriodosComponent implements OnInit {
         this.reload();
       },
       error: e => { this.saving.set(false); this.showError(e); },
+    });
+  }
+
+  activatePeriod(period: Period): void {
+    if (period.active) {
+      this.messageService.add({ severity: 'info', summary: 'Periodo activo', detail: 'Este ya es el periodo activo.' });
+      return;
+    }
+    this.userApi.updatePeriod(period.id, { active: true }).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Periodo activo', detail: `Periodo ${period.code} activado.` });
+        this.reload();
+      },
+      error: e => this.showError(e),
     });
   }
 

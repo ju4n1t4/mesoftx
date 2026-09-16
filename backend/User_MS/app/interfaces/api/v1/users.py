@@ -23,6 +23,18 @@ ALLOWED_TARGET_ROLES = {
 }
 
 
+def _is_teacher_role(role_name: str) -> bool:
+    return role_name.strip().lower().startswith("profesor")
+
+
+def _is_target_role_allowed(target_role_name: str, permissions: list[str]) -> bool:
+    allowed: set[str] = set()
+    for permission, roles in ALLOWED_TARGET_ROLES.items():
+        if permission in permissions:
+            allowed |= roles
+    return target_role_name in allowed or ("Profesor" in allowed and _is_teacher_role(target_role_name))
+
+
 @router.get("", response_model=list[UserResponse])
 def list_users(
     db: Session = Depends(db_session),
@@ -65,20 +77,16 @@ def create_user(
     if not target_role:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="role_id inexistente")
 
-    allowed: set[str] = set()
-    for perm, roles in ALLOWED_TARGET_ROLES.items():
-        if perm in perms:
-            allowed |= roles
-    if target_role.name not in allowed:
+    if not _is_target_role_allowed(target_role.name, perms):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"No puede crear usuarios con el rol {target_role.name}",
         )
 
     # program_id es obligatorio SOLO para Profesor; se ignora/rechaza para el resto.
-    if target_role.name == "Profesor" and not payload.program_id:
+    if _is_teacher_role(target_role.name) and not payload.program_id:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="program_id es obligatorio para Profesor")
-    if target_role.name != "Profesor" and payload.program_id:
+    if not _is_teacher_role(target_role.name) and payload.program_id:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Solo el Profesor pertenece a un programa")
 
     data = payload.model_dump()

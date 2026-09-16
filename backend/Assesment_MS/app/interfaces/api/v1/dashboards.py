@@ -91,7 +91,7 @@ async def dashboard_so(period_id: int, db: Session = Depends(db_session), _: Cur
         expected_by_so[so_id] = expected_by_so.get(so_id, 0) + indic * counts.get(subjects_id, 0)
 
     done_by_so = dict(repo.progress_by_so(period_id))
-    so_ids = sorted(set(expected_by_so) | set(done_by_so))
+    so_ids = sorted(set(repo.scheduled_so_ids(period_id)) | set(expected_by_so) | set(done_by_so))
     items = [
         SoProgressItem(so_id=so, expected=expected_by_so.get(so, 0), done=done_by_so.get(so, 0))
         for so in so_ids

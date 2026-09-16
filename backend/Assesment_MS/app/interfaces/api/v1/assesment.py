@@ -359,16 +359,22 @@ async def my_assessments(db: Session = Depends(db_session), current_user: Curren
 @router.get("/rubric", response_model=list[RubricResponse])
 async def list_rubric(
     period_id: int | None = None,
+    schedule_id: int | None = None,
+    subjects_id: int | None = None,
+    student_id: int | None = None,
     db: Session = Depends(db_session),
     user: CurrentUser = Depends(require_permission("RUBRIC_VIEW")),
 ):
     nrcs = await _teacher_nrcs_or_none(user)
     if nrcs is not None and not nrcs:
         return []
-    repo = RubricRepository(db)
-    if period_id is not None:
-        return repo.list_by_period(period_id, nrcs)
-    return repo.list_scoped(nrcs)
+    return RubricRepository(db).list_filtered(
+        period_id=period_id,
+        schedule_id=schedule_id,
+        subjects_id=subjects_id,
+        student_id=student_id,
+        nrcs=nrcs,
+    )
 
 
 @router.post("/rubric", response_model=RubricResponse, status_code=status.HTTP_201_CREATED)

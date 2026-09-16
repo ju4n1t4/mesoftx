@@ -8,7 +8,6 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
-import { MultiSelectModule } from 'primeng/multiselect';
 import { ToastModule } from 'primeng/toast';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -17,12 +16,143 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { UserApiService } from '../../../core/services/user-api.service';
 import { Role, Permission } from '../../../core/models/abet.models';
 
+type PermissionAction = {
+  label: string;
+  code?: string;
+};
+
+type PermissionGroup = {
+  title: string;
+  actions: PermissionAction[];
+};
+
+const PERMISSION_GROUPS: PermissionGroup[] = [
+  {
+    title: 'Rubrica',
+    actions: [
+      { label: 'Ver', code: 'RUBRIC_VIEW' },
+      { label: 'Crear', code: 'RUBRIC_FILL' },
+      { label: 'Editar', code: 'RUBRIC_FILL' },
+      { label: 'Borrar' },
+    ],
+  },
+  {
+    title: 'Desempenos',
+    actions: [
+      { label: 'Ver', code: 'INDICATOR_VIEW' },
+      { label: 'Crear', code: 'SO_CRUD' },
+      { label: 'Editar', code: 'SO_CRUD' },
+      { label: 'Borrar', code: 'SO_CRUD' },
+    ],
+  },
+  {
+    title: 'Indicadores',
+    actions: [
+      { label: 'Ver', code: 'INDICATOR_VIEW' },
+      { label: 'Graficar', code: 'INDICATOR_CHART' },
+      { label: 'Crear' },
+      { label: 'Editar' },
+      { label: 'Borrar' },
+    ],
+  },
+  {
+    title: 'Student Outcomes (SO)',
+    actions: [
+      { label: 'Ver', code: 'SO_TO_ASSESS_VIEW' },
+      { label: 'Crear', code: 'SO_CRUD' },
+      { label: 'Editar', code: 'SO_CRUD' },
+      { label: 'Borrar', code: 'SO_CRUD' },
+    ],
+  },
+  {
+    title: 'Programacion SO',
+    actions: [
+      { label: 'Ver', code: 'SO_TO_ASSESS_VIEW' },
+      { label: 'Crear', code: 'SO_SCHEDULE_MANAGE' },
+      { label: 'Editar', code: 'SO_SCHEDULE_MANAGE' },
+      { label: 'Borrar', code: 'SO_SCHEDULE_MANAGE' },
+    ],
+  },
+  {
+    title: 'Evidencias',
+    actions: [
+      { label: 'Ver' },
+      { label: 'Subir', code: 'EVIDENCE_UPLOAD' },
+      { label: 'Editar' },
+      { label: 'Borrar' },
+    ],
+  },
+  {
+    title: 'Estudiantes',
+    actions: [
+      { label: 'Ver' },
+      { label: 'Cargar', code: 'STUDENT_UPLOAD' },
+      { label: 'Editar' },
+      { label: 'Borrar' },
+    ],
+  },
+  {
+    title: 'Cursos',
+    actions: [
+      { label: 'Ver', code: 'MY_COURSES_VIEW' },
+      { label: 'Crear' },
+      { label: 'Editar' },
+      { label: 'Borrar' },
+    ],
+  },
+  {
+    title: 'Profesores',
+    actions: [
+      { label: 'Ver', code: 'TEACHER_CRUD' },
+      { label: 'Crear', code: 'TEACHER_CRUD' },
+      { label: 'Editar', code: 'TEACHER_CRUD' },
+      { label: 'Borrar', code: 'TEACHER_CRUD' },
+    ],
+  },
+  {
+    title: 'Materias',
+    actions: [
+      { label: 'Ver', code: 'SUBJECT_CRUD' },
+      { label: 'Crear', code: 'SUBJECT_CRUD' },
+      { label: 'Editar', code: 'SUBJECT_CRUD' },
+      { label: 'Borrar', code: 'SUBJECT_CRUD' },
+    ],
+  },
+  {
+    title: 'Estructura academica',
+    actions: [
+      { label: 'Ver', code: 'PROGRAM_CRUD' },
+      { label: 'Crear', code: 'PROGRAM_CRUD' },
+      { label: 'Editar', code: 'PROGRAM_CRUD' },
+      { label: 'Borrar', code: 'PROGRAM_CRUD' },
+    ],
+  },
+  {
+    title: 'Usuarios y perfiles',
+    actions: [
+      { label: 'Ver', code: 'USER_CRUD' },
+      { label: 'Crear', code: 'USER_CRUD' },
+      { label: 'Editar', code: 'USER_CRUD' },
+      { label: 'Borrar', code: 'USER_CRUD' },
+      { label: 'Asignar permisos', code: 'PERMISSION_ASSIGN' },
+    ],
+  },
+  {
+    title: 'Dashboards',
+    actions: [
+      { label: 'Programa', code: 'DASHBOARD_PROGRAM' },
+      { label: 'Profesor', code: 'DASHBOARD_TEACHER' },
+      { label: 'SO', code: 'DASHBOARD_SO' },
+    ],
+  },
+];
+
 @Component({
   selector: 'app-perfiles',
   standalone: true,
   imports: [
     CommonModule, ReactiveFormsModule,
-    TableModule, ButtonModule, DialogModule, InputTextModule, MultiSelectModule,
+    TableModule, ButtonModule, DialogModule, InputTextModule,
     ToastModule, ProgressSpinnerModule, ConfirmDialogModule,
   ],
   providers: [MessageService, ConfirmationService],
@@ -78,11 +208,34 @@ import { Role, Permission } from '../../../core/models/abet.models';
     </p-dialog>
 
     <!-- Asignar permisos -->
-    <p-dialog [(visible)]="permVisible" [modal]="true" [style]="{ width: '520px' }" [header]="'Permisos de ' + (permTarget()?.name || '')">
-      <div class="dialog-form">
-        <label>Permisos del perfil
-          <p-multiSelect [options]="permOptions()" [formControl]="permCtrl" optionLabel="label" optionValue="value" display="chip" placeholder="Selecciona permisos"></p-multiSelect>
-        </label>
+    <p-dialog [(visible)]="permVisible" [modal]="true" [style]="{ width: '620px' }" [header]="'Permisos de ' + (permTarget()?.name || '')">
+      <div class="permission-dialog">
+        <div class="permission-head">
+          <span>Permisos del perfil</span>
+          <span>{{ permCtrl.value.length }} seleccionados</span>
+        </div>
+
+        <div class="permission-list" role="group" aria-label="Permisos del perfil">
+          <section class="permission-group" *ngFor="let group of permissionGroups; trackBy: trackPermissionGroup">
+            <h3>{{ group.title }}</h3>
+
+            <div class="permission-actions">
+              <label
+                class="permission-action"
+                *ngFor="let action of group.actions; trackBy: trackPermissionAction"
+                [class.is-disabled]="!isActionEnabled(action)"
+              >
+                <input
+                  type="checkbox"
+                  [disabled]="!isActionEnabled(action)"
+                  [checked]="isActionSelected(action)"
+                  (change)="togglePermissionAction(action, $any($event.target).checked)"
+                />
+                <span>{{ action.label }}</span>
+              </label>
+            </div>
+          </section>
+        </div>
       </div>
       <ng-template pTemplate="footer">
         <button pButton type="button" label="Cancelar" class="p-button-text" (click)="permVisible = false"></button>
@@ -98,6 +251,21 @@ import { Role, Permission } from '../../../core/models/abet.models';
     .dialog-form { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
     .dialog-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text); }
     .err { color: var(--badge-expired, #dc2626); font-size: 12px; }
+    .permission-dialog { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
+    .permission-head { display: flex; justify-content: space-between; gap: 12px; color: var(--text); font-size: 13px; font-weight: 600; }
+    .permission-head span:last-child { color: var(--text-muted); font-weight: 500; white-space: nowrap; }
+    .permission-list { border: 1px solid var(--border); border-radius: 8px; max-height: 380px; overflow-y: auto; background: var(--surface); }
+    .permission-group { padding: 14px; border-bottom: 1px solid var(--border); }
+    .permission-group:last-child { border-bottom: 0; }
+    .permission-group h3 { margin: 0 0 10px; color: var(--text); font-size: 13px; font-weight: 700; }
+    .permission-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
+    .permission-action { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; background: #fff; }
+    .permission-action:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
+    .permission-action input { width: 16px; height: 16px; flex: 0 0 auto; accent-color: var(--primary); cursor: pointer; }
+    .permission-action span { min-width: 0; overflow-wrap: anywhere; }
+    .permission-action.is-disabled { color: var(--text-muted); background: #f3f4f6; opacity: .68; cursor: not-allowed; }
+    .permission-action.is-disabled input { cursor: not-allowed; }
+    .permission-action.is-disabled:hover { background: #f3f4f6; }
   `],
 })
 export class PerfilesComponent implements OnInit {
@@ -109,15 +277,16 @@ export class PerfilesComponent implements OnInit {
   permVisible = false;
 
   roles = signal<Role[]>([]);
-  private permissions = signal<Permission[]>([]);
+  permissions = signal<Permission[]>([]);
   private editId = signal<number | null>(null);
   private permTargetSig = signal<Role | null>(null);
+  permissionGroups = PERMISSION_GROUPS;
 
   roleForm: FormGroup;
   permCtrl = new FormControl<string[]>([], { nonNullable: true });
 
-  permOptions = computed(() => this.permissions().map(p => ({ label: `${p.code} — ${p.name}`, value: p.code })));
   permTarget = computed(() => this.permTargetSig());
+  availablePermissionCodes = computed(() => new Set(this.permissions().map(p => p.code)));
 
   constructor(
     private fb: FormBuilder,
@@ -144,6 +313,28 @@ export class PerfilesComponent implements OnInit {
 
   showErr(ctrl: string): boolean {
     const c = this.roleForm.get(ctrl); return !!c && c.invalid && (c.dirty || c.touched);
+  }
+
+  trackPermissionGroup(_: number, group: PermissionGroup): string { return group.title; }
+
+  trackPermissionAction(index: number, action: PermissionAction): string {
+    return `${action.code ?? 'future'}-${action.label}-${index}`;
+  }
+
+  isActionEnabled(action: PermissionAction): boolean {
+    return !!action.code && this.availablePermissionCodes().has(action.code);
+  }
+
+  isActionSelected(action: PermissionAction): boolean {
+    return this.isActionEnabled(action) && !!action.code && this.permCtrl.value.includes(action.code);
+  }
+
+  togglePermissionAction(action: PermissionAction, checked: boolean): void {
+    if (!this.isActionEnabled(action) || !action.code) return;
+    const current = new Set(this.permCtrl.value);
+    if (checked) current.add(action.code);
+    else current.delete(action.code);
+    this.permCtrl.setValue(Array.from(current));
   }
 
   openCreate(): void { this.editing.set(false); this.editId.set(null); this.roleForm.reset({ name: '', description: '' }); this.roleVisible = true; }

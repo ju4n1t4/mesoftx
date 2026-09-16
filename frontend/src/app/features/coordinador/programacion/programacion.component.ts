@@ -46,7 +46,7 @@ interface ScheduleRow extends SoSchedule {
       </div>
 
       <div class="toolbar">
-        <p-select [options]="periodOptions()" [formControl]="periodCtrl"
+        <p-select appendTo="body" [options]="periodOptions()" [formControl]="periodCtrl"
                   optionLabel="label" optionValue="value"
                   placeholder="Selecciona un periodo" styleClass="filter-select"></p-select>
         <button pButton type="button" label="Programar SO" icon="pi pi-plus"
@@ -63,7 +63,7 @@ interface ScheduleRow extends SoSchedule {
 
       <p-table *ngIf="!loading() && periodCtrl.value != null" [value]="rows()" styleClass="p-datatable-sm" [rowHover]="true">
         <ng-template pTemplate="header">
-          <tr><th>SO</th><th>Descripción</th><th>Estado</th><th>NRC asignados</th><th style="width:22rem">Acciones</th></tr>
+          <tr><th>SO</th><th>Descripción</th><th>Estado</th><th>NRC asignados</th><th style="width:26rem">Acciones</th></tr>
         </ng-template>
         <ng-template pTemplate="body" let-r>
           <tr>
@@ -76,7 +76,7 @@ interface ScheduleRow extends SoSchedule {
               <ng-container *ngIf="r.status === 'PLANIFICADO'">
                 <button pButton type="button" label="Abrir valoración" icon="pi pi-play" class="p-button-sm"
                         [disabled]="busy()" (click)="changeStatus(r, 'EN_CURSO')"></button>
-                <button pButton type="button" label="NRC" icon="pi pi-sitemap" class="p-button-sm p-button-secondary"
+                <button pButton type="button" label="Asignar NRC" icon="pi pi-sitemap" class="p-button-sm p-button-secondary"
                         [disabled]="busy()" (click)="openNrc(r)"></button>
                 <button pButton type="button" icon="pi pi-trash" class="p-button-sm p-button-text p-button-danger"
                         [disabled]="busy()" (click)="confirmDelete(r)"></button>
@@ -85,7 +85,7 @@ interface ScheduleRow extends SoSchedule {
               <ng-container *ngIf="r.status === 'EN_CURSO'">
                 <button pButton type="button" label="Cerrar periodo" icon="pi pi-lock" class="p-button-sm"
                         [disabled]="busy()" (click)="confirmClose(r)"></button>
-                <button pButton type="button" label="NRC" icon="pi pi-sitemap" class="p-button-sm p-button-secondary"
+                <button pButton type="button" label="Asignar NRC" icon="pi pi-sitemap" class="p-button-sm p-button-secondary"
                         [disabled]="busy()" (click)="openNrc(r)"></button>
                 <button pButton type="button" label="Volver a planificado" class="p-button-sm p-button-text"
                         [disabled]="busy()" (click)="changeStatus(r, 'PLANIFICADO')"></button>
@@ -108,7 +108,7 @@ interface ScheduleRow extends SoSchedule {
     <p-dialog [(visible)]="programVisible" [modal]="true" [style]="{ width: '440px' }" header="Programar Student Outcome">
       <div class="dialog-form">
         <label>Student Outcome
-          <p-select [options]="soOptions()" [formControl]="soCtrl" optionLabel="label" optionValue="value" placeholder="Selecciona un SO"></p-select>
+          <p-select appendTo="body" [options]="soOptions()" [formControl]="soCtrl" optionLabel="label" optionValue="value" placeholder="Selecciona un SO"></p-select>
         </label>
       </div>
       <ng-template pTemplate="footer">
@@ -121,10 +121,13 @@ interface ScheduleRow extends SoSchedule {
     <p-dialog [(visible)]="nrcVisible" [modal]="true" [style]="{ width: '520px' }" header="Materias (NRC) que valoran este SO">
       <div class="dialog-form">
         <label>Materias del periodo
-          <p-multiSelect [options]="periodSubjectOptions()" [formControl]="nrcCtrl"
+          <p-multiSelect appendTo="body" [options]="periodSubjectOptions()" [formControl]="nrcCtrl"
                          optionLabel="label" optionValue="value" display="chip"
                          placeholder="Selecciona los NRC"></p-multiSelect>
         </label>
+        <small class="muted" *ngIf="periodSubjectOptions().length === 0">
+          No hay materias registradas para el periodo seleccionado. Crea las materias desde el menú Materias.
+        </small>
         <small class="muted">La lista completa reemplaza la asignación anterior.</small>
       </div>
       <ng-template pTemplate="footer">
@@ -159,18 +162,14 @@ export class ProgramacionComponent implements OnInit {
   private sos = signal<StudentOutcome[]>([]);
   private rowsSig = signal<ScheduleRow[]>([]);
   private nrcTarget = signal<ScheduleRow | null>(null);
+  private nrcSubjectOptions = signal<{ label: string; value: number }[]>([]);
 
   periodOptions = computed(() => this.periods().map(p => ({ label: p.code, value: p.id })));
   soOptions = computed(() => this.sos().map(s => ({ label: `${s.id} · ${s.description}`, value: s.id })));
   rows = computed(() => this.rowsSig());
 
   // Materias del mismo periodo de la programación abierta en el diálogo NRC.
-  periodSubjectOptions = computed(() => {
-    const pid = this.periodCtrl.value;
-    return this.allSubjects()
-      .filter(s => s.periods_id === pid)
-      .map(s => ({ label: `${s.nrc} · ${s.materia_curso} — ${s.name}`, value: s.nrc }));
-  });
+  periodSubjectOptions = computed(() => this.nrcSubjectOptions());
 
   constructor(
     private userApi: UserApiService,
@@ -237,10 +236,29 @@ export class ProgramacionComponent implements OnInit {
   openNrc(r: ScheduleRow): void {
     this.nrcTarget.set(r);
     this.nrcCtrl.reset([]);
-    this.assesment.getScheduleSubjects(r.id).subscribe({
-      next: nrcs => { this.nrcCtrl.setValue(nrcs ?? []); this.nrcVisible = true; },
-      error: e => this.showError(e),
+    this.nrcSubjectOptions.set([]);
+    this.busy.set(true);
+    forkJoin({
+      subjects: this.userApi.getSubjects(),
+      assigned: this.assesment.getScheduleSubjects(r.id),
+    }).subscribe({
+      next: ({ subjects, assigned }) => {
+        const list = subjects ?? [];
+        this.allSubjects.set(list);
+        this.nrcSubjectOptions.set(this.subjectOptionsForPeriod(list, r.period_id));
+        this.nrcCtrl.setValue(assigned ?? []);
+        this.nrcVisible = true;
+        this.busy.set(false);
+      },
+      error: e => { this.busy.set(false); this.showError(e); },
     });
+  }
+
+  private subjectOptionsForPeriod(subjects: Subject[], periodId: number): { label: string; value: number }[] {
+    const pid = Number(periodId);
+    return subjects
+      .filter(s => Number(s.periods_id) === pid)
+      .map(s => ({ label: `${s.nrc} · ${s.materia_curso} — ${s.name}`, value: s.nrc }));
   }
 
   saveNrc(): void {

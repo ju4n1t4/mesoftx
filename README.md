@@ -101,6 +101,15 @@ npm install
 npm start
 ```
 
+Frontend con Docker:
+
+```bash
+cd deployment/frontend
+docker compose up --build -d
+```
+
+La aplicacion queda publicada en `http://localhost:8083`.
+
 `environment.ts` apunta por defecto a `http://localhost:8001/api/v1` y
 `http://localhost:8002/api/v1`; `environment.prod.ts` usa las rutas relativas
 `/user-api/v1` y `/assesment-api/v1`, que deben resolverse en el proxy inverso.
@@ -207,9 +216,9 @@ resultados de rúbricas en solo lectura.
 
 - `GET /api/v1/public/roles` y los botones de acceso demo del login son temporales para
   la defensa. Deben retirarse cuando se exija usuario para todo el acceso.
-- El frontend no forma parte de `deployment/`: se construye con su propio `Dockerfile`.
-  El bloque `location /api/` de `nginx.conf` debe apuntar a ambos microservicios en un
-  proxy inverso real.
+- El frontend ya cuenta con `deployment/frontend/docker-compose.yml`; su `nginx.conf`
+  enruta `/user-api/v1` y `/assesment-api/v1` hacia los microservicios en
+  `mesoftx-network`.
 - El esquema se crea mediante scripts SQL; no hay migraciones versionadas. Para recrearlo
   desde cero hay que eliminar el volumen `mesoftx_postgres_data`.
 

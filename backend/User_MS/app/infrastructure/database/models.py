@@ -13,6 +13,7 @@ class CollegeModel(Base):
 
     id: Mapped[str] = mapped_column(String(3), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
 class ProgramModel(Base):
@@ -25,6 +26,7 @@ class ProgramModel(Base):
     )
     accredited: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     accreditation_end_year: Mapped[int | None] = mapped_column(Integer)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     college: Mapped[CollegeModel] = relationship()
 
@@ -34,6 +36,7 @@ class PeriodModel(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     code: Mapped[str] = mapped_column(String(6), unique=True, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 class RoleModel(Base):

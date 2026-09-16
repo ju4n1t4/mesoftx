@@ -1,6 +1,6 @@
 from typing import Any, TypeVar
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -120,6 +120,44 @@ class PermissionRepository(SqlAlchemyRepository):
 
 class PeriodRepository(SqlAlchemyRepository):
     model = PeriodModel
+
+    def create(self, data: dict[str, Any]) -> PeriodModel:
+        has_active = bool(self.db.scalar(select(PeriodModel.id).where(PeriodModel.active.is_(True)).limit(1)))
+        if data.get("active") is True or not has_active:
+            self.db.execute(update(PeriodModel).values(active=False))
+            self.db.flush()
+            data["active"] = True
+        return super().create(data)
+
+    def update(self, entity_id: Any, data: dict[str, Any]) -> PeriodModel | None:
+        entity = self.get_by_id(entity_id)
+        if not entity:
+            return None
+        if data.get("active") is True:
+            self.db.execute(update(PeriodModel).where(PeriodModel.id != entity_id).values(active=False))
+            self.db.flush()
+        elif data.get("active") is False and entity.active:
+            other_active = self.db.scalar(select(PeriodModel.id).where(PeriodModel.id != entity_id).limit(1))
+            if other_active is not None:
+                self.db.execute(update(PeriodModel).where(PeriodModel.id == other_active).values(active=True))
+                self.db.flush()
+        for key, value in data.items():
+            setattr(entity, key, value)
+        return self._commit(entity)
+
+    def delete(self, entity_id: Any) -> bool:
+        entity = self.get_by_id(entity_id)
+        if not entity:
+            return False
+        was_active = bool(entity.active)
+        self.db.delete(entity)
+        self.db.flush()
+        if was_active:
+            next_id = self.db.scalar(select(PeriodModel.id).order_by(PeriodModel.code.desc(), PeriodModel.id.desc()).limit(1))
+            if next_id is not None:
+                self.db.execute(update(PeriodModel).where(PeriodModel.id == next_id).values(active=True))
+        self.db.commit()
+        return True
 
 
 class CollegeRepository(SqlAlchemyRepository):

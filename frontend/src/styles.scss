@@ -214,3 +214,10 @@ a { color: var(--primary); text-decoration: none; }
 .p-dialog { border-radius: var(--radius-lg) !important; }
 .p-dialog-header { border-bottom: 1px solid var(--border) !important; padding: 20px 24px !important; }
 .p-dialog-content { padding: 20px 24px !important; }
+
+.p-select-overlay,
+.p-multiselect-overlay,
+.p-dropdown-panel,
+.p-multiselect-panel {
+  z-index: 12000 !important;
+}

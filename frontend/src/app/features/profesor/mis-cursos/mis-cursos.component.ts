@@ -43,7 +43,7 @@ interface CourseRow extends Subject {
         <!-- Banner de NRC pendientes de cargar estudiantes -->
         <p-message *ngIf="pending().length > 0" severity="warn" styleClass="pending-banner">
           <span>
-            Te faltan por cargar los estudiantes de {{ pending().length }} curso(s):
+            Te faltan estudiantes por registrar en {{ pending().length }} curso(s):
             <a *ngFor="let p of pending(); let last = last" [routerLink]="['/profesor/estudiantes', p.nrc]" class="pending-link">
               {{ p.materia_curso }} ({{ p.nrc }}){{ last ? '' : ', ' }}
             </a>
@@ -72,7 +72,7 @@ interface CourseRow extends Subject {
                 <p-tag *ngIf="c.studentCount === 0" severity="warn" value="Sin estudiantes"></p-tag>
               </td>
               <td class="actions">
-                <button pButton type="button" label="Cargar estudiantes" icon="pi pi-upload" class="p-button-sm p-button-secondary"
+                <button pButton type="button" label="Ver estudiantes" icon="pi pi-user" class="p-button-sm p-button-secondary"
                         [routerLink]="['/profesor/estudiantes', c.nrc]"></button>
                 <button pButton type="button" label="Valorar" icon="pi pi-check-square" class="p-button-sm"
                         routerLink="/profesor/valorar"></button>

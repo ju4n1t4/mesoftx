@@ -50,6 +50,9 @@ export class UserApiService {
   // ── Programas (antes carreras) ────────────────────────────
   getPrograms(): Observable<Program[]>          { return this.http.get<Program[]>(`${this.base}/programs`); }
   getProgram(id: string): Observable<Program>   { return this.http.get<Program>(`${this.base}/programs/${id}`); }
+  createProgram(p: Program): Observable<Program> { return this.http.post<Program>(`${this.base}/programs`, p); }
+  updateProgram(id: string, p: Partial<Program>): Observable<Program> { return this.http.put<Program>(`${this.base}/programs/${id}`, p); }
+  deleteProgram(id: string): Observable<void> { return this.http.delete<void>(`${this.base}/programs/${id}`); }
 
   // ── Materias (NRC) ────────────────────────────────────────
   getSubjects(): Observable<Subject[]> { return this.http.get<Subject[]>(`${this.base}/subjects`); }
@@ -79,8 +82,15 @@ export class UserApiService {
 
   // ── Facultades (antes faculty) ────────────────────────────
   getColleges(): Observable<College[]> { return this.http.get<College[]>(`${this.base}/colleges`); }
+  getCollege(id: string): Observable<College> { return this.http.get<College>(`${this.base}/colleges/${id}`); }
+  createCollege(c: College): Observable<College> { return this.http.post<College>(`${this.base}/colleges`, c); }
+  updateCollege(id: string, c: Partial<College>): Observable<College> { return this.http.put<College>(`${this.base}/colleges/${id}`, c); }
+  deleteCollege(id: string): Observable<void> { return this.http.delete<void>(`${this.base}/colleges/${id}`); }
 
   // ── Periodos ──────────────────────────────────────────────
   getPeriods(): Observable<Period[]> { return this.http.get<Period[]>(`${this.base}/periods`); }
-  createPeriod(p: { code: string }): Observable<Period> { return this.http.post<Period>(`${this.base}/periods`, p); }
+  getPeriod(id: number): Observable<Period> { return this.http.get<Period>(`${this.base}/periods/${id}`); }
+  createPeriod(p: { code: string; active?: boolean }): Observable<Period> { return this.http.post<Period>(`${this.base}/periods`, p); }
+  updatePeriod(id: number, p: { code?: string; active?: boolean }): Observable<Period> { return this.http.put<Period>(`${this.base}/periods/${id}`, p); }
+  deletePeriod(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/periods/${id}`); }
 }

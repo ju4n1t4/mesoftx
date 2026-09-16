@@ -136,6 +136,8 @@ export const routes: Routes = [
       { path: '', redirectTo: 'perfiles', pathMatch: 'full' },
       { path: 'perfiles', loadComponent: () => import('./features/admin/perfiles/perfiles.component').then(m => m.PerfilesComponent) },
       { path: 'usuarios', loadComponent: () => import('./features/admin/usuarios/usuarios.component').then(m => m.UsuariosComponent) },
+      { path: 'periodos', loadComponent: () => import('./features/admin/periodos/periodos.component').then(m => m.PeriodosComponent) },
+      { path: 'facultades', loadComponent: () => import('./features/admin/facultades/facultades.component').then(m => m.FacultadesComponent) },
     ],
   },
 

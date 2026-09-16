@@ -1,296 +1,295 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { forkJoin } from 'rxjs';
-import { AssesmentApiService } from '../../../core/services/assesment-api.service';
-import { StudentOutcome, Performance, Level, Rubric } from '../../../core/models/abet.models';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
+import { forkJoin, of } from 'rxjs';
 
-interface OutcomeItem {
-  id: string;
-  label: string;
+import { SelectModule } from 'primeng/select';
+import { ChartModule } from 'primeng/chart';
+import { MessageModule } from 'primeng/message';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
+
+import { AssesmentApiService } from '../../../core/services/assesment-api.service';
+import { UserApiService } from '../../../core/services/user-api.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { MyAssessment, Rubric } from '../../../core/models/abet.models';
+import { IndicatorsChartComponent } from '../../../shared/indicators-chart/indicators-chart.component';
+
+interface SoIndicatorRow {
+  so_id: string;
+  description: string;
+  expected: number;
+  done: number;
   pct: number;
-  status: string;
-  statusClass: string;
 }
+
+const TARGET = 80;
 
 @Component({
   selector: 'app-indicadores',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ReactiveFormsModule, SelectModule, ChartModule, MessageModule, ToastModule, IndicatorsChartComponent],
+  providers: [MessageService],
   template: `
+    <p-toast></p-toast>
     <div class="content-area">
       <div class="page-header">
         <h1>Mis indicadores ABET</h1>
         <p>Cumplimiento promedio por Student Outcome frente a la meta institucional (80%).</p>
       </div>
 
-      <div class="state-box" *ngIf="loading()">
-        <i class="pi pi-spin pi-spinner"></i>
-        <span>Cargando indicadores…</span>
+      <div class="toolbar">
+        <p-select appendTo="body" [options]="periodOptions()" [formControl]="periodCtrl"
+                  optionLabel="label" optionValue="value" placeholder="Selecciona un periodo"></p-select>
       </div>
 
-      <div class="notice" *ngIf="error()">
-        <i class="pi pi-info-circle"></i>
-        <span>{{ error() }}</span>
+      <p-message *ngIf="periodCtrl.value == null && periodOptions().length > 0" severity="info" styleClass="block">
+        <span>Selecciona un periodo para ver la gráfica.</span>
+      </p-message>
+
+      <p-message *ngIf="!loading() && periodOptions().length === 0" severity="info" styleClass="block">
+        <span>Aún no tienes Student Outcomes abiertos para valorar.</span>
+      </p-message>
+
+      <div class="type-cards" *ngIf="periodCtrl.value != null">
+        <button type="button" class="type-card" [class.selected]="viewMode() === 'so'" (click)="setMode('so')">
+          <span>Por Student Outcome</span>
+          <small>Cumplimiento frente a la meta institucional.</small>
+        </button>
+        <button type="button" class="type-card" [class.selected]="viewMode() === 'id'" (click)="setMode('id')">
+          <span>Por Identificador de Desempeño</span>
+          <small>Distribución por nivel en cada ID.</small>
+        </button>
       </div>
 
-      <div class="empty-box" *ngIf="!loading() && outcomes().length === 0">
-        <div class="empty-icon"><i class="pi pi-chart-line"></i></div>
-        <div class="empty-title">Todavía no hay indicadores</div>
-        <div class="empty-desc">Cuando se parametricen los Student Outcomes y registres valoraciones, aquí verás tu desempeño por outcome.</div>
-      </div>
-
-      <div class="ind-grid" *ngIf="!loading() && outcomes().length > 0">
-        <!-- Radar chart -->
-        <div class="card radar-card">
-          <div class="card-title">Cumplimiento por Outcome</div>
-          <div class="radar-wrap">
-            <svg viewBox="0 0 300 300" class="radar-svg">
-              <g *ngFor="let ring of [0.25, 0.5, 0.75, 1.0]">
-                <polygon
-                  [attr.points]="ringPoints(ring)"
-                  fill="none"
-                  [attr.stroke]="ring === 0.75 ? 'rgba(255,165,2,0.25)' : 'var(--border)'"
-                  [attr.stroke-width]="ring === 0.75 ? '1.5' : '1'"
-                  [attr.stroke-dasharray]="ring === 0.75 ? '4 3' : ''"/>
-              </g>
-              <line *ngFor="let ax of axes()"
-                    [attr.x1]="150" [attr.y1]="150"
-                    [attr.x2]="ax.x2" [attr.y2]="ax.y2"
-                    stroke="var(--border)" stroke-width="1"/>
-              <polygon
-                [attr.points]="ringPoints(0.8)"
-                fill="rgba(255,165,2,0.08)"
-                stroke="rgba(255,165,2,0.4)"
-                stroke-width="1.5"
-                stroke-dasharray="5 3"/>
-              <polygon
-                [attr.points]="dataPoints()"
-                fill="rgba(124,58,237,0.15)"
-                stroke="var(--accent)"
-                stroke-width="2"/>
-              <circle *ngFor="let p of dataPointsArr()"
-                [attr.cx]="p.x" [attr.cy]="p.y" r="4"
-                fill="var(--accent)" stroke="#fff" stroke-width="2"/>
-              <text *ngFor="let ax of axes()"
-                    [attr.x]="ax.lx" [attr.y]="ax.ly"
-                    text-anchor="middle" dominant-baseline="middle"
-                    font-size="12" font-weight="700" fill="var(--text-muted)">
-                {{ ax.label }}
-              </text>
-            </svg>
-            <div class="radar-legend">
-              <div class="legend-item"><span class="legend-dot accent"></span>Mi desempeño</div>
-              <div class="legend-item"><span class="legend-sq orange"></span>Meta ABET 80%</div>
-            </div>
+      <div class="so-dashboard" *ngIf="periodCtrl.value != null && viewMode() === 'so'">
+        <section class="radar-card">
+          <h2>Cumplimiento por Outcome</h2>
+          <div class="empty" *ngIf="soRows().length === 0">Sin valoraciones registradas para los SO de este periodo.</div>
+          <p-chart *ngIf="soRows().length > 0" type="radar" [data]="soRadarData()" [options]="radarOptions" height="260px"></p-chart>
+          <div class="legend" *ngIf="soRows().length > 0">
+            <span><i class="dot mine"></i> Mi desempeño</span>
+            <span><i class="line-target"></i> Meta ABET 80%</span>
           </div>
-        </div>
+        </section>
 
-        <!-- Detalle por Outcome -->
-        <div class="card detail-card">
-          <div class="card-title">Detalle por Outcome</div>
-          <div class="outcome-list">
-            <div class="outcome-row" *ngFor="let o of outcomes()">
-              <div class="or-id">{{ o.id }}</div>
-              <div class="or-body">
-                <div class="or-label">{{ o.label }}</div>
-                <div class="or-bar-wrap">
-                  <div class="or-bar-track">
-                    <div class="or-bar-fill"
-                         [style.width]="o.pct + '%'"
-                         [style.background]="barColor(o.pct)"></div>
-                    <div class="or-meta-line"></div>
-                  </div>
-                </div>
-              </div>
-              <div class="or-right">
-                <span class="or-pct" [style.color]="barColor(o.pct)">{{ o.pct }}%</span>
-                <span class="or-status" [class]="o.statusClass">{{ o.status }}</span>
+        <section class="detail-card">
+          <h2>Detalle por Outcome</h2>
+          <div class="empty" *ngIf="soRows().length === 0">No hay datos para mostrar.</div>
+          <div class="outcome-row" *ngFor="let row of soRows()">
+            <div class="outcome-main">
+              <span class="so-badge">{{ row.so_id }}</span>
+              <div class="outcome-copy">
+                <strong>{{ row.description }}</strong>
+                <small>{{ row.done }} de {{ row.expected }} valoraciones esperadas</small>
               </div>
             </div>
+            <div class="progress-wrap">
+              <div class="target-marker" [style.left.%]="target"></div>
+              <div class="progress-track">
+                <div class="progress-fill" [class.ok]="row.pct >= target" [style.width.%]="barWidth(row.pct)"></div>
+              </div>
+            </div>
+            <div class="outcome-state">
+              <strong>{{ row.pct }}%</strong>
+              <span [class.ok]="row.pct >= target">{{ row.pct >= target ? 'Cumple' : 'En riesgo' }}</span>
+            </div>
           </div>
-        </div>
+        </section>
+      </div>
+
+      <div class="card" *ngIf="periodCtrl.value != null && viewMode() === 'id'">
+        <app-indicators-chart [periodId]="periodCtrl.value"></app-indicators-chart>
       </div>
     </div>
   `,
   styles: [`
-    .ind-grid { display: grid; grid-template-columns: 340px 1fr; gap: 16px; }
-    .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px; }
-    .card-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
-
-    .radar-wrap { display: flex; flex-direction: column; align-items: center; }
-    .radar-svg  { width: 100%; max-width: 280px; }
-    .radar-legend { display: flex; gap: 20px; margin-top: 12px; }
-    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
-    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
-    .legend-dot.accent { background: var(--accent); }
-    .legend-sq { width: 16px; height: 6px; background: rgba(255,165,2,0.3); border: 1px dashed var(--primary); border-radius: 2px; }
-
-    .outcome-list { display: flex; flex-direction: column; gap: 14px; }
-    .outcome-row { display: flex; align-items: center; gap: 12px; }
-    .or-id {
-      width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
-      color: #fff; display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 700; flex-shrink: 0;
+    .toolbar { margin-bottom: 16px; }
+    .block { display: block; margin-bottom: 16px; }
+    .card, .radar-card, .detail-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px 20px; }
+    .type-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .type-card { text-align: left; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; cursor: pointer; font-family: inherit; }
+    .type-card:hover { border-color: var(--primary); }
+    .type-card.selected { border-color: var(--primary); background: rgba(16,185,129,.08); box-shadow: inset 0 0 0 1px var(--primary); }
+    .type-card span { display: block; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+    .type-card small { color: var(--text-muted); line-height: 1.4; }
+    .so-dashboard { display: grid; grid-template-columns: minmax(260px, 360px) minmax(0, 1fr); gap: 16px; }
+    .radar-card h2, .detail-card h2 { margin: 0 0 16px; font-size: 14px; font-weight: 800; color: var(--text); }
+    .empty { color: var(--text-muted); font-size: 14px; padding: 16px 0; }
+    .legend { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; margin-top: 12px; font-size: 12px; color: var(--text-muted); }
+    .dot.mine { width: 8px; height: 8px; border-radius: 999px; display: inline-block; margin-right: 6px; background: #7C3AED; }
+    .line-target { width: 14px; border-top: 2px dashed #F59E0B; display: inline-block; margin-right: 6px; vertical-align: middle; }
+    .outcome-row { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(240px, 1.8fr) 70px; gap: 16px; align-items: center; padding: 10px 0; }
+    .outcome-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .so-badge { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; font-size: 10px; font-weight: 800; flex-shrink: 0; }
+    .outcome-copy { min-width: 0; }
+    .outcome-copy strong { display: block; color: var(--text); font-size: 13px; overflow-wrap: anywhere; }
+    .outcome-copy small { display: block; color: var(--text-muted); margin-top: 2px; font-size: 11px; }
+    .progress-wrap { position: relative; height: 20px; display: flex; align-items: center; }
+    .progress-track { width: 100%; height: 7px; border-radius: 999px; background: #E5E7EB; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 999px; background: #EF4444; }
+    .progress-fill.ok { background: #10B981; }
+    .target-marker { position: absolute; top: 1px; bottom: 1px; width: 2px; background: #F59E0B; z-index: 1; }
+    .outcome-state { text-align: right; }
+    .outcome-state strong { display: block; color: #EF4444; font-size: 12px; }
+    .outcome-state span { display: inline-flex; margin-top: 4px; padding: 3px 8px; border-radius: 4px; background: #FEE2E2; color: #DC2626; font-size: 10px; font-weight: 800; }
+    .outcome-state span.ok { background: #DCFCE7; color: #16A34A; }
+    .outcome-state:has(span.ok) strong { color: #16A34A; }
+    @media (max-width: 900px) {
+      .so-dashboard, .outcome-row { grid-template-columns: 1fr; }
+      .outcome-state { text-align: left; }
     }
-    .or-body { flex: 1; }
-    .or-label { font-size: 13px; color: var(--text); margin-bottom: 6px; }
-    .or-bar-wrap { position: relative; }
-    .or-bar-track { height: 8px; background: var(--border); border-radius: 4px; position: relative; overflow: visible; }
-    .or-bar-fill  { height: 100%; border-radius: 4px; transition: width 0.4s; }
-    .or-meta-line {
-      position: absolute; top: -3px; bottom: -3px;
-      left: 80%; width: 2px; background: var(--primary); border-radius: 1px;
-    }
-    .or-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; width: 80px; }
-    .or-pct  { font-size: 13px; font-weight: 700; }
-    .or-status {
-      font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
-    }
-    .or-status.done     { background: var(--badge-open-bg);    color: var(--badge-open); }
-    .or-status.progress { background: var(--badge-pending-bg); color: var(--badge-pending); }
-    .or-status.risk     { background: var(--badge-expired-bg); color: var(--badge-expired); }
-
-    .state-box {
-      display: flex; align-items: center; gap: 10px; padding: 18px 20px;
-      background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md);
-      font-size: 14px; color: var(--text-muted);
-    }
-    .notice { display: flex; align-items: center; gap: 10px; background: rgba(255,165,2,0.08); border: 1px solid rgba(255,165,2,0.25); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: var(--text-muted); }
-    .notice i { color: var(--primary); flex-shrink: 0; }
-    .empty-box {
-      background: #fff; border: 1px dashed var(--border); border-radius: var(--radius-md);
-      padding: 48px 24px; text-align: center;
-    }
-    .empty-icon {
-      width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 14px;
-      background: var(--surface-2); color: var(--text-muted);
-      display: flex; align-items: center; justify-content: center; font-size: 24px;
-    }
-    .empty-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-    .empty-desc  { font-size: 13px; color: var(--text-muted); max-width: 420px; margin: 0 auto; line-height: 1.6; }
-  `]
+  `],
 })
 export class IndicadoresComponent implements OnInit {
   loading = signal(true);
-  error   = signal<string | null>(null);
-  outcomes = signal<OutcomeItem[]>([]);
+  periodCtrl = new FormControl<number | null>(null);
+  viewMode = signal<'so' | 'id'>('so');
+  private periods = signal<{ label: string; value: number }[]>([]);
+  private assessments = signal<MyAssessment[]>([]);
+  soRows = signal<SoIndicatorRow[]>([]);
+  soRadarData = signal<Record<string, unknown>>({});
+  periodOptions = () => this.periods();
+  target = TARGET;
 
-  private readonly CX = 150;
-  private readonly CY = 150;
-  private readonly R  = 100;
+  radarOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      r: {
+        min: 0,
+        max: 100,
+        ticks: { display: false, stepSize: 20 },
+        pointLabels: { color: '#64748B', font: { size: 11, weight: '700' } },
+        grid: { color: '#E5E7EB' },
+        angleLines: { color: '#E5E7EB' },
+      },
+    },
+  };
 
-  axes = signal<{ x2: number; y2: number; lx: number; ly: number; label: string }[]>([]);
-
-  constructor(private assesment: AssesmentApiService) {}
+  constructor(
+    private assesment: AssesmentApiService,
+    private userApi: UserApiService,
+    private auth: AuthService,
+    private messageService: MessageService,
+  ) {}
 
   ngOnInit(): void {
-    // v13: SO -> indicadores -> niveles cruzados con las rúbricas. El logro de
-    // cada SO es el promedio del score del rank de nivel de sus rúbricas.
-    this.assesment.getStudentOutcomes().subscribe({
-      next: sos => {
-        if (!sos?.length) { this.outcomes.set([]); this.buildAxes(0); this.loading.set(false); return; }
-        forkJoin({
-          perfsBySo: forkJoin(sos.map(so => this.assesment.getPerformances(so.id))),
-          rubrics: this.assesment.getRubrics(),
-        }).subscribe({
-          next: ({ perfsBySo, rubrics }) => {
-            const allPerfs = perfsBySo.reduce((acc, arr) => acc.concat(arr), [] as Performance[]);
-            if (!allPerfs.length) { this.compute(sos, perfsBySo, allPerfs, [], rubrics ?? []); this.loading.set(false); return; }
-            forkJoin(allPerfs.map(p => this.assesment.getLevels(p.id))).subscribe({
-              next: levelsByPerf => { this.compute(sos, perfsBySo, allPerfs, levelsByPerf, rubrics ?? []); this.loading.set(false); },
-              error: () => this.failLoad(),
-            });
-          },
-          error: () => this.failLoad(),
-        });
+    this.periodCtrl.valueChanges.subscribe(periodId => {
+      if (periodId != null) this.loadSoChart(periodId);
+      else { this.soRows.set([]); this.soRadarData.set({}); }
+    });
+
+    this.assesment.getMyAssessments().subscribe({
+      next: assessments => {
+        this.assessments.set(assessments ?? []);
+        const unique = [...new Set((assessments ?? []).map(a => a.period_id))]
+          .sort((a, b) => b - a)
+          .map(id => ({ label: `Periodo ${id}`, value: id }));
+        this.periods.set(unique);
+        this.periodCtrl.setValue(unique[0]?.value ?? null);
+        this.loading.set(false);
       },
-      error: () => this.failLoad(),
+      error: (e: HttpErrorResponse) => {
+        this.loading.set(false);
+        this.showError(e, 'No se pudieron cargar los periodos disponibles');
+      },
     });
   }
 
-  private failLoad(): void {
-    this.error.set('No se pudieron cargar los indicadores. Verifica la conexión con el servidor.');
-    this.loading.set(false);
+  setMode(mode: 'so' | 'id'): void {
+    this.viewMode.set(mode);
   }
 
-  private compute(
-    sos: StudentOutcome[],
-    perfsBySo: Performance[][],
-    allPerfs: Performance[],
-    levelsByPerf: Level[][],
+  barWidth(pct: number): number {
+    return Math.max(0, Math.min(100, pct));
+  }
+
+  private loadSoChart(periodId: number): void {
+    const periodAssessments = this.assessments().filter(a => a.period_id === periodId);
+    if (periodAssessments.length === 0) {
+      this.soRows.set([]);
+      this.soRadarData.set({});
+      return;
+    }
+
+    forkJoin({
+      rubrics: this.assesment.getRubrics({ period_id: periodId }),
+      expected: forkJoin(periodAssessments.map(a => forkJoin({
+        assessment: of(a),
+        students: this.userApi.getSubjectStudents(a.nrc),
+        performances: this.assesment.getPerformances(a.so_id),
+      }))),
+    }).subscribe({
+      next: ({ rubrics, expected }) => this.buildSoRows(periodAssessments, rubrics ?? [], expected),
+      error: e => this.showError(e, 'No se pudo cargar la gráfica por SO'),
+    });
+  }
+
+  private buildSoRows(
+    periodAssessments: MyAssessment[],
     rubrics: Rubric[],
+    expectedRows: { assessment: MyAssessment; students: unknown[]; performances: unknown[] }[],
   ): void {
-    const perfToSo = new Map<string, string>();
-    perfsBySo.forEach((perfs, i) => perfs.forEach(p => perfToSo.set(p.id, sos[i].id)));
-    const levelRank = new Map<string, number>();
-    allPerfs.forEach((p, i) => (levelsByPerf[i] ?? []).forEach(l => levelRank.set(l.id, l.rank)));
-    const scoreOf = (rank: number) => ({ 4: 100, 3: 75, 2: 50, 1: 25 } as Record<number, number>)[rank] ?? 0;
+    const currentUserId = this.auth.user()?.id;
+    const bySo = new Map<string, SoIndicatorRow>();
 
-    const items: OutcomeItem[] = sos.map((so, i) => {
-      const soRubrics = rubrics.filter(r => perfToSo.get(r.performance_id) === so.id);
-      let pct = 0;
-      if (soRubrics.length) {
-        pct = Math.round(soRubrics.reduce((a, r) => a + scoreOf(levelRank.get(r.level_id) ?? 0), 0) / soRubrics.length);
-      }
-      return { id: `O${i + 1}`, label: so.description ?? so.id, pct, ...this.statusFor(pct) };
-    });
-
-    this.outcomes.set(items);
-    this.buildAxes(items.length);
-  }
-
-  private statusFor(pct: number): { status: string; statusClass: string } {
-    if (pct >= 80) return { status: 'Cumplido',   statusClass: 'done' };
-    if (pct >= 70) return { status: 'En proceso', statusClass: 'progress' };
-    if (pct > 0)   return { status: 'En riesgo',  statusClass: 'risk' };
-    return { status: 'Sin datos', statusClass: 'progress' };
-  }
-
-  private buildAxes(n: number): void {
-    const count = Math.max(n, 3);
-    this.axes.set(Array.from({ length: count }, (_, i) => {
-      const angle = (Math.PI / 2) + (2 * Math.PI * i / count);
-      return {
-        x2: this.CX + this.R * Math.cos(angle),
-        y2: this.CY - this.R * Math.sin(angle),
-        lx: this.CX + (this.R + 18) * Math.cos(angle),
-        ly: this.CY - (this.R + 18) * Math.sin(angle),
-        label: `O${i + 1}`,
+    for (const item of expectedRows) {
+      const a = item.assessment;
+      const current = bySo.get(a.so_id) ?? {
+        so_id: a.so_id,
+        description: a.description,
+        expected: 0,
+        done: 0,
+        pct: 0,
       };
-    }));
-  }
+      current.expected += (item.students?.length ?? 0) * (item.performances?.length ?? 0);
+      current.done += rubrics.filter(r =>
+        r.schedule_id === a.schedule_id &&
+        r.subjects_id === a.nrc &&
+        (currentUserId == null || r.evaluator_user_id === currentUserId)
+      ).length;
+      bySo.set(a.so_id, current);
+    }
 
-  ringPoints(scale: number): string {
-    const n = Math.max(this.outcomes().length, 3);
-    return Array.from({ length: n }, (_, i) => {
-      const angle = (Math.PI / 2) + (2 * Math.PI * i / n);
-      const x = this.CX + this.R * scale * Math.cos(angle);
-      const y = this.CY - this.R * scale * Math.sin(angle);
-      return `${x},${y}`;
-    }).join(' ');
-  }
+    const rows = [...bySo.values()]
+      .map(row => ({ ...row, pct: row.expected === 0 ? 0 : Math.round((row.done / row.expected) * 100) }))
+      .sort((a, b) => a.so_id.localeCompare(b.so_id));
 
-  dataPointsArr() {
-    const items = this.outcomes();
-    const n = Math.max(items.length, 3);
-    return items.map((o, i) => {
-      const scale = o.pct / 100;
-      const angle = (Math.PI / 2) + (2 * Math.PI * i / n);
-      return {
-        x: this.CX + this.R * scale * Math.cos(angle),
-        y: this.CY - this.R * scale * Math.sin(angle),
-      };
+    this.soRows.set(rows);
+    this.soRadarData.set({
+      labels: rows.map(r => r.so_id),
+      datasets: [
+        {
+          label: 'Mi desempeño',
+          data: rows.map(r => r.pct),
+          borderColor: '#7C3AED',
+          backgroundColor: 'rgba(124, 58, 237, .12)',
+          pointBackgroundColor: '#7C3AED',
+          pointBorderColor: '#7C3AED',
+          pointRadius: 3,
+          borderWidth: 2,
+        },
+        {
+          label: 'Meta ABET 80%',
+          data: rows.map(() => TARGET),
+          borderColor: '#F59E0B',
+          backgroundColor: 'rgba(245, 158, 11, .08)',
+          pointRadius: 0,
+          borderDash: [4, 4],
+          borderWidth: 1.5,
+        },
+      ],
     });
   }
 
-  dataPoints(): string {
-    return this.dataPointsArr().map(p => `${p.x},${p.y}`).join(' ');
-  }
-
-  barColor(pct: number): string {
-    if (pct >= 80) return 'var(--badge-open)';
-    if (pct >= 70) return 'var(--n2-color)';
-    if (pct > 0)   return 'var(--badge-expired)';
-    return 'var(--border)';
+  private showError(e: HttpErrorResponse, fallback: string): void {
+    this.messageService.add({
+      severity: 'error',
+      summary: `Error ${e.status}`,
+      detail: typeof e.error?.detail === 'string' ? e.error.detail : fallback,
+    });
   }
 }

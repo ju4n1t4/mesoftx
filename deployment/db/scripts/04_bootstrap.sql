@@ -36,7 +36,7 @@ VALUES ('Administrativo', 'Administrador del sistema');
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM roles r, permissions p
 WHERE r.name = 'Administrativo'
-  AND p.code IN ('USER_CRUD', 'PERMISSION_ASSIGN');
+  AND p.code IN ('USER_CRUD', 'PERMISSION_ASSIGN', 'PROGRAM_CR/*  */UD');
 
 -- ---------------------------------------------------------------
 -- 3. USUARIO ADMINISTRADOR INICIAL

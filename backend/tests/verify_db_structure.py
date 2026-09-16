@@ -60,12 +60,12 @@ PERMISSION_CODES = {
     "USER_CRUD", "PERMISSION_ASSIGN",
 }
 
-ADMIN_PERMISSIONS = {"USER_CRUD", "PERMISSION_ASSIGN"}
+ADMIN_PERMISSIONS = {"USER_CRUD", "PERMISSION_ASSIGN", "PROGRAM_CRUD"}
 
 # tabla -> filas esperadas justo después del bootstrap
 EXPECTED_ROWS_USERS = {
     "college": 0, "program": 0, "periods": 0, "roles": 1, "permissions": 18,
-    "role_permissions": 2, "users": 1, "students": 0, "subjects": 0,
+    "role_permissions": 3, "users": 1, "students": 0, "subjects": 0,
     "students_subjects": 0, "teacher_subjects": 0,
 }
 EXPECTED_ROWS_ASSESMENT = {t: 0 for t in ASSESMENT_TABLES}

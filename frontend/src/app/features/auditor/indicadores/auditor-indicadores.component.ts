@@ -33,7 +33,7 @@ import { IndicatorsChartComponent } from '../../../shared/indicators-chart/indic
       </div>
 
       <div class="toolbar">
-        <p-select [options]="periodOptions()" [formControl]="periodCtrl"
+        <p-select appendTo="body" [options]="periodOptions()" [formControl]="periodCtrl"
                   optionLabel="label" optionValue="value" placeholder="Selecciona un periodo"></p-select>
       </div>
 

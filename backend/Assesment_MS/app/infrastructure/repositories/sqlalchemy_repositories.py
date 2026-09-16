@@ -171,6 +171,29 @@ class RubricRepository(SqlAlchemyRepository):
             stmt = stmt.where(RubricModel.subjects_id.in_(nrcs))
         return list(self.db.scalars(stmt).all())
 
+    def list_filtered(
+        self,
+        *,
+        period_id: int | None = None,
+        schedule_id: int | None = None,
+        subjects_id: int | None = None,
+        student_id: int | None = None,
+        nrcs: list[int] | None = None,
+    ) -> list[RubricModel]:
+        stmt = select(RubricModel)
+        if period_id is not None:
+            stmt = stmt.join(SoScheduleModel, SoScheduleModel.id == RubricModel.schedule_id)
+            stmt = stmt.where(SoScheduleModel.period_id == period_id)
+        if schedule_id is not None:
+            stmt = stmt.where(RubricModel.schedule_id == schedule_id)
+        if subjects_id is not None:
+            stmt = stmt.where(RubricModel.subjects_id == subjects_id)
+        if student_id is not None:
+            stmt = stmt.where(RubricModel.student_id == student_id)
+        if nrcs is not None:
+            stmt = stmt.where(RubricModel.subjects_id.in_(nrcs))
+        return list(self.db.scalars(stmt).all())
+
     # ── Borrado interno cruzado (idempotente) ───────────────
     def _closed_periods_for(self, whereclause) -> list[str]:
         stmt = (
@@ -279,6 +302,14 @@ class DashboardRepository:
             .where(SoScheduleModel.period_id == period_id)
         )
         return [(str(a), int(b), int(c)) for a, b, c in self.db.execute(stmt).all()]
+
+    def scheduled_so_ids(self, period_id: int) -> list[str]:
+        stmt = (
+            select(SoScheduleModel.so_id)
+            .where(SoScheduleModel.period_id == period_id)
+            .order_by(SoScheduleModel.so_id)
+        )
+        return [str(so_id) for so_id in self.db.scalars(stmt).all()]
 
     def progress_by_so(self, period_id: int) -> list[tuple[str, int]]:
         stmt = (

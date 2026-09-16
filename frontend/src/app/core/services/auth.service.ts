@@ -81,8 +81,10 @@ export class AuthService {
   }
 
   loginAsCoordinador(): void {
-    this.login('orueda741@unab.edu.co', ACCESS_PASSWORD).subscribe({
-      error: () => this._fallbackSession('Coordinador'),
+    this.login('coordinador@gmail.com', ACCESS_PASSWORD).subscribe({
+      error: () => this.login('orueda741@unab.edu.co', ACCESS_PASSWORD).subscribe({
+        error: () => this._fallbackSession('Coordinador'),
+      }),
     });
   }
 

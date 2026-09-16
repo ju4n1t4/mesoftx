@@ -2,7 +2,7 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { forkJoin, of } from 'rxjs';
+import { firstValueFrom, forkJoin, of } from 'rxjs';
 
 import { AccordionModule } from 'primeng/accordion';
 import { ButtonModule } from 'primeng/button';
@@ -19,6 +19,8 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { AssesmentApiService } from '../../../core/services/assesment-api.service';
 import { UserApiService } from '../../../core/services/user-api.service';
 import { StudentOutcome, Performance, Level, College } from '../../../core/models/abet.models';
+import { BulkExcelService, BulkImportSummary } from '../../../shared/bulk-import/bulk-excel.service';
+import { BulkResultDialogComponent } from '../../../shared/bulk-import/bulk-result-dialog.component';
 
 /** Los 4 niveles fijos de la rúbrica, por rank. El sufijo forma el id propuesto. */
 const LEVEL_DEFS: { rank: number; name: string; suffix: string }[] = [
@@ -32,6 +34,17 @@ const LEVEL_DEFS: { rank: number; name: string; suffix: string }[] = [
 interface PerfNode { perf: Performance; levels: Level[]; }
 /** Vista en árbol: un SO con sus indicadores. */
 interface SoNode { so: StudentOutcome; performances: PerfNode[]; }
+interface RubricImportLevel { row: number; id: string; rank: number; description: string; }
+interface RubricImportGroup {
+  rows: number[];
+  soId: string;
+  soDescription: string;
+  collegeId: string;
+  indicatorId: string;
+  indicatorDescription: string;
+  levels: Map<number, RubricImportLevel>;
+  errors: string[];
+}
 
 @Component({
   selector: 'app-student-outcomes',
@@ -40,6 +53,7 @@ interface SoNode { so: StudentOutcome; performances: PerfNode[]; }
     CommonModule, ReactiveFormsModule,
     AccordionModule, ButtonModule, DialogModule, InputTextModule, InputTextarea,
     SelectModule, TagModule, ToastModule, ProgressSpinnerModule, ConfirmDialogModule,
+    BulkResultDialogComponent,
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -53,6 +67,11 @@ interface SoNode { so: StudentOutcome; performances: PerfNode[]; }
       </div>
 
       <div class="toolbar">
+        <button pButton type="button" label="Descargar plantilla" icon="pi pi-download"
+                class="p-button-secondary" (click)="downloadImportTemplate()"></button>
+        <button pButton type="button" label="Importar Excel" icon="pi pi-upload"
+                class="p-button-secondary" (click)="rubricImportInput.click()" [disabled]="saving()"></button>
+        <input #rubricImportInput type="file" accept=".xlsx" hidden (change)="onImportFile($event)" />
         <button pButton type="button" label="Nuevo student outcome" icon="pi pi-plus" (click)="openSoForm()"></button>
       </div>
 
@@ -201,6 +220,12 @@ interface SoNode { so: StudentOutcome; performances: PerfNode[]; }
           <button pButton type="button" label="Crear niveles" [disabled]="saving()" (click)="saveCompleteLevels()"></button>
         </ng-template>
       </p-dialog>
+
+      <app-bulk-result-dialog
+        title="Resultado importación de rúbrica"
+        [(visible)]="importResultVisible"
+        [summary]="importSummary">
+      </app-bulk-result-dialog>
     </div>
   `,
   styles: [`
@@ -257,6 +282,8 @@ export class StudentOutcomesComponent implements OnInit {
   soDialog = false;
   perfDialog = false;
   completeDialog = false;
+  importResultVisible = false;
+  importSummary: BulkImportSummary = { success: [], skipped: [], errors: [] };
 
   soForm: FormGroup;
   perfForm: FormGroup;
@@ -265,6 +292,7 @@ export class StudentOutcomesComponent implements OnInit {
   constructor(
     private assesment: AssesmentApiService,
     private userApi: UserApiService,
+    private bulkExcel: BulkExcelService,
     private fb: FormBuilder,
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
@@ -341,6 +369,181 @@ export class StudentOutcomesComponent implements OnInit {
 
   perfCode(perf: Performance): string {
     return perf.code || perf.id;
+  }
+
+  downloadImportTemplate(): void {
+    this.bulkExcel.downloadTemplate(
+      'plantilla_rubrica.xlsx',
+      ['SO', 'SODescription', 'College', 'ID', 'CODE', 'IDDescription', 'Level', 'LevelDescription'],
+      'Rubrica',
+    );
+  }
+
+  async onImportFile(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    const summary: BulkImportSummary = { success: [], skipped: [], errors: [] };
+    this.saving.set(true);
+    try {
+      const rows = await this.bulkExcel.readRows(file);
+      const groups = this.buildImportGroups(rows, summary);
+      const soCache = new Map(this.tree().map(node => [this.normalizeKey(node.so.id), node.so]));
+      const perfCache = new Map<string, Performance[]>(
+        this.tree().map(node => [this.normalizeKey(node.so.id), node.performances.map(p => p.perf)]),
+      );
+
+      for (const group of groups) {
+        const label = `${group.soId} - ${group.indicatorId}`;
+        const row = group.rows[0] ?? 0;
+        if (group.errors.length) {
+          summary.errors.push({ row, label, detail: group.errors.join(' ') });
+          continue;
+        }
+
+        const soKey = this.normalizeKey(group.soId);
+        if (!soCache.has(soKey)) {
+          try {
+            const createdSo = await firstValueFrom(this.assesment.createStudentOutcome({
+              id: group.soId,
+              description: group.soDescription || group.soId,
+              college_id: group.collegeId,
+            }));
+            soCache.set(soKey, createdSo);
+            perfCache.set(soKey, []);
+            summary.success.push({ row, label: group.soId, detail: 'Student Outcome creado.' });
+          } catch (err) {
+            summary.errors.push({ row, label: group.soId, detail: `No se pudo crear el SO: ${this.errorText(err)}` });
+            continue;
+          }
+        }
+
+        const existingPerf = (perfCache.get(soKey) ?? [])
+          .find(perf => this.normalizeKey(this.perfCode(perf)) === this.normalizeKey(group.indicatorId));
+        if (existingPerf) {
+          summary.skipped.push({ row, label, detail: 'El indicador ya existe para este SO.' });
+          continue;
+        }
+
+        try {
+          const createdPerf = await firstValueFrom(this.assesment.createPerformance({
+            id: group.indicatorId,
+            description: group.indicatorDescription,
+            so_id: group.soId,
+          }));
+          perfCache.set(soKey, [...(perfCache.get(soKey) ?? []), createdPerf]);
+
+          const levels = [...group.levels.values()].sort((a, b) => a.rank - b.rank);
+          for (const level of levels) {
+            await firstValueFrom(this.assesment.createLevel({
+              id: level.id,
+              description: level.description,
+              rank: level.rank,
+              performance_id: createdPerf.id,
+            }));
+          }
+          summary.success.push({ row, label, detail: `Indicador creado con ${levels.length} niveles.` });
+        } catch (err) {
+          summary.errors.push({ row, label, detail: this.errorText(err) });
+        }
+      }
+    } catch (err) {
+      summary.errors.push({ row: 0, label: file.name, detail: this.errorText(err) });
+    } finally {
+      this.saving.set(false);
+      this.importSummary = summary;
+      this.importResultVisible = true;
+      this.reload();
+    }
+  }
+
+  private buildImportGroups(rows: Record<string, unknown>[], summary: BulkImportSummary): RubricImportGroup[] {
+    const activeCollegeIds = new Set(this.activeColleges().map(c => this.normalizeKey(c.id)));
+    const defaultCollege = this.activeColleges()[0]?.id ?? '';
+    const groups = new Map<string, RubricImportGroup>();
+
+    rows.forEach((row, index) => {
+      const rowNumber = index + 2;
+      const soId = this.cleanCode(this.bulkExcel.value(row, 'SO')).toUpperCase();
+      const indicatorId = this.cleanCode(this.bulkExcel.value(row, 'ID')).toUpperCase();
+      const indicatorDescription = this.bulkExcel.value(row, 'IDDescription');
+      const levelId = this.cleanCode(this.bulkExcel.value(row, 'Level'));
+      const levelDescription = this.bulkExcel.value(row, 'LevelDescription');
+      const soDescription = this.bulkExcel.value(row, 'SODescription') || soId;
+      const collegeId = (this.bulkExcel.value(row, 'College') || this.bulkExcel.value(row, 'college_id') || defaultCollege).toUpperCase();
+      const rowLabel = `${soId || 'SO vacío'} - ${indicatorId || 'ID vacío'}`;
+
+      if (!soId || !indicatorId || !indicatorDescription || !levelId || !levelDescription) {
+        summary.errors.push({ row: rowNumber, label: rowLabel, detail: 'SO, ID, IDDescription, Level y LevelDescription son obligatorios.' });
+        return;
+      }
+      if (!collegeId || !activeCollegeIds.has(this.normalizeKey(collegeId))) {
+        summary.errors.push({ row: rowNumber, label: rowLabel, detail: 'No hay una facultad activa válida para crear el SO.' });
+        return;
+      }
+
+      const rank = this.levelRank(levelId);
+      if (!rank) {
+        summary.errors.push({ row: rowNumber, label: rowLabel, detail: 'No se pudo identificar el nivel. Usa Insatisfactorio, En desarrollo, Bueno o Supera las expectativas.' });
+        return;
+      }
+
+      const key = `${this.normalizeKey(soId)}|${this.normalizeKey(indicatorId)}`;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          rows: [],
+          soId,
+          soDescription,
+          collegeId,
+          indicatorId,
+          indicatorDescription,
+          levels: new Map<number, RubricImportLevel>(),
+          errors: [],
+        });
+      }
+
+      const group = groups.get(key)!;
+      group.rows.push(rowNumber);
+      if (this.normalizeKey(group.indicatorDescription) !== this.normalizeKey(indicatorDescription)) {
+        group.errors.push(`El indicador ${indicatorId} tiene descripciones diferentes dentro del archivo.`);
+      }
+      if (group.levels.has(rank)) {
+        group.errors.push(`El nivel ${this.levelName(rank)} está repetido.`);
+        return;
+      }
+      group.levels.set(rank, { row: rowNumber, id: levelId, rank, description: levelDescription });
+    });
+
+    for (const group of groups.values()) {
+      for (const def of LEVEL_DEFS) {
+        if (!group.levels.has(def.rank)) group.errors.push(`Falta el nivel ${def.name}.`);
+      }
+    }
+
+    return [...groups.values()];
+  }
+
+  private cleanCode(value: string): string {
+    return value.replace(/\s+/g, '');
+  }
+
+  private normalizeKey(value: string): string {
+    return this.removeAccents(value).trim().toUpperCase();
+  }
+
+  private removeAccents(value: string): string {
+    return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private levelRank(value: string): number | null {
+    const normalized = this.normalizeKey(value);
+    if (normalized.includes('INSATISFACTORIO')) return 1;
+    if (normalized.includes('DESARROLLO')) return 2;
+    if (normalized.includes('BUENO')) return 3;
+    if (normalized.includes('SUPERA')) return 4;
+    return null;
   }
 
   // ── Student Outcome ───────────────────────────────────────
@@ -522,8 +725,16 @@ export class StudentOutcomesComponent implements OnInit {
 
   // ── Errores ───────────────────────────────────────────────
   private showError(err: HttpErrorResponse): void {
-    const detail = typeof err.error?.detail === 'string' ? err.error.detail : 'Ocurrió un error inesperado';
+    const detail = this.errorText(err);
     this.messageService.add({ severity: 'error', summary: `Error ${err.status}`, detail });
+  }
+
+  private errorText(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      return typeof err.error?.detail === 'string' ? err.error.detail : `Error ${err.status}`;
+    }
+    if (err instanceof Error) return err.message;
+    return 'Ocurrió un error inesperado';
   }
 }
 

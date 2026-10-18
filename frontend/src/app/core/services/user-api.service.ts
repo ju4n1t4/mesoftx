@@ -39,13 +39,13 @@ export class UserApiService {
     return this.http.get<string[]>(`${this.base}/roles/${id}/permissions`);
   }
 
+  // ── Cuenta propia ─────────────────────────────────────────
+  changeMyPassword(current_password: string, new_password: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/me/password`, { current_password, new_password });
+  }
+
   // ── Permisos ──────────────────────────────────────────────
   getPermissions(): Observable<Permission[]> { return this.http.get<Permission[]>(`${this.base}/permissions`); }
-
-  // ── Público (temporal, para la defensa): perfiles existentes, sin token ──
-  getPublicRoles(): Observable<Pick<Role, 'id' | 'name'>[]> {
-    return this.http.get<Pick<Role, 'id' | 'name'>[]>(`${this.base}/public/roles`);
-  }
 
   // ── Programas (antes carreras) ────────────────────────────
   getPrograms(): Observable<Program[]>          { return this.http.get<Program[]>(`${this.base}/programs`); }

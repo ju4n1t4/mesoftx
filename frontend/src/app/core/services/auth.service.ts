@@ -1,6 +1,7 @@
 /**
  * AuthService — gestiona login, logout y sesión JWT contra User_MS.
- * También soporta acceso demo (mock) para recorrer la interfaz sin backend.
+ * No existen accesos de demostración ni credenciales incrustadas en el código:
+ * toda sesión nace de un login real contra User_MS.
  */
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
@@ -11,9 +12,6 @@ import { CurrentUser, LoginRequest, TokenResponse, User } from '../models/abet.m
 
 const TOKEN_KEY = 'mesoftx_token';
 const USER_KEY  = 'mesoftx_user';
-
-// Credencial de los usuarios institucionales de acceso rápido.
-const ACCESS_PASSWORD = 'Mesoftx2026!';
 
 // Los roles son dinámicos (los crea el admin). El único fijo del bootstrap es
 // Administrativo (role_id 1). El resto se resuelve por el claim "role" del JWT.
@@ -73,53 +71,6 @@ export class AuthService {
     );
   }
 
-  // ── Acceso rápido con usuarios institucionales reales de la BD ──
-  loginAsProfesor(): void {
-    this.login('jramirez@unab.edu.co', ACCESS_PASSWORD).subscribe({
-      error: () => this._fallbackSession('Profesor'),
-    });
-  }
-
-  loginAsCoordinador(): void {
-    this.login('coordinador@gmail.com', ACCESS_PASSWORD).subscribe({
-      error: () => this.login('orueda741@unab.edu.co', ACCESS_PASSWORD).subscribe({
-        error: () => this._fallbackSession('Coordinador'),
-      }),
-    });
-  }
-
-  loginAsAuditor(): void {
-    this.login('auditor@unab.edu.co', ACCESS_PASSWORD).subscribe({
-      error: () => this._fallbackSession('Auditor'),
-    });
-  }
-
-  loginAsAdmin(): void {
-    this.login('admin@unab.edu.co', ACCESS_PASSWORD).subscribe({
-      error: () => this._fallbackSession('Administrativo'),
-    });
-  }
-
-  // Sesión de respaldo si el backend no responde (solo navegación de UI).
-  private _fallbackSession(role: 'Profesor' | 'Coordinador' | 'Auditor' | 'Administrativo'): void {
-    const meta = {
-      Profesor:       { id: 99, email: 'jramirez@unab.edu.co',  document_number: 'DOC-DEMO', role_id: 3, token: 'demo-token-profesor',    program_id: 'ISI' as string | null, route: '/profesor/mis-cursos' },
-      Coordinador:    { id: 98, email: 'orueda741@unab.edu.co', document_number: 'COO-DEMO', role_id: 2, token: 'demo-token-coordinador', program_id: null as string | null, route: '/coordinador' },
-      Auditor:        { id: 96, email: 'auditor@unab.edu.co',   document_number: 'AUD-DEMO', role_id: 4, token: 'demo-token-auditor',     program_id: null as string | null, route: '/auditor' },
-      Administrativo: { id: 97, email: 'admin@unab.edu.co',     document_number: 'ADM-DEMO', role_id: 1, token: 'demo-token-admin',       program_id: null as string | null, route: '/admin' },
-    }[role];
-
-    this._setUser({
-      id: meta.id,
-      name: role,
-      email: meta.email, document_number: meta.document_number,
-      role_id: meta.role_id, role,
-      program_id: meta.program_id, active: true,
-    });
-    localStorage.setItem(TOKEN_KEY, meta.token);
-    this.router.navigate([meta.route]);
-  }
-
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
@@ -128,10 +79,6 @@ export class AuthService {
   }
 
   getToken(): string | null { return localStorage.getItem(TOKEN_KEY); }
-  isDemo(): boolean {
-    const t = this.getToken();
-    return t === 'demo-token-profesor' || t === 'demo-token-coordinador' || t === 'demo-token-auditor' || t === 'demo-token-admin';
-  }
 
   // ── Helpers ──
   private _setUser(user: CurrentUser): void {
@@ -146,9 +93,9 @@ export class AuthService {
     try { return JSON.parse(atob(token.split('.')[1])) as JwtClaims; } catch { return null; }
   }
   private _redirectByRole(role: string): void {
-    if (role === 'Profesor') this.router.navigate(['/profesor/mis-cursos']);
-    else if (role === 'Administrativo') this.router.navigate(['/admin']);
-    else if (role === 'Auditor') this.router.navigate(['/auditor']);
-    else this.router.navigate(['/coordinador']);
+    if (role === 'Profesor') this.router.navigate(['/profesor/dashboard']);
+    else if (role === 'Administrativo') this.router.navigate(['/admin/dashboard']);
+    else if (role === 'Auditor') this.router.navigate(['/auditor/dashboard']);
+    else this.router.navigate(['/coordinador/dashboard']);
   }
 }

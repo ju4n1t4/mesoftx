@@ -4,7 +4,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
 
-import { TabViewModule } from 'primeng/tabview';
+import { TabsModule } from 'primeng/tabs';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { ProgressBarModule } from 'primeng/progressbar';
@@ -36,7 +36,7 @@ interface TabData {
   standalone: true,
   imports: [
     CommonModule, ReactiveFormsModule,
-    TabViewModule, SelectModule, TableModule, ProgressBarModule, ChartModule,
+    TabsModule, SelectModule, TableModule, ProgressBarModule, ChartModule,
     ProgressSpinnerModule, MessageModule, ButtonModule,
   ],
   template: `
@@ -65,17 +65,24 @@ interface TabData {
         <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="reload()"></button>
       </div>
 
-      <p-tabView *ngIf="periodCtrl.value != null && !loading() && !errorMsg()">
-        <p-tabPanel header="Por programa">
-          <ng-container *ngTemplateOutlet="tabTpl; context: { $implicit: program(), unit: 'programa' }"></ng-container>
-        </p-tabPanel>
-        <p-tabPanel header="Por profesor">
-          <ng-container *ngTemplateOutlet="tabTpl; context: { $implicit: teacher(), unit: 'profesor' }"></ng-container>
-        </p-tabPanel>
-        <p-tabPanel header="Por student outcome">
-          <ng-container *ngTemplateOutlet="tabTpl; context: { $implicit: so(), unit: 'student outcome' }"></ng-container>
-        </p-tabPanel>
-      </p-tabView>
+      <p-tabs value="program" *ngIf="periodCtrl.value != null && !loading() && !errorMsg()">
+        <p-tablist>
+          <p-tab value="program">Por programa</p-tab>
+          <p-tab value="teacher">Por profesor</p-tab>
+          <p-tab value="so">Por student outcome</p-tab>
+        </p-tablist>
+        <p-tabpanels>
+          <p-tabpanel value="program">
+            <ng-container *ngTemplateOutlet="tabTpl; context: { $implicit: program(), unit: 'programa' }"></ng-container>
+          </p-tabpanel>
+          <p-tabpanel value="teacher">
+            <ng-container *ngTemplateOutlet="tabTpl; context: { $implicit: teacher(), unit: 'profesor' }"></ng-container>
+          </p-tabpanel>
+          <p-tabpanel value="so">
+            <ng-container *ngTemplateOutlet="tabTpl; context: { $implicit: so(), unit: 'student outcome' }"></ng-container>
+          </p-tabpanel>
+        </p-tabpanels>
+      </p-tabs>
     </div>
 
     <!-- Plantilla común de pestaña -->

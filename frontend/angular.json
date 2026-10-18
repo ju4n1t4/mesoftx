@@ -22,13 +22,23 @@
             "outputPath": "dist/mesoftx-frontend",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": ["zone.js"],
+            "polyfills": [
+              "zone.js"
+            ],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-              { "glob": "**/*", "input": "public" }
+              {
+                "glob": "**/*",
+                "input": "public"
+              }
             ],
             "styles": [
+              "node_modules/@fontsource/inter/400.css",
+              "node_modules/@fontsource/inter/500.css",
+              "node_modules/@fontsource/inter/600.css",
+              "node_modules/@fontsource/inter/700.css",
+              "node_modules/@fontsource/inter/800.css",
               "node_modules/primeicons/primeicons.css",
               "src/styles.scss"
             ],
@@ -37,10 +47,24 @@
           "configurations": {
             "production": {
               "budgets": [
-                { "type": "initial", "maximumWarning": "1mb", "maximumError": "3mb" },
-                { "type": "anyComponentStyle", "maximumWarning": "8kb", "maximumError": "16kb" }
+                {
+                  "type": "initial",
+                  "maximumWarning": "1mb",
+                  "maximumError": "3mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "8kb",
+                  "maximumError": "16kb"
+                }
               ],
-              "optimization": { "scripts": true, "styles": true, "fonts": { "inline": false } },
+              "optimization": {
+                "scripts": true,
+                "styles": { "minify": true, "inlineCritical": false },
+                "fonts": {
+                  "inline": false
+                }
+              },
               "outputHashing": "all",
               "fileReplacements": [
                 {
@@ -60,8 +84,12 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
-            "production": { "buildTarget": "mesoftx-frontend:build:production" },
-            "development": { "buildTarget": "mesoftx-frontend:build:development" }
+            "production": {
+              "buildTarget": "mesoftx-frontend:build:production"
+            },
+            "development": {
+              "buildTarget": "mesoftx-frontend:build:development"
+            }
           },
           "defaultConfiguration": "development"
         }

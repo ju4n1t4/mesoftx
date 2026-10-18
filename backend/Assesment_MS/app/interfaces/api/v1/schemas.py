@@ -100,6 +100,19 @@ class AssessmentToDoResponse(BaseModel):
     period_id: int
 
 
+# ── Meta de logro del periodo ───────────────────────────────
+class PeriodTargetUpdate(BaseModel):
+    target_pct: int = Field(..., ge=1, le=100)
+
+
+class PeriodTargetResponse(BaseModel):
+    period_id: int
+    target_pct: int
+    updated_by: int
+    updated_at: datetime | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+
 # ── Rúbrica ─────────────────────────────────────────────────
 class RubricCreate(BaseModel):
     schedule_id: int = Field(..., gt=0)
@@ -201,3 +214,26 @@ class ChartLevelItem(BaseModel):
 class IndicatorsChartResponse(BaseModel):
     period_id: int
     items: list[ChartLevelItem]
+
+
+class PublicLevelItem(BaseModel):
+    rank: int
+    label: str
+    pct: int
+
+
+class PublicSoIndicator(BaseModel):
+    so_id: str
+    description: str
+    assessments: int
+    students: int
+    suppressed: bool            # True = grupo demasiado pequeño para publicarse
+    levels: list[PublicLevelItem]
+
+
+class PublicIndicatorsResponse(BaseModel):
+    """Vista pública: SOLO agregados. Sin ids de estudiantes, profesores ni NRC."""
+    min_group_size: int
+    average_pct: int | None
+    total_assessments: int
+    items: list[PublicSoIndicator]

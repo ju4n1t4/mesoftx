@@ -12,6 +12,7 @@ from app.infrastructure.repositories.sqlalchemy_repositories import (
     InvalidReferenceError,
     LevelRepository,
     PerformanceRepository,
+    PeriodTargetRepository,
     RubricRepository,
     SoScheduleRepository,
     StudentOutcomeRepository,
@@ -20,6 +21,7 @@ from app.interfaces.api.v1.dependencies import (
     CurrentUser,
     db_session,
     get_current_user,
+    require_any_permission,
     require_permission,
 )
 from app.interfaces.api.v1.error_handlers import map_repository_error
@@ -33,6 +35,8 @@ from app.interfaces.api.v1.schemas import (
     PerformanceCreate,
     PerformanceResponse,
     PerformanceUpdate,
+    PeriodTargetResponse,
+    PeriodTargetUpdate,
     RubricCreate,
     RubricResponse,
     RubricUpdate,
@@ -72,7 +76,7 @@ async def _teacher_nrcs_or_none(user: CurrentUser) -> list[int] | None:
 
 # ── Student Outcomes — SO_CRUD ──────────────────────────────
 @router.get("/so", response_model=list[StudentOutcomeResponse])
-def list_so(db: Session = Depends(db_session), _: CurrentUser = Depends(require_permission("SO_CRUD"))):
+def list_so(db: Session = Depends(db_session), _: CurrentUser = Depends(require_any_permission("SO_CRUD", "INDICATOR_VIEW", "RUBRIC_VIEW", "SO_TO_ASSESS_VIEW"))):
     return _service(StudentOutcomeRepository, db).list()
 
 
@@ -328,6 +332,42 @@ def change_status(
     db.commit()
     db.refresh(sched)
     return sched
+
+
+# ── Meta de logro del periodo — SO_SCHEDULE_MANAGE ──────────
+@router.get("/period-target/{period_id}", response_model=PeriodTargetResponse)
+def get_period_target(
+    period_id: int,
+    db: Session = Depends(db_session),
+    _: CurrentUser = Depends(require_permission("SO_SCHEDULE_MANAGE")),
+):
+    """Devuelve la meta de logro configurada para el periodo. 404 si no existe."""
+    target = PeriodTargetRepository(db).get(period_id)
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meta no configurada para el periodo")
+    return target
+
+
+@router.put("/period-target/{period_id}", response_model=PeriodTargetResponse)
+async def set_period_target(
+    period_id: int,
+    payload: PeriodTargetUpdate,
+    db: Session = Depends(db_session),
+    current_user: CurrentUser = Depends(require_permission("SO_SCHEDULE_MANAGE")),
+):
+    """Fija o actualiza la meta de logro del periodo. Rechaza el cambio si el
+    periodo ya tiene programaciones cerradas, para no alterar el histórico."""
+    try:
+        if not await UserMsClient().period_exists(period_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El periodo no existe")
+    except httpx.HTTPError as exc:
+        raise _SERVICE_DOWN from exc
+    if SoScheduleRepository(db).has_closed_in_period(period_id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="La meta no se puede cambiar: el periodo tiene programaciones cerradas",
+        )
+    return PeriodTargetRepository(db).upsert(period_id, payload.target_pct, current_user.user_id)
 
 
 # ── SO a valorar en mis NRC — SO_TO_ASSESS_VIEW ─────────────

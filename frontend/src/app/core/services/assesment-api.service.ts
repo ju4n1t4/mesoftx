@@ -8,13 +8,18 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   StudentOutcome, Performance, Level, Rubric, SoSchedule, ScheduleStatus, MyAssessment, IndicatorsChart,
-  DashboardProgramResponse, DashboardSoResponse, DashboardTeacherResponse,
+  DashboardProgramResponse, DashboardSoResponse, DashboardTeacherResponse, PeriodTarget, PublicIndicators,
 } from '../models/abet.models';
 
 @Injectable({ providedIn: 'root' })
 export class AssesmentApiService {
   private base = environment.assesmentApiUrl;
   constructor(private http: HttpClient) {}
+
+  // ── Vista pública (sin autenticación, solo agregados) ─────
+  getPublicIndicators(): Observable<PublicIndicators> {
+    return this.http.get<PublicIndicators>(`${this.base}/public/indicators`);
+  }
 
   // ── Student Outcomes ──────────────────────────────────────
   getStudentOutcomes(): Observable<StudentOutcome[]> {
@@ -76,6 +81,14 @@ export class AssesmentApiService {
   }
   patchScheduleStatus(id: number, status: ScheduleStatus): Observable<SoSchedule> {
     return this.http.patch<SoSchedule>(`${this.base}/so-schedule/${id}/status`, { status });
+  }
+
+  // ── Meta de logro del periodo ─────────────────────────────
+  getPeriodTarget(periodId: number): Observable<PeriodTarget> {
+    return this.http.get<PeriodTarget>(`${this.base}/period-target/${periodId}`);
+  }
+  updatePeriodTarget(periodId: number, targetPct: number): Observable<PeriodTarget> {
+    return this.http.put<PeriodTarget>(`${this.base}/period-target/${periodId}`, { target_pct: targetPct });
   }
 
   // ── Profesor: qué debo valorar ────────────────────────────

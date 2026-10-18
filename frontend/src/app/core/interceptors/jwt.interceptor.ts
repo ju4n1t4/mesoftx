@@ -3,16 +3,17 @@ import { inject } from '@angular/core';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../../environments/environment';
 
-// Añade el Bearer token solo a las peticiones del User_MS, que es quien
-// exige autenticación. El Assesment_MS expone sus endpoints de forma pública
-// y su CORS no admite la cabecera Authorization.
+// Añade el Bearer token a las peticiones de los dos microservicios. Ambos exigen
+// autenticación, salvo /public/* (vista pública), al que no se le envía el token.
 export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
   const auth  = inject(AuthService);
   const token = auth.getToken();
   const isUserApi = req.url.startsWith(environment.userApiUrl);
   const isAssesmentApi = req.url.startsWith(environment.assesmentApiUrl);
 
-  if (token && !auth.isDemo() && (isUserApi || isAssesmentApi)) {
+  const isPublic = req.url.includes('/public/');
+
+  if (token && !isPublic && (isUserApi || isAssesmentApi)) {
     req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
   }
   return next(req);

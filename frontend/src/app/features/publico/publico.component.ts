@@ -1,23 +1,23 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { LegalFooterComponent } from '../../shared/legal-footer/legal-footer.component';
 import { AssesmentApiService } from '../../core/services/assesment-api.service';
-import { UserApiService } from '../../core/services/user-api.service';
-import { StudentOutcome, Performance, Level, Rubric } from '../../core/models/abet.models';
+import { PublicIndicators } from '../../core/models/abet.models';
 
 interface OutcomeCard {
   code: string;
   desc: string;
   color: string;
   students: number;
+  suppressed: boolean;
   levels: { label: string; class: string; pct: number; barColor: string }[];
 }
 
 @Component({
   selector: 'app-publico',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, LegalFooterComponent],
   template: `
     <div class="pub-page">
       <header class="pub-header">
@@ -39,7 +39,7 @@ interface OutcomeCard {
           <p>Facultad de Ingeniería · Universidad Autónoma de Bucaramanga</p>
           <div class="pub-stats">
             <div class="pub-stat"><span class="ps-val">{{ outcomes().length }}</span><span class="ps-label">Student Outcomes</span></div>
-            <div class="pub-stat"><span class="ps-val">{{ programsCount() }}</span><span class="ps-label">Programas</span></div>
+            <div class="pub-stat"><span class="ps-val">{{ totalAssessments() }}</span><span class="ps-label">Valoraciones</span></div>
             <div class="pub-stat"><span class="ps-val">{{ avgPct() !== null ? avgPct() + '%' : '—' }}</span><span class="ps-label">Promedio logro</span></div>
           </div>
         </div>
@@ -67,7 +67,11 @@ interface OutcomeCard {
               <div class="so-pub-badge" [style.background]="so.color">{{ so.code }}</div>
               <div class="so-card-title">{{ so.desc }}</div>
             </div>
-            <div class="so-levels">
+            <div class="notice" *ngIf="so.suppressed">
+              <i class="pi pi-lock"></i>
+              <span>Datos reservados: el grupo valorado es menor a {{ minGroup() }} estudiantes y no se publica para proteger su privacidad.</span>
+            </div>
+            <div class="so-levels" *ngIf="!so.suppressed">
               <div class="sl-row" *ngFor="let lv of so.levels">
                 <span class="sl-label" [class]="lv.class">{{ lv.label }}</span>
                 <div class="sl-track"><div class="sl-fill" [style.width]="lv.pct+'%'" [style.background]="lv.barColor"></div></div>
@@ -82,9 +86,10 @@ interface OutcomeCard {
 
         <div class="pub-note">
           <i class="pi pi-info-circle"></i>
-          Esta vista es de acceso público y no requiere autenticación. Los datos son actualizados por los profesores de la facultad.
+          Esta vista es de acceso público y no requiere autenticación. Muestra únicamente resultados agregados: no incluye nombres, documentos ni cursos, y no se publican grupos de menos de {{ minGroup() }} estudiantes. Los datos son actualizados por los profesores de la facultad.
         </div>
       </div>
+      <app-legal-footer />
     </div>
   `,
   styles: [`
@@ -141,113 +146,41 @@ export class PublicoComponent implements OnInit {
   loading = signal(true);
   error   = signal<string | null>(null);
   outcomes = signal<OutcomeCard[]>([]);
-  programsCount = signal(0);
+  totalAssessments = signal(0);
   avgPct = signal<number | null>(null);
+  minGroup = signal(5);
 
   private palette = ['#7C3AED', '#0369A1', '#EA580C', '#16A34A', '#CA8A04', '#DC2626'];
 
-  constructor(
-    private assesment: AssesmentApiService,
-    private users: UserApiService,
-  ) {}
+  constructor(private assesment: AssesmentApiService) {}
 
   ngOnInit(): void {
-    // Modelo v13: se cruzan SO -> indicadores -> niveles con las rúbricas
-    // registradas. Cada rúbrica trae performance_id y level_id; el rank del
-    // nivel (1..4) determina el bucket de logro. Los estudiantes valorados por
-    // SO se cuentan como los student_id distintos de sus rúbricas.
-    forkJoin({
-      sos: this.assesment.getStudentOutcomes(),
-      rubrics: this.assesment.getRubrics(),
-      programs: this.users.getPrograms(),
-    }).subscribe({
-      next: ({ sos, rubrics, programs }) => {
-        this.programsCount.set((programs ?? []).length);
-        if (!sos?.length) { this.outcomes.set([]); this.avgPct.set(null); this.loading.set(false); return; }
-        // Para cada SO, sus indicadores; para cada indicador, sus niveles.
-        forkJoin(sos.map(so => this.assesment.getPerformances(so.id))).subscribe({
-          next: perfsBySo => {
-            const allPerfs = allFlat(perfsBySo);
-            if (!allPerfs.length) {
-              this.compute(sos, perfsBySo, allPerfs, [], rubrics ?? []);
-              this.loading.set(false);
-              return;
-            }
-            forkJoin(allPerfs.map(p => this.assesment.getLevels(p.id))).subscribe({
-              next: levelsByPerf => {
-                this.compute(sos, perfsBySo, allPerfs, levelsByPerf, rubrics ?? []);
-                this.loading.set(false);
-              },
-              error: () => this.failLoad(),
-            });
-          },
-          error: () => this.failLoad(),
-        });
+    // Un solo endpoint público que devuelve únicamente agregados por Student
+    // Outcome. No se descargan valoraciones individuales ni datos personales.
+    this.assesment.getPublicIndicators().subscribe({
+      next: (res: PublicIndicators) => {
+        this.minGroup.set(res.min_group_size);
+        this.totalAssessments.set(res.total_assessments);
+        this.avgPct.set(res.average_pct);
+        this.outcomes.set(res.items.map((it, i) => ({
+          code: it.so_id,
+          desc: it.description,
+          color: this.palette[i % this.palette.length],
+          students: it.students,
+          suppressed: it.suppressed,
+          levels: it.levels.map(l => ({
+            label: l.label,
+            class: 'n' + l.rank,
+            pct: l.pct,
+            barColor: ({ 4: '#16A34A', 3: '#CA8A04', 2: '#EA580C', 1: '#DC2626' } as Record<number, string>)[l.rank],
+          })),
+        })));
+        this.loading.set(false);
       },
-      error: () => this.failLoad(),
+      error: () => {
+        this.error.set('No se pudieron cargar los indicadores. Intente de nuevo más tarde.');
+        this.loading.set(false);
+      },
     });
   }
-
-  private failLoad(): void {
-    this.error.set('No se pudieron cargar los indicadores. Verifica la conexión con el servidor.');
-    this.loading.set(false);
-  }
-
-  private compute(
-    sos: StudentOutcome[],
-    perfsBySo: Performance[][],
-    allPerfs: Performance[],
-    levelsByPerf: Level[][],
-    rubrics: Rubric[],
-  ): void {
-    // performance_id -> so_id, y level_id -> rank (1..4).
-    const perfToSo = new Map<string, string>();
-    perfsBySo.forEach((perfs, i) => perfs.forEach(p => perfToSo.set(p.id, sos[i].id)));
-    const levelRank = new Map<string, number>();
-    allPerfs.forEach((p, i) => (levelsByPerf[i] ?? []).forEach(l => levelRank.set(l.id, l.rank)));
-
-    const levelMeta = [
-      { rank: 4, label: 'Supera',          cls: 'n4', color: '#16A34A' },
-      { rank: 3, label: 'Bueno',           cls: 'n3', color: '#CA8A04' },
-      { rank: 2, label: 'En desarrollo',   cls: 'n2', color: '#EA580C' },
-      { rank: 1, label: 'Insatisfactorio', cls: 'n1', color: '#DC2626' },
-    ];
-    const scoreOf = (rank: number) => ({ 4: 100, 3: 75, 2: 50, 1: 25 } as Record<number, number>)[rank] ?? 0;
-    const measured: number[] = [];
-
-    const cards: OutcomeCard[] = sos.map((so, i) => {
-      const soRubrics = rubrics.filter(r => perfToSo.get(r.performance_id) === so.id);
-      const total = soRubrics.length;
-      const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
-      soRubrics.forEach(r => {
-        const rank = levelRank.get(r.level_id);
-        if (rank && counts[rank] !== undefined) counts[rank]++;
-      });
-      if (total > 0) {
-        const avg = Math.round([1, 2, 3, 4].reduce((a, rank) => a + scoreOf(rank) * counts[rank], 0) / total);
-        measured.push(avg);
-      }
-      const students = new Set(soRubrics.map(r => r.student_id)).size;
-      return {
-        code: so.id,
-        desc: so.description ?? '',
-        color: this.palette[i % this.palette.length],
-        students,
-        levels: levelMeta.map(m => ({
-          label: m.label,
-          class: m.cls,
-          pct: total ? Math.round((counts[m.rank] / total) * 100) : 0,
-          barColor: m.color,
-        })),
-      };
-    });
-
-    this.outcomes.set(cards);
-    this.avgPct.set(measured.length ? Math.round(measured.reduce((a, b) => a + b, 0) / measured.length) : null);
-  }
-}
-
-/** Aplana una lista de listas de indicadores. */
-function allFlat(perfsBySo: Performance[][]): Performance[] {
-  return perfsBySo.reduce((acc, arr) => acc.concat(arr), [] as Performance[]);
 }

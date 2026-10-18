@@ -12,6 +12,6 @@ uvicorn[standard]==0.34.0
 SQLAlchemy==2.0.36
 psycopg2-binary==2.9.10
 pydantic-settings==2.7.1
-python-jose[cryptography]==3.3.0
+PyJWT==2.15.1
 passlib[bcrypt]==1.7.4
 ```

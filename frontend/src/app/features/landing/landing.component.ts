@@ -1,10 +1,11 @@
+import { LegalFooterComponent } from '../../shared/legal-footer/legal-footer.component';
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, LegalFooterComponent],
   template: `
     <div class="landing">
       <header class="lnd-header">
@@ -60,9 +61,7 @@ import { RouterLink } from '@angular/router';
         </div>
       </section>
 
-      <footer class="lnd-footer">
-        <span>© 2026 MESOFTX · Universidad Autónoma de Bucaramanga · Facultad de Ingeniería</span>
-      </footer>
+      <app-legal-footer />
     </div>
   `,
   styles: [`

@@ -1,6 +1,8 @@
+import logging
 from datetime import timedelta
 
 from app.core.config import get_settings
+from app.core.security_constants import SEED_ADMIN_PASSWORD_HASH
 from app.infrastructure.repositories.sqlalchemy_repositories import UserRepository
 from app.infrastructure.security.jwt_service import create_access_token
 from app.infrastructure.security.password_service import verify_password
@@ -14,6 +16,13 @@ class InactiveUserError(Exception):
     pass
 
 
+class DefaultPasswordError(Exception):
+    """La cuenta aún usa la contraseña inicial publicada en el repositorio."""
+
+
+audit = logging.getLogger("mesoftx.audit")
+
+
 class AuthService:
     def __init__(self, user_repository: UserRepository):
         self.user_repository = user_repository
@@ -25,6 +34,12 @@ class AuthService:
             raise InvalidCredentialsError("Invalid email or password.")
         if not user.active:
             raise InactiveUserError("User is inactive.")
+        if self.settings.is_production and user.password == SEED_ADMIN_PASSWORD_HASH:
+            audit.critical("LOGIN_BLOCKED user=%s motivo=contraseña inicial sin rotar", user.id)
+            raise DefaultPasswordError(
+                "La contraseña inicial debe cambiarse antes de usar el sistema en producción. "
+                "Ejecute: docker compose exec user-ms python -m app.tools.set_password <correo>"
+            )
 
         permissions = [rp.permission.code for rp in user.role.role_permissions]
         expires_delta = timedelta(minutes=self.settings.jwt_access_token_expire_minutes)

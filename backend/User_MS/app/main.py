@@ -39,6 +39,17 @@ def health_check() -> dict[str, str]:
 
 
 @app.on_event("startup")
+def warn_if_demo_mode() -> None:
+    if settings.demo_mode:
+        import logging
+
+        logging.getLogger("mesoftx.audit").critical(
+            "MODO EXPOSICIÓN ACTIVO: el acceso sin credenciales está habilitado (DEMO_MODE=true, env=%s). "
+            "Úselo solo con datos de ejemplo y apáguelo al terminar.", settings.app_env,
+        )
+
+
+@app.on_event("startup")
 def ensure_period_active_column() -> None:
     with engine.begin() as conn:
         conn.execute(text("ALTER TABLE periods ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT FALSE"))

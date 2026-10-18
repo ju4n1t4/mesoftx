@@ -1,0 +1,17 @@
+# MODO EXPOSICIÓN (sin login). Se SUMA al compose de producción; sin este archivo el sistema
+# exige login. Úselo solo con datos de ejemplo y apáguelo al terminar la sustentación.
+#
+#   Opción 1 (exposición, sin login):
+#     docker compose --env-file .env.prod -f docker-compose.prod.yml -f docker-compose.demo.yml up -d
+#     docker compose ... exec user-ms python -m app.tools.seed_demo --program-id <PROGRAMA>   # una vez
+#
+#   Opción 2 (uso real, con login):
+#     docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --force-recreate user-ms
+#
+# En este modo cualquier persona que alcance el sitio puede entrar con cualquier perfil.
+# Nunca lo deje activo con datos reales de estudiantes ni abierto a Internet fuera de la exposición.
+services:
+  user-ms:
+    environment:
+      DEMO_MODE: "true"
+      DEMO_ALLOW_IN_PRODUCTION: "true"

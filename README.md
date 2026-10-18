@@ -214,7 +214,7 @@ resultados de rúbricas en solo lectura.
 
 ## Estado actual y limitaciones conocidas
 
-- Se retiraron `GET /api/v1/public/roles` y los accesos demo del login. El único acceso sin
+- Se retiraron `GET /api/v1/public/roles` y los accesos demo con clave incrustada. El **modo exposición** (sin login) existe ahora como interruptor del servidor (`DEMO_MODE`, apagado por defecto; ver `COMO_EJECUTAR.md` paso 5). El único acceso sin
   sesión es `GET /assesment-api/v1/public/indicators` (datos agregados, grupos < 5
   estudiantes suprimidos, límite de peticiones por IP).
 - Para producción use `deployment/docker-compose.prod.yml` (ver `docs/DESPLIEGUE_Y_SEGURIDAD.md`).

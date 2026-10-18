@@ -238,7 +238,7 @@ class StudentRow(BaseModel):
 
 
 class StudentUploadRequest(BaseModel):
-    students: list[StudentRow] = Field(..., min_length=1)
+    students: list[StudentRow] = Field(..., min_length=1, max_length=5000)
 
 
 class StudentUploadResult(BaseModel):
@@ -250,3 +250,13 @@ class StudentUploadResult(BaseModel):
 # ── Batch interno (dashboards) ──────────────────────────────
 class SubjectsCountRequest(BaseModel):
     nrcs: list[int] = Field(default_factory=list)
+
+
+class AuthModeResponse(BaseModel):
+    """Lo único que el login público necesita saber: si hay modo exposición y qué perfiles."""
+    demo_enabled: bool
+    demo_roles: list[str] = []
+
+
+class DemoLoginRequest(BaseModel):
+    role: str = Field(..., min_length=1, max_length=30)

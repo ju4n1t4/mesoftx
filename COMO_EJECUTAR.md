@@ -155,9 +155,37 @@ Abre **http://localhost:4200** cuando aparezca "Watch mode enabled".
 
 ## 5. Cómo entrar a la aplicación
 
-No existen botones de acceso rápido ni cuentas de demostración: **todo ingreso es con
-correo y contraseña reales** (la vista pública `/publico` es la única sin sesión y solo
-muestra datos agregados y anónimos).
+MESOFTX tiene **dos modos de acceso**, con el mismo código. El modo lo decide el **servidor**
+(la variable `DEMO_MODE`, apagada por defecto); el navegador no guarda ninguna clave.
+
+| | Opción 1 · Exposición (sin login) | Opción 2 · Uso real (con login) |
+|---|---|---|
+| Cómo entra la gente | Botones **Administrador / Coordinador / Profesor / Auditor** en el login, sin credenciales | Correo y contraseña |
+| Variable | `DEMO_MODE=true` (en Docker de producción: añadir `-f docker-compose.demo.yml`) | `DEMO_MODE` ausente o `false` (por defecto) |
+| Aviso en pantalla | Etiqueta "MODO EXPOSICIÓN · datos de ejemplo" siempre visible | — |
+| Datos | **Solo datos de ejemplo** | Datos reales |
+
+**Preparar la exposición (una sola vez):**
+```bash
+docker compose exec user-ms python -m app.tools.seed_demo --program-id ISI   # programa que exista
+```
+Crea (si faltan) los perfiles Coordinador/Profesor/Auditor con permisos recomendados y una cuenta de
+demostración por perfil. Las cuentas llevan una clave aleatoria que nadie conoce: solo se usan por el botón.
+No modifica perfiles que ya existan. Para retirarlas: `... seed_demo --remove`.
+
+**Encender / apagar:**
+```bash
+# Opción 1 (exposición):
+docker compose --env-file .env.prod -f docker-compose.prod.yml -f docker-compose.demo.yml up -d
+# Opción 2 (uso real) — volver al modo con login:
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --force-recreate user-ms
+```
+En local (sin Docker de producción): `DEMO_MODE=true` al arrancar User_MS.
+
+> El login normal **sigue disponible debajo de los botones** aun en modo exposición. Con `DEMO_MODE`
+> apagado, `/auth/demo-login` responde 404 y las cuentas de demostración no pueden entrar por contraseña.
+> En producción (`APP_ENV=production`), el servidor se niega a arrancar con `DEMO_MODE=true` salvo que
+> también se confirme `DEMO_ALLOW_IN_PRODUCTION=true` (lo hace `docker-compose.demo.yml`).
 
 ### Primer ingreso (administrador)
 La base recién creada trae un único usuario: `admin@unab.edu.co`, con una contraseña

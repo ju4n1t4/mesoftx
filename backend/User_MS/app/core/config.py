@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     # None = automático: /docs, /redoc y /openapi.json solo fuera de producción.
     enable_docs: bool | None = None
 
+    # --- Modo exposición (sin login) ---
+    # APAGADO por defecto. Solo para sustentaciones/demostraciones con DATOS DE EJEMPLO:
+    # quien llegue al sitio entra con el perfil que elija, sin credenciales.
+    demo_mode: bool = False
+    # En producción exige además esta confirmación explícita (doble llave).
+    demo_allow_in_production: bool = False
+
     @property
     def is_production(self) -> bool:
         return self.app_env.strip().lower() in {"production", "prod", "produccion", "producción"}
@@ -41,6 +48,15 @@ class Settings(BaseSettings):
     @property
     def docs_enabled(self) -> bool:
         return self.enable_docs if self.enable_docs is not None else not self.is_production
+
+    @model_validator(mode="after")
+    def reject_demo_in_production_without_ack(self) -> "Settings":
+        if self.demo_mode and self.is_production and not self.demo_allow_in_production:
+            raise ValueError(
+                "DEMO_MODE=true en producción abre el acceso sin credenciales. Si es una exposición con datos "
+                "de ejemplo, confirme con DEMO_ALLOW_IN_PRODUCTION=true; de lo contrario deje DEMO_MODE=false."
+            )
+        return self
 
     @model_validator(mode="after")
     def reject_placeholder_secrets_in_production(self) -> "Settings":

@@ -18,7 +18,7 @@ npm start        # ng serve → http://localhost:4200
 npm run build    # build de producción
 ```
 
-El inicio de sesión es siempre contra el backend (correo y contraseña); no hay accesos demo ni inicio con Google.
+El inicio de sesión es siempre contra el backend. Con correo y contraseña (uso real) o, solo si el servidor tiene `DEMO_MODE=true`, con los botones de "modo exposición" (sin credenciales). No hay claves en el código del navegador ni inicio con Google.
 
 ## Mapa de vistas (las 4 vistas principales del Brief)
 

@@ -18,24 +18,26 @@ npm start        # ng serve → http://localhost:4200
 npm run build    # build de producción
 ```
 
-Acceso de demostración sin backend: en el login, botones **"entrar como Docente"** y **"entrar como Coordinador"** establecen una sesión local para recorrer toda la interfaz.
+Acceso de demostración sin backend: en el login, los botones **"Entrar como Profesor"**, **"Entrar como Coordinador"**, **"Entrar como Auditor"** y **"Entrar como Administrador"** establecen una sesión local para recorrer la interfaz de cada rol.
 
 ## Mapa de vistas (las 4 vistas principales del Brief)
 
 | Vista | Ruta | Pantallas implementadas |
 |---|---|---|
 | Landing | `/` | Portada institucional con acceso a login y a la vista pública |
-| Acceso (login) | `/auth/login` | Formulario reactivo con validación, estado de carga y error de credenciales; redirección por rol |
-| Módulo docente | `/docente/*` | Dashboard · Registrar valoración (cursos + carga de lista + **rúbrica interactiva**) · Mis indicadores (radar) · Ayuda y soporte |
+| Acceso (login) | `/auth/login` | Formulario reactivo con validación, estado de carga y error de credenciales; redirección por rol; accesos de demostración para los 4 roles |
+| Módulo profesor | `/profesor/*` | Mis cursos (por defecto) · Estudiantes por curso · Valorar (rúbrica interactiva) · Inicio de acreditación · Dashboard · Mis indicadores · Ayuda y soporte |
+| Módulo coordinador | `/coordinador/*` | Dashboard (por defecto) · Programas · Materias · Asignación de materias · Programación · Avance · Indicadores · Profesores · Parametrización de Student Outcomes · Valoraciones · Periodos · Configuración |
+| Módulo administrador | `/admin/*` | Perfiles (por defecto) · Usuarios |
+| Módulo auditor | `/auditor/*` | Indicadores (por defecto) |
 | Vista pública ABET | `/publico` | Indicadores consolidados por programa y Student Outcome, sin autenticación |
-| Panel coordinador/admin | `/coordinador/*` | Dashboard · Programas · Docentes y roles · **Parametrización de la rúbrica** · Valoraciones por curso · Auditoría (filtrable) · Vista pública (gestión) · Periodos · Configuración |
 
 ## Componentes UI clave (sección 6 del Brief)
 
-- **Rúbrica de valoración interactiva** (`docente/valoraciones/registrar`): selección de Student Outcome → carga de identificadores y descriptores → valoración por celda de nivel de logro, con progreso por grupo y confirmación visual. Sustituye la matriz de Excel.
-- **Parametrización de catálogos** (`coordinador/student-outcomes`): CRUD editable de SO, identificadores (ID) y descriptores por nivel; "Publicar cambios" refleja la rúbrica que ve el docente.
+- **Rúbrica de valoración interactiva** (`profesor/valorar`): selección de Student Outcome → carga de identificadores y descriptores → valoración por celda de nivel de logro, con progreso por grupo y confirmación visual. Sustituye la matriz de Excel.
+- **Parametrización de catálogos** (`coordinador/student-outcomes`): CRUD editable de SO, identificadores (ID) y descriptores por nivel; "Publicar cambios" refleja la rúbrica que ve el profesor.
 - **Chips de nivel de logro** y **badges de estado** (abierto/pendiente/vencido/validada/borrador) coherentes en todas las vistas, sin depender solo del color (texto + icono).
-- **Tablas** de docentes, valoraciones y auditoría (con búsqueda y filtro por SO).
+- **Tablas** de profesores, valoraciones y auditoría (con búsqueda y filtro por SO).
 - **Carga de lista de estudiantes** con autocompletado (reemplazo del BUSCARV).
 
 ## Estructura

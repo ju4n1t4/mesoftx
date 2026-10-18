@@ -103,10 +103,10 @@ export class AuthService {
   // Sesión de respaldo si el backend no responde (solo navegación de UI).
   private _fallbackSession(role: 'Profesor' | 'Coordinador' | 'Auditor' | 'Administrativo'): void {
     const meta = {
-      Profesor:       { id: 99, email: 'jramirez@unab.edu.co',  document_number: 'DOC-DEMO', role_id: 3, token: 'demo-token-profesor',    program_id: 'ISI' as string | null, route: '/profesor/mis-cursos' },
-      Coordinador:    { id: 98, email: 'orueda741@unab.edu.co', document_number: 'COO-DEMO', role_id: 2, token: 'demo-token-coordinador', program_id: null as string | null, route: '/coordinador' },
-      Auditor:        { id: 96, email: 'auditor@unab.edu.co',   document_number: 'AUD-DEMO', role_id: 4, token: 'demo-token-auditor',     program_id: null as string | null, route: '/auditor' },
-      Administrativo: { id: 97, email: 'admin@unab.edu.co',     document_number: 'ADM-DEMO', role_id: 1, token: 'demo-token-admin',       program_id: null as string | null, route: '/admin' },
+      Profesor:       { id: 99, email: 'jramirez@unab.edu.co',  document_number: 'DOC-DEMO', role_id: 3, token: 'demo-token-profesor',    program_id: 'ISI' as string | null, route: '/profesor/dashboard' },
+      Coordinador:    { id: 98, email: 'orueda741@unab.edu.co', document_number: 'COO-DEMO', role_id: 2, token: 'demo-token-coordinador', program_id: null as string | null, route: '/coordinador/dashboard' },
+      Auditor:        { id: 96, email: 'auditor@unab.edu.co',   document_number: 'AUD-DEMO', role_id: 4, token: 'demo-token-auditor',     program_id: null as string | null, route: '/auditor/dashboard' },
+      Administrativo: { id: 97, email: 'admin@unab.edu.co',     document_number: 'ADM-DEMO', role_id: 1, token: 'demo-token-admin',       program_id: null as string | null, route: '/admin/dashboard' },
     }[role];
 
     this._setUser({
@@ -146,9 +146,9 @@ export class AuthService {
     try { return JSON.parse(atob(token.split('.')[1])) as JwtClaims; } catch { return null; }
   }
   private _redirectByRole(role: string): void {
-    if (role === 'Profesor') this.router.navigate(['/profesor/mis-cursos']);
-    else if (role === 'Administrativo') this.router.navigate(['/admin']);
-    else if (role === 'Auditor') this.router.navigate(['/auditor']);
-    else this.router.navigate(['/coordinador']);
+    if (role === 'Profesor') this.router.navigate(['/profesor/dashboard']);
+    else if (role === 'Administrativo') this.router.navigate(['/admin/dashboard']);
+    else if (role === 'Auditor') this.router.navigate(['/auditor/dashboard']);
+    else this.router.navigate(['/coordinador/dashboard']);
   }
 }

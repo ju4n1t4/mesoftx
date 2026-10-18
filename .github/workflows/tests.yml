@@ -1,8 +1,8 @@
 name: DB structure tests
 
-# Verifica en cada push y PR que los 4 scripts SQL crean el modelo v13
+# Verifica en cada push y PR que los 4 scripts SQL crean el modelo de datos
 # correcto: levanta PostgreSQL 16, ejecuta los scripts en orden y corre
-# backend/tests/verify_db_structure.py. El workflow falla si no da 91 passed.
+# backend/tests/verify_db_structure.py. El workflow falla si no da 92 passed.
 on:
   push:
   pull_request:
@@ -64,10 +64,10 @@ jobs:
         run: pip install pytest psycopg2-binary
 
       # pytest devuelve != 0 si algún test falla, lo que ya haría fallar el job.
-      # Además se exige explícitamente el conteo: debe ser 91 passed.
-      - name: Correr verify_db_structure.py (exige 91 passed)
+      # Además se exige explícitamente el conteo: debe ser 92 passed.
+      - name: Correr verify_db_structure.py (exige 92 passed)
         run: |
           cd backend
           pytest tests/verify_db_structure.py -v | tee pytest_output.txt
-          grep -qE "(^| )91 passed" pytest_output.txt \
-            || (echo "ERROR: se esperaban 91 tests passed y no se cumplió." && exit 1)
+          grep -qE "(^| )92 passed" pytest_output.txt \
+            || (echo "ERROR: se esperaban 92 tests passed y no se cumplió." && exit 1)

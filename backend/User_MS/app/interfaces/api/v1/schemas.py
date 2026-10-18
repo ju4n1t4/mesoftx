@@ -23,6 +23,11 @@ class LoginRequest(BaseModel):
         return value.strip().lower()
 
 
+class PasswordChange(BaseModel):
+    current_password: str = Field(..., min_length=1, max_length=255)
+    new_password: str = Field(..., min_length=1, max_length=128)
+
+
 class RoleCreate(BaseModel):
     name: str = Field(..., max_length=255)
     description: str | None = None

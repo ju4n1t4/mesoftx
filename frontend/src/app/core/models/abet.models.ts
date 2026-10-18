@@ -185,3 +185,14 @@ export interface StudentUploadResult {
 // ── UI helpers ────────────────────────────────────────────────────────────
 export type AssesmentStatus = 'open' | 'pending' | 'expired' | 'draft' | 'valid';
 export type AchievementLevel = 'N1' | 'N2' | 'N3' | 'N4';
+
+
+/** Vista pública: solo agregados (sin datos de estudiantes ni profesores). */
+export interface PublicLevelItem { rank: number; label: string; pct: number; }
+export interface PublicSoIndicator {
+  so_id: string; description: string; assessments: number; students: number;
+  suppressed: boolean; levels: PublicLevelItem[];
+}
+export interface PublicIndicators {
+  min_group_size: number; average_pct: number | null; total_assessments: number; items: PublicSoIndicator[];
+}

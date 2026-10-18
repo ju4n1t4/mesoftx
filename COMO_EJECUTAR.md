@@ -1,4 +1,4 @@
-# Cómo ejecutar MESOFTX en local (guía para la defensa del TFM)
+# Cómo ejecutar MESOFTX en local
 
 Guía paso a paso para levantar el proyecto completo desde cero: base de datos,
 microservicios backend y frontend.
@@ -68,7 +68,7 @@ scripts de `deployment/db/scripts/`:
 | `01_create_db.sql` | Crea las dos bases: `users_db` y `assesment_mesoftx_db` |
 | `02_create_tables_users.sql` | Crea las 11 tablas de `users_db` (college, program, periods, roles, permissions, role_permissions, users, students, subjects, students_subjects, teacher_subjects) |
 | `03_create_tables_assesment.sql` | Crea las 7 tablas de `assesment_mesoftx_db` (so, performance, level, so_schedule, schedule_subjects, rubric, evidence) |
-| `04_bootstrap.sql` | Inserta los 18 permisos, el rol `Administrativo` y el usuario administrador (`admin@unab.edu.co`, contraseña `Mesoftx2026!`) |
+| `04_bootstrap.sql` | Inserta los 18 permisos, el rol `Administrativo` y el usuario administrador (`admin@unab.edu.co`, con clave temporal de desarrollo que debe cambiarse; ver paso 5) |
 
 Para volver a ejecutarlos desde cero hay que borrar el volumen:
 
@@ -155,34 +155,46 @@ Abre **http://localhost:4200** cuando aparezca "Watch mode enabled".
 
 ## 5. Cómo entrar a la aplicación
 
-### Opción A — Botones de acceso rápido (recomendado para la defensa)
-En el login, los botones "Entrar como Profesor" / "Entrar como Coordinador" /
-"Entrar como Auditor" / "Entrar como Administrador" inician sesión contra el
-backend (no hay que escribir credenciales). Cada botón se habilita solo si ese
-perfil ya existe en la base de datos. Al hacer login real se obtiene un token
-JWT válido, por lo que **todas las vistas cargan datos reales**.
+No existen botones de acceso rápido ni cuentas de demostración: **todo ingreso es con
+correo y contraseña reales** (la vista pública `/publico` es la única sin sesión y solo
+muestra datos agregados y anónimos).
 
-### Opción B — Inicio de sesión manual (mismo resultado, escribiendo credenciales)
-Todos los usuarios comparten la misma contraseña inicial:
+### Primer ingreso (administrador)
+La base recién creada trae un único usuario: `admin@unab.edu.co`, con una contraseña
+**temporal conocida solo para desarrollo** (está en `04_bootstrap.sql`). Antes de usar la
+aplicación, **defina la clave real**:
 
-| Rol | Correo | Contraseña |
-|---|---|---|
-| Administrador | `admin@unab.edu.co` | `Mesoftx2026!` |
+```bash
+docker compose exec -it user-ms python -m app.tools.set_password admin@unab.edu.co
+```
 
-> Con la base recién creada (bootstrap) el **único usuario es el Administrador**.
-> Los demás perfiles (Coordinador, Profesor, Auditor) y sus usuarios se crean
-> desde la aplicación. Todos los usuarios que se creen usan la misma contraseña
-> inicial `Mesoftx2026!` salvo que se indique otra al crearlos.
+Pide la nueva clave por consola (mínimo 10 caracteres, con letras y números; no se acepta
+una clave de lista de claves comunes). En producción (`APP_ENV=production`) el sistema
+**bloquea el inicio de sesión** de cualquier cuenta que aún tenga la clave temporal.
 
-> Reglas de autorización relevantes para la demo:
-> - **Admin y Coordinador** pueden crear usuarios desde la aplicación.
-> - Un **Coordinador NO puede crear cuentas con rol Admin** (error 403, para
->   evitar escalada de privilegios). Solo un Admin puede otorgar el rol Admin.
->
-> El resto de datos (Student Outcomes, indicadores, materias, periodos, demás
-> usuarios, carreras, evidencias y valoraciones) se crean desde la propia
-> aplicación con el perfil de coordinador. Al arrancar limpio, las vistas de
-> métricas aparecen vacías hasta que se parametriza y se registran valoraciones.
+> Nunca escriba claves reales en este archivo, en el README ni en capturas de pantalla
+> de la memoria o la sustentación.
+
+### Resto de perfiles
+Los perfiles (Coordinador, Profesor, Auditor) y sus usuarios se crean desde la aplicación
+(el Administrador crea perfiles/permisos y usuarios; el Coordinador crea a los Profesores).
+Al crear un usuario se define una clave inicial; cada persona debe cambiarla en
+**Mi cuenta → Cambiar contraseña**. No hay recuperación de clave por correo: la restablece
+el coordinador o el administrador.
+
+### Permisos mínimos recomendados por perfil
+Los perfiles son dinámicos (los define el Administrador). Para que cada pantalla cargue:
+
+| Perfil | Permisos de lectura que no deben faltar |
+|---|---|
+| Profesor | `MY_COURSES_VIEW`, `STUDENT_UPLOAD`, `SO_TO_ASSESS_VIEW`, `RUBRIC_VIEW`, `RUBRIC_FILL`, `EVIDENCE_UPLOAD`, `INDICATOR_VIEW`, `INDICATOR_CHART` |
+| Coordinador | todos excepto los propios del profesor, más `SO_TO_ASSESS_VIEW` y `RUBRIC_VIEW` para ver la programación y las rúbricas |
+| Auditor | `DASHBOARD_*`, `INDICATOR_CHART`, `RUBRIC_VIEW` (solo lectura) |
+
+Reglas de autorización:
+- Solo el **Coordinador** crea usuarios con perfil Profesor; un Coordinador no puede crear
+  cuentas Administrador (403).
+- Un permiso faltante devuelve 403 y la pantalla correspondiente lo indica.
 
 ---
 
@@ -191,7 +203,7 @@ Todos los usuarios comparten la misma contraseña inicial:
 `backend/tests/verify_db_structure.py` comprueba que la base recién creada
 tiene el modelo v13 correcto: las 18 tablas, los 18 permisos, el rol y el
 usuario administrador, y que no quedan tablas del modelo antiguo. Se ejecuta
-contra la base ya levantada (paso 2) y **debe dar 91 passed**.
+contra la base ya levantada (paso 2) y **debe dar 92 passed**.
 
 ```bash
 cd /Users/julianaramirezarenas/Documents/UNIR/TFM/mesoftx/backend
@@ -233,7 +245,7 @@ docker compose down
 
 ---
 
-## 7. Chuleta ultra rápida (día de la defensa)
+## 7. Chuleta ultra rápida
 
 ```bash
 # 1. Docker
@@ -252,7 +264,7 @@ cd /Users/julianaramirezarenas/Documents/UNIR/TFM/mesoftx/frontend
 npx ng serve --port 4200 -o
 ```
 
-Abrir **http://localhost:4200** y usar los botones de acceso rápido.
+Abrir **http://localhost:4200** e iniciar sesión con las credenciales reales (paso 5).
 
 ---
 

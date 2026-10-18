@@ -21,6 +21,7 @@ from app.interfaces.api.v1.dependencies import (
     CurrentUser,
     db_session,
     get_current_user,
+    require_any_permission,
     require_permission,
 )
 from app.interfaces.api.v1.error_handlers import map_repository_error
@@ -75,7 +76,7 @@ async def _teacher_nrcs_or_none(user: CurrentUser) -> list[int] | None:
 
 # ── Student Outcomes — SO_CRUD ──────────────────────────────
 @router.get("/so", response_model=list[StudentOutcomeResponse])
-def list_so(db: Session = Depends(db_session), _: CurrentUser = Depends(require_permission("SO_CRUD"))):
+def list_so(db: Session = Depends(db_session), _: CurrentUser = Depends(require_any_permission("SO_CRUD", "INDICATOR_VIEW", "RUBRIC_VIEW", "SO_TO_ASSESS_VIEW"))):
     return _service(StudentOutcomeRepository, db).list()
 
 

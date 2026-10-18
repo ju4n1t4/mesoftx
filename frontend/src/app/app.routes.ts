@@ -15,6 +15,25 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent),
   },
 
+  // Textos legales (públicos)
+  {
+    path: 'legal/privacidad',
+    data: { doc: 'privacidad' },
+    loadComponent: () => import('./features/legal/legal.component').then(m => m.LegalComponent),
+  },
+  {
+    path: 'legal/terminos',
+    data: { doc: 'terminos' },
+    loadComponent: () => import('./features/legal/legal.component').then(m => m.LegalComponent),
+  },
+
+  // Mi cuenta (cualquier usuario autenticado)
+  {
+    path: 'cuenta',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/cuenta/cuenta.component').then(m => m.CuentaComponent),
+  },
+
   // Vista pública ABET (standalone, sin auth)
   {
     path: 'publico',

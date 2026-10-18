@@ -49,6 +49,8 @@ interface NavItem { label: string; icon: string; route: string; }
             <i class="pi pi-question-circle"></i>
             <span>Ayuda y soporte</span>
           </a>
+          <a routerLink="/cuenta" class="nav-item"><i class="pi pi-user-edit"></i><span>Mi cuenta</span></a>
+          <a routerLink="/legal/privacidad" class="nav-item"><i class="pi pi-shield"></i><span>Privacidad y términos</span></a>
           <button class="nav-item logout-item" (click)="logout()">
             <i class="pi pi-sign-out"></i>
             <span>Cerrar sesión</span>
@@ -69,7 +71,6 @@ interface NavItem { label: string; icon: string; route: string; }
             <span class="bc-current">Panel</span>
           </div>
           <div class="topbar-right">
-            <span class="period-chip">Periodo 202610 · Activo</span>
             <div class="topbar-avatar" title="{{ fullName() }}">{{ initial() }}</div>
           </div>
         </header>

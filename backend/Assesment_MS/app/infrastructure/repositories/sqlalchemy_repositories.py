@@ -412,3 +412,33 @@ class DashboardRepository:
             .order_by(RubricModel.performance_id, LevelModel.rank)
         )
         return [(str(a), int(b), str(c), int(d)) for a, b, c, d in self.db.execute(stmt).all()]
+
+
+    # ── Vista pública: agregados por SO, sin datos personales ──────────────
+    def public_level_counts(self) -> list[tuple[str, int, int]]:
+        """(so_id, rank, cantidad de valoraciones)."""
+        stmt = (
+            select(PerformanceModel.so_id, LevelModel.rank, func.count())
+            .select_from(RubricModel)
+            .join(PerformanceModel, PerformanceModel.id == RubricModel.performance_id)
+            .join(
+                LevelModel,
+                (LevelModel.performance_id == RubricModel.performance_id) & (LevelModel.id == RubricModel.level_id),
+            )
+            .group_by(PerformanceModel.so_id, LevelModel.rank)
+        )
+        return [(str(a), int(b), int(c)) for a, b, c in self.db.execute(stmt).all()]
+
+    def public_students_by_so(self) -> dict[str, int]:
+        """so_id -> número de estudiantes distintos valorados (solo el conteo)."""
+        stmt = (
+            select(PerformanceModel.so_id, func.count(func.distinct(RubricModel.student_id)))
+            .select_from(RubricModel)
+            .join(PerformanceModel, PerformanceModel.id == RubricModel.performance_id)
+            .group_by(PerformanceModel.so_id)
+        )
+        return {str(a): int(b) for a, b in self.db.execute(stmt).all()}
+
+    def all_outcomes(self) -> list[tuple[str, str]]:
+        stmt = select(StudentOutcomeModel.id, StudentOutcomeModel.description).order_by(StudentOutcomeModel.id)
+        return [(str(a), str(b)) for a, b in self.db.execute(stmt).all()]

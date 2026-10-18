@@ -47,16 +47,12 @@ interface NavItem { label: string; icon: string; route: string; }
             <i class="pi pi-question-circle"></i>
             <span>Ayuda y soporte</span>
           </a>
+          <a routerLink="/cuenta" class="nav-item"><i class="pi pi-user-edit"></i><span>Mi cuenta</span></a>
+          <a routerLink="/legal/privacidad" class="nav-item"><i class="pi pi-shield"></i><span>Privacidad y términos</span></a>
           <button class="nav-item logout-item" (click)="logout()">
             <i class="pi pi-sign-out"></i>
             <span>Cerrar sesión</span>
           </button>
-        </div>
-
-        <div class="sidebar-period">
-          <div class="period-label">PERIODO ACTIVO</div>
-          <div class="period-value">202610</div>
-          <div class="period-status"><span class="dot green"></span>Abierto · cierre 7 jun</div>
         </div>
       </aside>
 

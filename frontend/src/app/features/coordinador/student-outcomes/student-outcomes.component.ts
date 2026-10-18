@@ -8,7 +8,7 @@ import { AccordionModule } from 'primeng/accordion';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
-import { InputTextarea } from 'primeng/inputtextarea';
+import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
@@ -51,7 +51,7 @@ interface RubricImportGroup {
   standalone: true,
   imports: [
     CommonModule, ReactiveFormsModule,
-    AccordionModule, ButtonModule, DialogModule, InputTextModule, InputTextarea,
+    AccordionModule, ButtonModule, DialogModule, InputTextModule, TextareaModule,
     SelectModule, TagModule, ToastModule, ProgressSpinnerModule, ConfirmDialogModule,
     BulkResultDialogComponent,
   ],
@@ -88,15 +88,16 @@ interface RubricImportGroup {
         </div>
 
         <p-accordion *ngIf="tree().length > 0" [multiple]="true">
-          <p-accordionTab *ngFor="let node of tree()">
-            <ng-template pTemplate="header">
+          <p-accordion-panel *ngFor="let node of tree()" [value]="node.so.id">
+            <p-accordion-header>
               <div class="so-head">
                 <span class="so-badge">{{ node.so.id }}</span>
                 <span class="so-desc">{{ node.so.description }}</span>
                 <p-tag *ngIf="node.performances.length === 0" severity="warn"
                        value="Sin indicadores: no se puede valorar"></p-tag>
               </div>
-            </ng-template>
+            </p-accordion-header>
+            <p-accordion-content>
 
             <div class="so-actions">
               <button pButton type="button" label="Añadir indicador" icon="pi pi-plus"
@@ -132,7 +133,8 @@ interface RubricImportGroup {
                 <span class="level-text">{{ lv.description }}</span>
               </div>
             </div>
-          </p-accordionTab>
+            </p-accordion-content>
+          </p-accordion-panel>
         </p-accordion>
       </ng-container>
 
@@ -146,7 +148,7 @@ interface RubricImportGroup {
             <small class="err" *ngIf="soForm.controls['id'].invalid && soForm.controls['id'].touched">Requerido (máx 5).</small>
           </label>
           <label>Descripción
-            <textarea pInputTextarea formControlName="description" rows="3" maxlength="255"></textarea>
+            <textarea pTextarea formControlName="description" rows="3" maxlength="255"></textarea>
             <small class="err" *ngIf="soForm.controls['description'].invalid && soForm.controls['description'].touched">Requerida (máx 255).</small>
           </label>
           <label>Facultad
@@ -183,7 +185,7 @@ interface RubricImportGroup {
                 <span class="lf-rank">{{ ctrl.value.rank }} · {{ ctrl.value.name }}</span>
                 <input pInputText class="lf-id" formControlName="id" maxlength="100" />
               </div>
-              <textarea pInputTextarea formControlName="description" rows="2" maxlength="255"
+              <textarea pTextarea formControlName="description" rows="2" maxlength="255"
                         [placeholder]="'Descriptor de ' + ctrl.value.name"></textarea>
               <small class="err" *ngIf="ctrl.get('description')?.invalid && ctrl.get('description')?.touched">Descriptor obligatorio.</small>
             </div>
@@ -209,7 +211,7 @@ interface RubricImportGroup {
                 <span class="lf-rank">{{ ctrl.value.rank }} · {{ ctrl.value.name }}</span>
                 <input pInputText class="lf-id" formControlName="id" maxlength="100" />
               </div>
-              <textarea pInputTextarea formControlName="description" rows="2" maxlength="255"
+              <textarea pTextarea formControlName="description" rows="2" maxlength="255"
                         [placeholder]="'Descriptor de ' + ctrl.value.name"></textarea>
               <small class="err" *ngIf="ctrl.get('description')?.invalid && ctrl.get('description')?.touched">Descriptor obligatorio.</small>
             </div>

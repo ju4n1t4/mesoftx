@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +20,40 @@ class Settings(BaseSettings):
     service_token: str = Field(..., min_length=1)
 
     cors_origins: str = ""
+
+    # --- Límite de intentos de login (OWASP ASVS V2.2) ---
+    login_max_attempts: int = 5            # fallos por correo dentro de la ventana
+    login_max_attempts_per_ip: int = 30    # fallos por IP dentro de la ventana
+    login_window_seconds: int = 900
+    # Solo True detrás de un proxy de confianza (nginx del compose): usa X-Forwarded-For.
+    trust_proxy_headers: bool = False
+
+    # --- Seguridad adicional ---
+    jwt_issuer: str = "mesoftx-user-ms"
+    jwt_audience: str = "mesoftx-api"
+    # None = automático: /docs, /redoc y /openapi.json solo fuera de producción.
+    enable_docs: bool | None = None
+
+    @property
+    def is_production(self) -> bool:
+        return self.app_env.strip().lower() in {"production", "prod", "produccion", "producción"}
+
+    @property
+    def docs_enabled(self) -> bool:
+        return self.enable_docs if self.enable_docs is not None else not self.is_production
+
+    @model_validator(mode="after")
+    def reject_placeholder_secrets_in_production(self) -> "Settings":
+        """En producción no se arranca con secretos de ejemplo (OWASP A02/A05)."""
+        if self.is_production:
+            for name, value in (("JWT_SECRET_KEY", self.jwt_secret_key), ("SERVICE_TOKEN", self.service_token)):
+                low = value.lower()
+                if low.startswith(("change-this", "genera-un", "changeme", "secret", "password")) or len(value) < 32:
+                    raise ValueError(
+                        f"{name} es un valor de ejemplo o muy corto. En producción genere uno con: "
+                        "python -c \"import secrets; print(secrets.token_urlsafe(48))\""
+                    )
+        return self
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

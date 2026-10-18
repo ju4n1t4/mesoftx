@@ -4,8 +4,8 @@ Implementación del frontend de **MESOFTX** (Valoración de Resultados de Aprend
 
 ## Stack
 
-- **Angular 18** con *standalone components* y *lazy loading* por ruta.
-- **PrimeNG 18** + **PrimeIcons** (tema Aura configurado en `app.config.ts`).
+- **Angular 20** con *standalone components* y *lazy loading* por ruta.
+- **PrimeNG 20** + **PrimeIcons** (tema Aura configurado en `app.config.ts`).
 - **SCSS** con un sistema de tokens propio (`src/styles.scss`) que replica la marca (naranja UNAB `#FFA502`, morado acreditación `#7C3AED`) y la escala semántica de niveles de logro N1–N4.
 - Autenticación **JWT** con `AuthService`, `authGuard` y `roleGuard` (redirección automática por rol).
 
@@ -18,7 +18,7 @@ npm start        # ng serve → http://localhost:4200
 npm run build    # build de producción
 ```
 
-Acceso de demostración sin backend: en el login, los botones **"Entrar como Profesor"**, **"Entrar como Coordinador"**, **"Entrar como Auditor"** y **"Entrar como Administrador"** establecen una sesión local para recorrer la interfaz de cada rol.
+El inicio de sesión es siempre contra el backend (correo y contraseña); no hay accesos demo ni inicio con Google.
 
 ## Mapa de vistas (las 4 vistas principales del Brief)
 

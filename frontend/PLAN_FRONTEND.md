@@ -11,7 +11,7 @@ Leyenda: ✅ hecho · 🔄 en revisión/ajuste · ⬜ pendiente
 - [x] Estructura `src/` (app.config, app.routes, main.ts, index.html)
 - [x] Sistema de tokens de diseño en `styles.scss` (tema claro, naranja UNAB #FFA502, morado #7C3AED)
 - [x] Modelos TypeScript (`abet.models.ts`)
-- [x] `AuthService` (login real + demo docente/coordinador)
+- [x] `AuthService` (login real)
 - [x] Interceptor JWT + guards (auth, role)
 - [x] `UserApiService` (puerto 8001) y `AssesmentApiService` (puerto 8002)
 - [x] Layout Docente (sidebar oscuro + topbar + logout en menú)
@@ -21,7 +21,7 @@ Leyenda: ✅ hecho · 🔄 en revisión/ajuste · ⬜ pendiente
 
 ## Autenticación
 
-- [x] Login (panel naranja + Google + correo/contraseña + accesos demo)
+- [x] Login (correo/contraseña; se retiraron Google y accesos demo)
 
 ## Módulo Docente
 

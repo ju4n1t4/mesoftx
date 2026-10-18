@@ -20,7 +20,7 @@ El sistema se compone de tres piezas desplegables de forma independiente:
 |---|---|---|
 | `User_MS` — usuarios, autenticación y catálogos académicos | Python 3.12, FastAPI, SQLAlchemy, JWT, bcrypt | 8001 |
 | `Assesment_MS` — valoración ABET (outcomes, indicadores, evidencias, resultados) | Python 3.12, FastAPI, SQLAlchemy | 8002 |
-| Frontend | Angular 18, PrimeNG 18 | 4200 (dev) / 80 (nginx) |
+| Frontend | Angular 20, PrimeNG 20 | 4200 (dev) / 80 (nginx) |
 | Base de datos | PostgreSQL 16 | 5432 |
 
 Cada microservicio sigue arquitectura hexagonal con cuatro capas: `domain` (entidades y
@@ -214,8 +214,10 @@ resultados de rúbricas en solo lectura.
 
 ## Estado actual y limitaciones conocidas
 
-- `GET /api/v1/public/roles` y los botones de acceso demo del login son temporales para
-  la defensa. Deben retirarse cuando se exija usuario para todo el acceso.
+- Se retiraron `GET /api/v1/public/roles` y los accesos demo del login. El único acceso sin
+  sesión es `GET /assesment-api/v1/public/indicators` (datos agregados, grupos < 5
+  estudiantes suprimidos, límite de peticiones por IP).
+- Para producción use `deployment/docker-compose.prod.yml` (ver `docs/DESPLIEGUE_Y_SEGURIDAD.md`).
 - El frontend ya cuenta con `deployment/frontend/docker-compose.yml`; su `nginx.conf`
   enruta `/user-api/v1` y `/assesment-api/v1` hacia los microservicios en
   `mesoftx-network`.

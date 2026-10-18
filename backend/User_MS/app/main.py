@@ -3,23 +3,32 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.core.config import get_settings
+from app.core.http_security import AuditMiddleware, SecurityHeadersMiddleware, configure_logging
 from app.infrastructure.database.session import engine
 from app.interfaces.api.v1.router import api_router
 
 settings = get_settings()
+configure_logging()
 
+# En producción no se publica la documentación interactiva ni el esquema OpenAPI.
 app = FastAPI(
     title=settings.app_name,
     version="1.0.0",
     description="User management microservice for MesoftX.",
+    docs_url="/docs" if settings.docs_enabled else None,
+    redoc_url="/redoc" if settings.docs_enabled else None,
+    openapi_url="/openapi.json" if settings.docs_enabled else None,
 )
+
+app.add_middleware(AuditMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 if settings.allowed_origins:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.allowed_origins,
         allow_credentials=False,
-        allow_methods=["GET", "POST", "PUT", "PATCH"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type"],
     )
 

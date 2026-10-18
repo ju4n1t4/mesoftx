@@ -8,13 +8,18 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   StudentOutcome, Performance, Level, Rubric, SoSchedule, ScheduleStatus, MyAssessment, IndicatorsChart,
-  DashboardProgramResponse, DashboardSoResponse, DashboardTeacherResponse, PeriodTarget,
+  DashboardProgramResponse, DashboardSoResponse, DashboardTeacherResponse, PeriodTarget, PublicIndicators,
 } from '../models/abet.models';
 
 @Injectable({ providedIn: 'root' })
 export class AssesmentApiService {
   private base = environment.assesmentApiUrl;
   constructor(private http: HttpClient) {}
+
+  // ── Vista pública (sin autenticación, solo agregados) ─────
+  getPublicIndicators(): Observable<PublicIndicators> {
+    return this.http.get<PublicIndicators>(`${this.base}/public/indicators`);
+  }
 
   // ── Student Outcomes ──────────────────────────────────────
   getStudentOutcomes(): Observable<StudentOutcome[]> {

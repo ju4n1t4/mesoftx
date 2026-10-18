@@ -1,6 +1,9 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.application.services.password_policy import PasswordPolicyError, validate_new_password
 from app.application.services.user_service import UserService
 from app.infrastructure.clients.assesment_ms_client import AssesmentMsClient
 from app.infrastructure.repositories.sqlalchemy_repositories import (
@@ -13,6 +16,7 @@ from app.interfaces.api.v1.dependencies import db_session, get_current_user, req
 from app.interfaces.api.v1.error_handlers import map_repository_error
 from app.interfaces.api.v1.schemas import UserCreate, UserResponse, UserUpdate
 
+audit = logging.getLogger("mesoftx.audit")
 router = APIRouter(prefix="/users", tags=["Users"], dependencies=[Depends(get_current_user)])
 
 # Quién puede crear a quién (paso 13). Keyea por PERMISO del que llama y NOMBRE
@@ -33,6 +37,21 @@ def _is_target_role_allowed(target_role_name: str, permissions: list[str]) -> bo
         if permission in permissions:
             allowed |= roles
     return target_role_name in allowed or ("Profesor" in allowed and _is_teacher_role(target_role_name))
+
+
+def _authorize_target(db: Session, current_user, user_id: int):
+    """Un usuario solo puede administrar cuentas cuyo rol está dentro de lo que su propio
+    permiso le deja crear (misma regla que create_user) y nunca la suya propia: así no hay
+    autoelevación de privilegios ni se puede borrar/desactivar a un Administrativo con TEACHER_CRUD."""
+    target = UserRepository(db).get_by_id(user_id)
+    if not target:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+    if target.id == current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No puede modificar su propia cuenta por este medio; use Mi cuenta.")
+    perms = getattr(current_user, "permissions", [])
+    if not _is_target_role_allowed(target.role.name, perms):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"No puede administrar usuarios con el rol {target.role.name}")
+    return target
 
 
 @router.get("", response_model=list[UserResponse])
@@ -89,6 +108,11 @@ def create_user(
     if not _is_teacher_role(target_role.name) and payload.program_id:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Solo el Profesor pertenece a un programa")
 
+    try:
+        validate_new_password(payload.password)
+    except PasswordPolicyError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
     data = payload.model_dump()
     data["created_by"] = current_user.id
     try:
@@ -103,10 +127,25 @@ def update_user(
     user_id: int,
     payload: UserUpdate,
     db: Session = Depends(db_session),
-    _=Depends(require_permission("TEACHER_CRUD")),
+    current_user=Depends(require_permission("TEACHER_CRUD")),
 ) -> UserResponse:
+    target = _authorize_target(db, current_user, user_id)
+    data = payload.model_dump(exclude_unset=True)
+    perms = getattr(current_user, "permissions", [])
+    if data.get("role_id") is not None:
+        new_role = RoleRepository(db).get_by_id(data["role_id"])
+        if not new_role:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="role_id inexistente")
+        if not _is_target_role_allowed(new_role.name, perms):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"No puede asignar el rol {new_role.name}")
+    if data.get("password"):
+        try:
+            validate_new_password(data["password"])
+        except PasswordPolicyError as exc:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    audit.info("USER_UPDATED actor=%s target=%s fields=%s", current_user.id, target.id, sorted(data))
     try:
-        user = UserService(UserRepository(db)).update(user_id, payload.model_dump(exclude_unset=True))
+        user = UserService(UserRepository(db)).update(user_id, data)
         return UserResponse.from_model(user)
     except (EntityAlreadyExistsError, EntityNotFoundError) as exc:
         raise map_repository_error(exc) from exc
@@ -116,14 +155,14 @@ def update_user(
 async def delete_user(
     user_id: int,
     db: Session = Depends(db_session),
-    _=Depends(require_permission("TEACHER_CRUD")),
+    current_user=Depends(require_permission("TEACHER_CRUD")),
 ):
     """Borra un profesor/auditor. Antes borra en cascada sus rúbricas en
     Assesment_MS; si hay periodos cerrados -> 409; si el servicio no responde
     -> 503 y no borra nada (paso 12)."""
     repo = UserRepository(db)
-    if not repo.get_by_id(user_id):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+    _authorize_target(db, current_user, user_id)
+    audit.info("USER_DELETED actor=%s target=%s", current_user.id, user_id)
 
     import httpx
 
@@ -148,8 +187,10 @@ async def delete_user(
 def activate_user(
     user_id: int,
     db: Session = Depends(db_session),
-    _=Depends(require_permission("TEACHER_CRUD")),
+    current_user=Depends(require_permission("TEACHER_CRUD")),
 ) -> UserResponse:
+    _authorize_target(db, current_user, user_id)
+    audit.info("USER_ACTIVATED actor=%s target=%s", current_user.id, user_id)
     try:
         user = UserService(UserRepository(db)).activate(user_id)
         return UserResponse.from_model(user)
@@ -161,8 +202,10 @@ def activate_user(
 def deactivate_user(
     user_id: int,
     db: Session = Depends(db_session),
-    _=Depends(require_permission("TEACHER_CRUD")),
+    current_user=Depends(require_permission("TEACHER_CRUD")),
 ) -> UserResponse:
+    _authorize_target(db, current_user, user_id)
+    audit.info("USER_DEACTIVATED actor=%s target=%s", current_user.id, user_id)
     try:
         user = UserService(UserRepository(db)).deactivate(user_id)
         return UserResponse.from_model(user)

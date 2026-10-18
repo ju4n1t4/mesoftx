@@ -17,7 +17,7 @@ from app.infrastructure.repositories.sqlalchemy_repositories import (
     SubjectRepository,
     TeacherSubjectRepository,
 )
-from app.interfaces.api.v1.dependencies import db_session, get_current_user, require_permission
+from app.interfaces.api.v1.dependencies import db_session, get_current_user, require_any_permission, require_permission
 from app.interfaces.api.v1.error_handlers import map_repository_error
 from app.interfaces.api.v1.schemas import (
     CollegeCreate,
@@ -190,12 +190,12 @@ def delete_program(entity_id: str, db: Session = Depends(db_session), _=Depends(
 
 
 @router.get("/periods", response_model=list[PeriodResponse])
-def list_periods(db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
+def list_periods(db: Session = Depends(db_session), _=Depends(require_any_permission("PROGRAM_CRUD", "INDICATOR_VIEW", "INDICATOR_CHART", "RUBRIC_VIEW", "DASHBOARD_PROGRAM", "SO_TO_ASSESS_VIEW"))):
     return _service(PeriodRepository, db).list()
 
 
 @router.get("/periods/{entity_id}", response_model=PeriodResponse)
-def get_period(entity_id: int, db: Session = Depends(db_session), _=Depends(require_permission("PROGRAM_CRUD"))):
+def get_period(entity_id: int, db: Session = Depends(db_session), _=Depends(require_any_permission("PROGRAM_CRUD", "INDICATOR_VIEW", "INDICATOR_CHART", "RUBRIC_VIEW", "DASHBOARD_PROGRAM", "SO_TO_ASSESS_VIEW"))):
     try:
         return _service(PeriodRepository, db).get(entity_id)
     except EntityNotFoundError as exc:

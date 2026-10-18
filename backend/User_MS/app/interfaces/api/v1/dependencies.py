@@ -54,6 +54,22 @@ def require_permission(code: str):
     return checker
 
 
+def require_any_permission(*codes: str):
+    """Autoriza si el usuario tiene al menos uno de los permisos (lecturas de catálogo
+    compartidas por perfiles de consulta, sin exigir un permiso de administración)."""
+
+    def checker(current_user=Depends(get_current_user)):
+        have = getattr(current_user, "permissions", [])
+        if not any(c in have for c in codes):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Falta alguno de los permisos: " + ", ".join(codes),
+            )
+        return current_user
+
+    return checker
+
+
 def require_service_token(x_service_token: str | None = Header(default=None)):
     """Valida el secreto compartido entre microservicios (paso 12)."""
     if x_service_token != settings.service_token:

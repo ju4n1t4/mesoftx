@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -36,6 +36,17 @@ import { AuthService } from '../../../core/services/auth.service';
           <!-- Error -->
           <div class="error-alert" *ngIf="errorMsg()">
             <i class="pi pi-exclamation-circle"></i> {{ errorMsg() }}
+          </div>
+
+          <!-- Modo exposición: solo aparece si el SERVIDOR lo habilita (DEMO_MODE=true) -->
+          <div class="demo-box" *ngIf="demoRoles().length > 0">
+            <div class="demo-title"><i class="pi pi-bolt"></i> Modo exposición · entrar sin credenciales</div>
+            <p class="demo-note">Datos de ejemplo. Elija un perfil:</p>
+            <div class="demo-btns">
+              <button type="button" class="demo-btn" *ngFor="let r of demoRoles()"
+                      [disabled]="demoLoading()" (click)="enterDemo(r)">{{ roleLabel(r) }}</button>
+            </div>
+            <div class="demo-sep"><span>o ingrese con su cuenta</span></div>
           </div>
 
           <form [formGroup]="form" (ngSubmit)="onSubmit()">
@@ -86,6 +97,15 @@ import { AuthService } from '../../../core/services/auth.service';
     </div>
   `,
   styles: [`
+    .demo-box { background: #FFF7ED; border: 1px solid #FDBA74; border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; }
+    .demo-title { font-weight: 700; font-size: 13px; color: #9A3412; display: flex; align-items: center; gap: 6px; }
+    .demo-note { font-size: 12px; color: #7C2D12; margin: 4px 0 10px; }
+    .demo-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .demo-btn { padding: 9px 10px; border-radius: 8px; border: 1px solid #FB923C; background: #fff;
+      color: #9A3412; font-weight: 600; font-size: 13px; cursor: pointer; }
+    .demo-btn:hover:not(:disabled) { background: #FFEDD5; }
+    .demo-btn:disabled { opacity: .6; cursor: wait; }
+    .demo-sep { text-align: center; margin-top: 12px; font-size: 11px; color: #9A3412; }
     .login-page {
       display: flex; height: 100vh;
       font-family: 'Inter', -apple-system, sans-serif;
@@ -209,16 +229,38 @@ import { AuthService } from '../../../core/services/auth.service';
     @media (max-width: 700px) { .login-left { display: none; } }
   `]
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   form: FormGroup;
   loading  = signal(false);
   errorMsg = signal('');
   showPass = signal(false);
+  /** Perfiles de demostración que ofrece el servidor (vacío = modo exposición apagado). */
+  demoRoles = signal<string[]>([]);
+  demoLoading = signal(false);
 
   constructor(private fb: FormBuilder, private auth: AuthService) {
     this.form = this.fb.group({
       email:    ['', [Validators.required, Validators.email]],
       password: ['', Validators.required],
+    });
+  }
+
+  ngOnInit(): void {
+    this.auth.getAuthMode().subscribe(m => this.demoRoles.set(m.demo_enabled ? m.demo_roles : []));
+  }
+
+  roleLabel(key: string): string {
+    return ({ administrativo: 'Administrador', coordinador: 'Coordinador', profesor: 'Profesor', auditor: 'Auditor' } as Record<string, string>)[key] ?? key;
+  }
+
+  enterDemo(role: string) {
+    this.demoLoading.set(true);
+    this.errorMsg.set('');
+    this.auth.demoLogin(role).subscribe({
+      error: () => {
+        this.demoLoading.set(false);
+        this.errorMsg.set('El modo exposición no está disponible en este momento.');
+      },
     });
   }
 

@@ -24,6 +24,7 @@ Qué garantiza esta configuración:
 | `APP_ENV=production`: no arranca con secretos de ejemplo o < 32 caracteres | `core/config.py` |
 | `/docs`, `/redoc`, `/openapi.json` desactivados en producción | `main.py` |
 | Clave semilla del admin bloqueada en producción | `auth_service.py` |
+| Modo exposición apagado por defecto, con doble llave en producción y sin claves en el navegador | `config.py`, `auth.py`, `docker-compose.demo.yml` |
 | JWT con `iss`, `aud`, `exp`, `jti` (PyJWT) | `jwt_service.py` |
 | Límite de intentos de login (5 por correo / 30 por IP en 15 min → 429) | `login_rate_limiter.py` |
 | Política de claves (≥ 10, letras y números, no comunes) y cambio en *Mi cuenta* | `password_policy.py` |
@@ -39,6 +40,30 @@ Qué garantiza esta configuración:
 
 **Copias de seguridad:** programe `pg_dump` cifrado de `users_db` y `assesment_mesoftx_db`
 (los datos de estudiantes son datos personales; trate las copias con las mismas medidas).
+
+## 1b. Modo exposición (sin login) vs. uso real (con login)
+
+Para la sustentación del TFM se necesita entrar rápido sin credenciales; en la vida real se exige login.
+Ambos modos conviven en el mismo código y **el servidor decide** (ver `COMO_EJECUTAR.md`, paso 5):
+
+- **Apagado por defecto** (`DEMO_MODE=false`): `/auth/demo-login` responde 404, `/auth/mode` dice `demo_enabled:false`
+  y las cuentas de demostración no pueden iniciar sesión con contraseña. Es el estado del despliegue normal.
+- **Encendido** (`DEMO_MODE=true`): el login muestra un botón por perfil. Cada botón pide un **token JWT real**
+  (mismo formato, mismos permisos del perfil, misma expiración); los controles de acceso del backend **siguen
+  aplicando**: el Auditor no puede crear usuarios, el Profesor no ve datos ajenos, etc.
+- **Doble llave en producción:** con `APP_ENV=production` el servicio no arranca con `DEMO_MODE=true` sin
+  `DEMO_ALLOW_IN_PRODUCTION=true`. En Docker eso lo aporta únicamente `docker-compose.demo.yml`.
+- **Sin secretos en el navegador:** no hay contraseñas en el JS (corrige el hallazgo RS-02). Las cuentas demo
+  tienen clave aleatoria desconocida y solo entran por `/auth/demo-login`.
+- **Trazabilidad:** cada ingreso queda en la bitácora (`DEMO_LOGIN role=… ip=…`), el arranque registra un aviso
+  crítico y la interfaz muestra una etiqueta permanente de "modo exposición".
+- **Límite de abuso:** `/auth/demo-login` aplica el mismo limitador por IP que el login (429).
+
+**Riesgo residual (decisión de gestión, no técnica):** mientras el modo exposición esté activo, cualquiera que
+alcance el sitio puede entrar con cualquier perfil, incluido el administrativo. Úselo **solo con datos de ejemplo**
+(nunca estudiantes reales, Ley 1581), restrinja el acceso de red si es posible (VPN, red de la universidad o URL
+no publicada) y **apáguelo al terminar** (comando de la Opción 2). Los textos legales del sitio siguen visibles
+en ambos modos.
 
 ## 2. Lista de verificación legal (Colombia) — pendiente de la UNAB
 

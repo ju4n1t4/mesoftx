@@ -61,13 +61,13 @@ def requires_service_token(route):
     return any("require_service_token" in getattr(s.call, "__qualname__", "") for s in walk(route.dependant))
 
 from app.application.services.password_policy import PasswordPolicyError, validate_new_password
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
 from app.infrastructure.security.jwt_service import InvalidTokenError, create_access_token, decode_access_token
 from app.infrastructure.security.login_rate_limiter import LoginRateLimiter
 from app.interfaces.api.v1 import dependencies as deps
 from app.main import app
 
-PUBLIC = {"/health", "/api/v1/auth/login"}
+PUBLIC = {"/health", "/api/v1/auth/login", "/api/v1/auth/mode", "/api/v1/auth/demo-login"}
 client = TestClient(app, raise_server_exceptions=False)
 
 
@@ -254,3 +254,150 @@ def test_hash_semilla_publico_no_se_acepta_en_produccion(monkeypatch):
     monkeypatch.setattr(svc.settings.__class__, "is_production", property(lambda self: True))
     with pytest.raises(DefaultPasswordError):
         svc.login("admin@unab.edu.co", "Mesoftx2026!")
+
+
+def test_no_hay_autoelevacion_de_privilegios(monkeypatch):
+    """RS-04: con TEACHER_CRUD no se puede cambiar el propio rol, ni editar/borrar/desactivar
+    a un Administrativo, ni asignar un rol superior al que el permiso permite crear."""
+    from types import SimpleNamespace as NS
+
+    from app.interfaces.api.v1 import users as users_mod
+
+    roles = {1: NS(id=1, name="Administrativo"), 2: NS(id=2, name="Coordinador"), 3: NS(id=3, name="Profesor")}
+    people = {
+        10: NS(id=10, role=roles[2], role_id=2),   # el que llama (coordinador)
+        11: NS(id=11, role=roles[1], role_id=1),   # administrativo
+        12: NS(id=12, role=roles[3], role_id=3),   # profesor
+    }
+
+    class FakeUsers:
+        def __init__(self, db): ...
+        def get_by_id(self, i): return people.get(i)
+
+    class FakeRoles:
+        def __init__(self, db): ...
+        def get_by_id(self, i): return roles.get(i)
+
+    monkeypatch.setattr(users_mod, "UserRepository", FakeUsers)
+    monkeypatch.setattr(users_mod, "RoleRepository", FakeRoles)
+    caller = NS(id=10, permissions=["TEACHER_CRUD"])
+    app.dependency_overrides[deps.get_current_user] = lambda: caller
+    app.dependency_overrides[deps.get_db_session if hasattr(deps, "get_db_session") else deps.db_session] = lambda: None
+    try:
+        h = {"Authorization": "Bearer x"}
+        assert client.put("/api/v1/users/10", json={"role_id": 1}, headers=h).status_code == 403   # a sí mismo
+        assert client.put("/api/v1/users/11", json={"name": "x"}, headers=h).status_code == 403     # a un admin
+        assert client.delete("/api/v1/users/11", headers=h).status_code == 403
+        assert client.patch("/api/v1/users/11/deactivate", headers=h).status_code == 403
+        assert client.put("/api/v1/users/12", json={"role_id": 1}, headers=h).status_code == 403    # subir a admin
+        assert client.put("/api/v1/users/12", json={"password": "abc12345"}, headers=h).status_code == 422
+    finally:
+        app.dependency_overrides.clear()
+
+
+# ---------------------------------------------------------------- modo exposición (sin login)
+def _demo_settings(**over):
+    return Settings(_env_file=None, database_url="postgresql://x", jwt_secret_key="k" * 40,
+                    service_token="t" * 40, **over)
+
+
+def test_modo_exposicion_apagado_por_defecto_y_endpoint_oculto():
+    assert get_settings().demo_mode is False
+    assert client.get("/api/v1/auth/mode").json() == {"demo_enabled": False, "demo_roles": []}
+    # Con el modo apagado el endpoint responde 404, como si no existiera.
+    assert client.post("/api/v1/auth/demo-login", json={"role": "administrativo"}).status_code == 404
+
+
+def test_modo_exposicion_en_produccion_exige_doble_confirmacion():
+    with pytest.raises(ValidationError):
+        _demo_settings(app_env="production", demo_mode=True)
+    ok = _demo_settings(app_env="production", demo_mode=True, demo_allow_in_production=True)
+    assert ok.demo_mode and ok.is_production
+    assert _demo_settings(app_env="production").demo_mode is False   # producción normal: apagado
+
+
+def test_modo_exposicion_emite_token_real_solo_para_cuentas_demo(monkeypatch):
+    from types import SimpleNamespace as NS
+
+    from app.interfaces.api.v1 import auth as auth_mod
+    from app.application.services import auth_service as svc_mod
+
+    perm = NS(permission=NS(code="DASHBOARD_PROGRAM"))
+    role = NS(id=2, name="Coordinador", role_permissions=[perm])
+    demo_user = NS(id=77, email="demo.coordinador@demo.mesoftx.local", active=True, role=role, role_id=2,
+                   program_id=None, password="x")
+    other = NS(id=5, email="real@unab.edu.co", active=True, role=role, role_id=2, program_id=None, password="x")
+
+    class FakeUsers:
+        def __init__(self, db): ...
+        def get_by_email(self, email):
+            return {demo_user.email: demo_user, other.email: other}.get(email)
+
+    on = _demo_settings(demo_mode=True)
+    monkeypatch.setattr(auth_mod, "get_settings", lambda: on)
+    monkeypatch.setattr(svc_mod, "get_settings", lambda: on)
+    monkeypatch.setattr(auth_mod, "UserRepository", FakeUsers)
+    app.dependency_overrides[deps.db_session] = lambda: None
+    try:
+        mode = client.get("/api/v1/auth/mode").json()
+        assert mode == {"demo_enabled": True, "demo_roles": ["coordinador"]}
+        r = client.post("/api/v1/auth/demo-login", json={"role": "coordinador"})
+        assert r.status_code == 200
+        claims = decode_access_token(r.json()["access_token"])
+        assert claims["sub"] == "77" and claims["role"] == "Coordinador" and claims["perms"] == ["DASHBOARD_PROGRAM"]
+        # perfil inexistente / rol que no coincide con el de la cuenta -> 404, nunca un token
+        assert client.post("/api/v1/auth/demo-login", json={"role": "profesor"}).status_code == 404
+        assert client.post("/api/v1/auth/demo-login", json={"role": "../admin"}).status_code == 404
+        # las cuentas demo nunca entran por contraseña, ni con el modo encendido
+        monkeypatch.setattr(svc_mod, "verify_password", lambda *a, **k: True)
+        bad = client.post("/api/v1/auth/login", json={"email": demo_user.email, "password": "cualquiera123"})
+        assert bad.status_code == 401
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_cuentas_demo_no_funcionan_con_el_modo_apagado(monkeypatch):
+    from types import SimpleNamespace as NS
+
+    from app.application.services.auth_service import AuthService, DemoUnavailableError
+
+    user = NS(id=1, email="demo.administrativo@demo.mesoftx.local", active=True,
+              role=NS(name="Administrativo", role_permissions=[]), role_id=1, program_id=None, password="x")
+
+    class FakeUsers:
+        def get_by_email(self, e): return user
+
+    svc = AuthService(FakeUsers())
+    svc.settings = _demo_settings(demo_mode=False)
+    with pytest.raises(DemoUnavailableError):
+        svc.demo_login("administrativo")
+    assert svc.available_demo_roles() == []
+
+
+def test_rbac_lecturas_con_cualquiera_de_varios_permisos():
+    """Los periodos se leen con permisos de consulta, pero nunca con uno ajeno ni sin permiso."""
+    def any_of(route):
+        for sub in walk(route.dependant):
+            call = sub.call
+            if call is not None and "require_any_permission" in getattr(call, "__qualname__", ""):
+                for cell in call.__closure__ or ():
+                    if isinstance(cell.cell_contents, tuple):
+                        return cell.cell_contents
+        return ()
+    rutas = [(r, any_of(r)) for r in all_routes(app) if any_of(r)]
+    assert rutas
+    for r, codes in rutas:
+        assert "GET" in r.methods                      # solo lecturas
+        for peligroso in ("USER_CRUD", "TEACHER_CRUD", "PERMISSION_ASSIGN"):
+            assert peligroso not in codes
+        def status_with(perms):
+            from types import SimpleNamespace as NS
+            app.dependency_overrides[deps.get_current_user] = lambda: NS(id=1, permissions=perms, program_id=None, password=None)
+            app.dependency_overrides[deps.db_session] = lambda: None
+            try:
+                return client.get(concrete_path(r)).status_code
+            finally:
+                app.dependency_overrides.clear()
+        assert status_with([]) == 403
+        assert status_with(["USER_CRUD"]) == 403
+        assert status_with([codes[1]]) != 403

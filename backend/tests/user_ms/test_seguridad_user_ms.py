@@ -17,7 +17,21 @@ from fastapi.routing import APIRoute
 
 
 def all_routes(app):
-    return [r for r in app.routes if isinstance(r, APIRoute)]
+    """Rutas finales con su path completo. Compatible con FastAPI que guarda los routers
+    incluidos de forma perezosa (>= 0.14x: `_IncludedRouter`) y con las versiones previas."""
+    from types import SimpleNamespace
+
+    out = []
+
+    def collect(routes, prefix=""):
+        for r in routes:
+            if isinstance(r, APIRoute):
+                out.append(SimpleNamespace(path=prefix + r.path, methods=r.methods, dependant=r.dependant))
+            elif hasattr(r, "original_router") and hasattr(r, "include_context"):
+                collect(r.original_router.routes, prefix + (r.include_context.prefix or ""))
+
+    collect(app.routes)
+    return out
 
 
 def concrete_path(route):

@@ -1,0 +1,99 @@
+# MESOFTX – despliegue unificado (servidor propio o máquina virtual).
+# Solo el contenedor "frontend" (nginx) publica un puerto. Base de datos y microservicios
+# quedan en una red interna sin acceso desde Internet.
+#
+#   cp .env.prod.example .env.prod      # y complete TODOS los valores (ver instrucciones dentro)
+#   docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+#
+# La TLS (HTTPS) debe terminar en un proxy delante (Azure Front Door / App Gateway / Caddy / etc.)
+# que envíe X-Forwarded-Proto; nginx redirige HTTP→HTTPS y emite HSTS en ese caso.
+name: mesoftx
+
+x-backend-env: &backend-env
+  APP_ENV: production
+  API_V1_PREFIX: /api/v1
+  JWT_ALGORITHM: HS256
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY:?defina JWT_SECRET_KEY (>=32 caracteres aleatorios) en .env.prod}
+  SERVICE_TOKEN: ${SERVICE_TOKEN:?defina SERVICE_TOKEN (>=32 caracteres aleatorios) en .env.prod}
+  TRUST_PROXY_HEADERS: "true"          # nginx sobrescribe X-Forwarded-For con la IP vista
+  CORS_ORIGINS: ${PUBLIC_ORIGIN:?defina PUBLIC_ORIGIN, p. ej. https://mesoftx.unab.edu.co}
+
+services:
+  mesoftx-db:
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mesoftx}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD en .env.prod}
+      POSTGRES_DB: postgres
+    volumes:
+      - mesoftx_postgres_data:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d users_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  user-ms:
+    build:
+      context: ..
+      dockerfile: deployment/backend/User_MS/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mesoftx-db: { condition: service_healthy }
+    environment:
+      <<: *backend-env
+      APP_NAME: User_MS
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-mesoftx}:${POSTGRES_PASSWORD}@mesoftx-db:5432/users_db
+      ASSESMENT_MS_URL: http://assesment-ms:8002
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  assesment-ms:
+    build:
+      context: ..
+      dockerfile: deployment/backend/Assesment_MS/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mesoftx-db: { condition: service_healthy }
+      user-ms: { condition: service_healthy }
+    environment:
+      <<: *backend-env
+      APP_NAME: Assesment_MS
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-mesoftx}:${POSTGRES_PASSWORD}@mesoftx-db:5432/assesment_mesoftx_db
+      USER_MS_URL: http://user-ms:8001
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8002/health', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      user-ms: { condition: service_healthy }
+      assesment-ms: { condition: service_healthy }
+    ports:
+      - "${FRONTEND_PORT:-8083}:80"
+    networks: [internal]
+
+networks:
+  internal:
+
+volumes:
+  mesoftx_postgres_data:

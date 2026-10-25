@@ -110,3 +110,9 @@ logs/
 frontend/PLAN_FRONTEND.md
 
 .kiro/
+
+# Refactor verification reports (regenerated in CI)
+backend/coverage/
+
+.ai/
+scripts/

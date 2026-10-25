@@ -1,4 +1,4 @@
-name: DB structure tests
+name: Architecture, persistence and tests
 
 # Verifica en cada push y PR que los 4 scripts SQL crean el modelo de datos
 # correcto: levanta PostgreSQL 16, ejecuta los scripts en orden y corre
@@ -101,7 +101,75 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: cd frontend && npm ci && npx ng build --configuration production && npm audit --omit=dev
+      - run: cd frontend && npm ci && npm run test:coverage && npx ng build --configuration production && npm audit --omit=dev
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+
+
+  refactor-contracts-and-coverage:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      USERS_TEST_DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/users_db
+      ASSESSMENT_TEST_DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/assesment_mesoftx_db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r backend/requirements-dev.txt
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Initialize disposable databases and additive migrations
+        run: |
+          for file in deployment/db/scripts/*.sql deployment/db/migrations/*.sql; do
+            psql -v ON_ERROR_STOP=1 -d postgres -f "$file"
+          done
+      - name: Test workflows, function coverage and preservation
+        run: scripts/test_backend.sh
+      - name: Verify OpenAPI contracts
+        run: python scripts/export_contracts.py --check
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: backend/coverage/
+
+  deployment-smoke:
+    runs-on: ubuntu-latest
+    needs: [frontend, refactor-contracts-and-coverage]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build release images
+        run: |
+          docker build -t mesoftx-refactor-db:20261025 deployment/db
+          docker build -t mesoftx-refactor-user:20261025 -f deployment/backend/User_MS/Dockerfile .
+          docker build -t mesoftx-refactor-assessment:20261025 -f deployment/backend/Assesment_MS/Dockerfile .
+          docker build -t mesoftx-refactor-frontend:20261025 frontend
+      - name: Verify isolated deployment and recovery
+        run: |
+          mkdir -p backend/coverage
+          python3 scripts/smoke_deployment.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deployment-smoke
+          path: backend/coverage/deployment-smoke.json

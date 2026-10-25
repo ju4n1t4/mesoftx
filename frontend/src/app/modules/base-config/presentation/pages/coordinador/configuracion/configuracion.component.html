@@ -1,0 +1,60 @@
+<div class="content-area">
+  <div class="page-header">
+    <h1>Configuración del sistema</h1>
+    <p>Parámetros generales de la plataforma MESOFTX.</p>
+  </div>
+
+  <div class="state-box" *ngIf="loading()"><i class="pi pi-spin pi-spinner"></i> Cargando…</div>
+  <div class="notice" *ngIf="error()"><i class="pi pi-info-circle"></i> <span>{{ error() }}</span></div>
+
+  <div class="config-grid" *ngIf="!loading()">
+
+    <!-- Periodos -->
+    <div class="config-card">
+      <div class="cc-header">
+        <i class="pi pi-calendar cc-icon"></i><h2>Periodos académicos</h2>
+        <button mxButton class="add-btn" (click)="showPeriodForm.set(!showPeriodForm())">
+          <i class="pi pi-plus"></i> Agregar
+        </button>
+      </div>
+
+      <div class="inline-form" *ngIf="showPeriodForm()">
+        <input mxInput class="mini-input" [(ngModel)]="newPeriodCode" placeholder="Código (202610)" />
+        <button mxButton class="save-mini" (click)="addPeriod()">Guardar</button>
+        <button mxButton class="cancel-mini" (click)="cancelPeriod()">Cancelar</button>
+      </div>
+
+      <div class="row" *ngFor="let p of periods()">
+        <div class="row-title">{{ p.code }}</div>
+      </div>
+      <div class="empty-inline" *ngIf="periods().length === 0 && !showPeriodForm()">Sin periodos registrados.</div>
+    </div>
+
+    <!-- Integraciones -->
+    <div class="config-card">
+      <div class="cc-header"><i class="pi pi-check-circle cc-icon"></i><h2>Integraciones</h2></div>
+      <div class="int-row">
+        <span class="int-name">Base de datos PostgreSQL</span>
+        <span class="int-status connected">Operativo</span>
+      </div>
+      <div class="int-row">
+        <span class="int-name">Microservicio de usuarios (User_MS)</span>
+        <span class="int-status connected">Operativo</span>
+      </div>
+      <div class="int-row">
+        <span class="int-name">Microservicio de valoración (Assesment_MS)</span>
+        <span class="int-status connected">Operativo</span>
+      </div>
+    </div>
+
+    <!-- Gestión de usuarios: vive en /admin -->
+    <div class="config-card">
+      <div class="cc-header"><i class="pi pi-users cc-icon"></i><h2>Usuarios y perfiles</h2></div>
+      <p class="info-text">
+        La creación de usuarios y perfiles y la asignación de permisos se gestionan
+        desde el módulo de administración (<code>/admin</code>). El coordinador registra
+        profesores desde la pantalla “Profesores”.
+      </p>
+    </div>
+  </div>
+</div>

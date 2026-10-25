@@ -1,0 +1,52 @@
+.loading-wrap { display: flex; justify-content: center; padding: 48px; }
+.step { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 16px; }
+.step-title { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+.step-title.compact { margin-bottom: 14px; }
+.ctx { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+.empty-box { color: var(--text-muted); font-size: 14px; padding: 20px; background: var(--surface-2); border-radius: var(--radius-sm); }
+.valuation-grid { display: grid; grid-template-columns: minmax(280px, 420px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.cards, .nrc-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.ass-card { display: flex; flex-direction: column; gap: 4px; text-align: left; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; cursor: pointer; font-family: inherit; }
+.ass-card:hover { border-color: var(--primary); }
+.ass-card.selected { border-color: var(--primary); background: rgba(16, 185, 129, .08); box-shadow: inset 0 0 0 1px var(--primary); }
+.nrc-card { display: flex; flex-direction: column; gap: 4px; text-align: left; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; cursor: pointer; font-family: inherit; }
+.nrc-card:hover { border-color: var(--primary); }
+.nrc-card.selected { border-color: var(--primary); background: rgba(16, 185, 129, .08); box-shadow: inset 0 0 0 1px var(--primary); }
+.ac-so { font-weight: 800; color: var(--accent); }
+.ac-desc { font-size: 13px; color: var(--text); }
+.ac-nrc { font-size: 12px; color: var(--text-muted); }
+.rubric-workspace { margin-bottom: 16px; }
+.info-card, .rubric-card { width: 100%; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 16px; }
+.eyebrow { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.so-card h2, .rubric-head h2 { margin: 0 0 6px; color: var(--text); font-size: 18px; line-height: 1.2; }
+.so-card p { margin: 0; color: var(--text); line-height: 1.5; }
+.meta-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.kv { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.kv:last-child { border-bottom: 0; }
+.kv span { color: var(--text-muted); }
+.kv strong { color: var(--text); font-weight: 700; overflow-wrap: anywhere; }
+.rubric-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.rubric-list { display: flex; flex-direction: column; gap: 14px; }
+.rubric-row { display: grid; grid-template-columns: minmax(220px, 320px) minmax(0, 1fr); gap: 14px; padding: 14px 0; border-top: 1px solid var(--border); }
+.performance-cell p { margin: 8px 0 0; color: var(--text); font-size: 13px; line-height: 1.45; }
+.ind-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.ind-id { font-weight: 700; color: var(--accent); background: rgba(124,58,237,0.08); padding: 2px 8px; border-radius: 4px; }
+.ind-desc { font-size: 13px; color: var(--text); }
+.level-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.level-card { min-height: 132px; display: flex; flex-direction: column; gap: 8px; text-align: left; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; color: var(--text); font: inherit; cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease, background .15s ease; }
+.level-card:hover:not(:disabled) { border-color: var(--primary); box-shadow: 0 4px 14px rgba(15, 23, 42, .08); }
+.level-card.selected { border-color: var(--primary); background: rgba(16, 185, 129, .08); box-shadow: inset 0 0 0 1px var(--primary); }
+.level-card:disabled { cursor: default; opacity: .78; }
+.level-name { color: var(--text); font-size: 12px; font-weight: 800; text-transform: uppercase; }
+.level-desc { color: var(--text-muted); font-size: 12px; line-height: 1.4; }
+.save-bar { margin-top: 16px; display: flex; justify-content: flex-end; }
+.empty-cell { text-align: center; color: var(--text-muted); padding: 20px; }
+@media (max-width: 1100px) {
+  .rubric-row { grid-template-columns: 1fr; }
+  .level-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .valuation-grid, .meta-grid, .level-grid { grid-template-columns: 1fr; }
+  .rubric-head { align-items: flex-start; flex-direction: column; }
+  .kv { grid-template-columns: 1fr; gap: 2px; }
+}

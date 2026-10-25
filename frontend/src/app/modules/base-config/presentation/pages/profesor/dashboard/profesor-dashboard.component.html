@@ -1,0 +1,64 @@
+<div class="content-area">
+  <div class="page-header">
+    <h1>Resumen</h1>
+    <p>Estado de tus cursos y valoraciones ABET del período académico vigente.</p>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card" style="border-top-color: var(--primary)">
+      <div class="kpi-label">Cursos activos</div>
+      <div class="kpi-value">{{ courses().length }}</div>
+      <div class="kpi-sub">Asignados este período</div>
+    </div>
+    <div class="kpi-card" style="border-top-color: var(--n2-color)">
+      <div class="kpi-label">Valoraciones registradas</div>
+      <div class="kpi-value" style="color: var(--n2-color)">{{ rubricsCount() }}</div>
+      <div class="kpi-sub">Rúbricas que has llenado</div>
+    </div>
+    <div class="kpi-card" style="border-top-color: var(--accent)">
+      <div class="kpi-label">Outcomes disponibles</div>
+      <div class="kpi-value" style="color: var(--accent)">{{ outcomes().length }}</div>
+      <div class="kpi-sub">Parametrizados en el sistema</div>
+    </div>
+    <div class="kpi-card" style="border-top-color: var(--badge-open)">
+      <div class="kpi-label">Estudiantes valorados</div>
+      <div class="kpi-value" style="color: var(--badge-open)">{{ studentsCount() }}</div>
+      <div class="kpi-sub">Distintos en tus rúbricas</div>
+    </div>
+  </div>
+
+  <!-- Mis cursos activos -->
+  <div class="section-header">
+    <h2>Mis cursos activos</h2>
+    <a routerLink="/profesor/mis-cursos" class="ver-todos">Ver todos →</a>
+  </div>
+
+  <div class="state-box" *ngIf="loading()">
+    <i class="pi pi-spin pi-spinner"></i>
+    <span>Cargando información…</span>
+  </div>
+
+  <div class="notice" *ngIf="error()">
+    <i class="pi pi-info-circle"></i>
+    <span>{{ error() }}</span>
+  </div>
+
+  <div class="empty-box" *ngIf="!loading() && courses().length === 0">
+    <div class="empty-icon"><i class="pi pi-book"></i></div>
+    <div class="empty-title">No tienes cursos asignados</div>
+    <div class="empty-desc">Cuando el coordinador te asigne cursos y actividades de valoración aparecerán aquí.</div>
+  </div>
+
+  <div class="courses-grid" *ngIf="!loading() && courses().length > 0">
+    <div class="course-card" *ngFor="let c of courses()">
+      <div class="cc-top">
+        <span class="cc-code">{{ c.code }}</span>
+      </div>
+      <div class="cc-name">{{ c.name }}</div>
+      <a [routerLink]="['/profesor/valorar']" class="cc-link">
+        Registrar valoración →
+      </a>
+    </div>
+  </div>
+</div>

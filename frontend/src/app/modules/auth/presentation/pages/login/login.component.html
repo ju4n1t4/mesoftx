@@ -1,0 +1,86 @@
+<div class="login-page">
+  <!-- Panel izquierdo naranja -->
+  <div class="login-left">
+    <a class="left-logo" routerLink="/" title="Volver al inicio">
+      <div class="logo-box">M</div>
+      <span class="logo-wordmark">MESOFTX</span>
+    </a>
+    <div class="left-body">
+      <h2>Valoración de Resultados de Aprendizaje ABET</h2>
+      <p>Plataforma institucional de la Facultad de Ingeniería · UNAB. Trazable, colaborativa y lista para tu proceso de acreditación.</p>
+      <ul class="left-bullets">
+        <li><i class="pi pi-check"></i> Acceso con tu correo institucional UNAB</li>
+        <li><i class="pi pi-check"></i> Redirección automática según tu rol</li>
+        <li><i class="pi pi-check"></i> Dashboards de indicadores en tiempo real</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Panel derecho blanco -->
+  <div class="login-right">
+    <div class="login-card">
+      <h1>Bienvenido</h1>
+      <p class="login-sub">Ingresa con tu cuenta institucional UNAB para continuar.</p>
+
+      <!-- Error -->
+      <div class="error-alert" *ngIf="errorMsg()">
+        <i class="pi pi-exclamation-circle"></i> {{ errorMsg() }}
+      </div>
+
+      <!-- Modo exposición: solo aparece si el SERVIDOR lo habilita (DEMO_MODE=true) -->
+      <div class="demo-box" *ngIf="demoRoles().length > 0">
+        <div class="demo-title"><i class="pi pi-bolt"></i> Modo exposición · entrar sin credenciales</div>
+        <p class="demo-note">Datos de ejemplo. Elija un perfil:</p>
+        <div class="demo-btns">
+          <button mxButton type="button" class="demo-btn" *ngFor="let r of demoRoles()"
+                  [disabled]="demoLoading()" (click)="enterDemo(r)">{{ roleLabel(r) }}</button>
+        </div>
+        <div class="demo-sep"><span>o ingrese con su cuenta</span></div>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="form-field">
+          <label class="form-label">Correo institucional</label>
+          <div class="input-wrap">
+            <i class="pi pi-envelope input-icon"></i>
+            <input mxInput formControlName="email" type="email"
+                   class="form-input"
+                   placeholder="profesor@unab.edu.co"
+                   [class.has-error]="f('email').invalid && f('email').touched" />
+          </div>
+          <span class="field-err" *ngIf="f('email').invalid && f('email').touched">Ingresa un correo válido.</span>
+        </div>
+
+        <div class="form-field">
+          <div class="label-row">
+            <label class="form-label">Contraseña</label>
+            <span class="forgot-link" title="Solicite el restablecimiento al coordinador o al administrador del sistema">¿Olvidó su contraseña? Contacte a su coordinador</span>
+          </div>
+          <div class="input-wrap">
+            <i class="pi pi-lock input-icon"></i>
+            <input mxInput formControlName="password"
+                   [type]="showPass() ? 'text' : 'password'"
+                   class="form-input with-btn"
+                   placeholder="••••••••"
+                   [class.has-error]="f('password').invalid && f('password').touched" />
+            <button mxButton type="button" class="eye-btn" (click)="togglePass()">
+              <i [class]="'pi ' + (showPass() ? 'pi-eye-slash' : 'pi-eye')"></i>
+            </button>
+          </div>
+          <span class="field-err" *ngIf="f('password').invalid && f('password').touched">La contraseña es obligatoria.</span>
+        </div>
+
+        <button mxButton type="submit" class="btn-submit" [disabled]="loading()">
+          <i class="pi pi-spin pi-spinner" *ngIf="loading()"></i>
+          {{ loading() ? 'Verificando…' : 'Iniciar sesión' }}
+        </button>
+      </form>
+
+      <p class="legal-note">
+        Al iniciar sesión usted reconoce que sus datos personales se tratan conforme a la
+        <a routerLink="/legal/privacidad">Política de tratamiento de datos personales</a>
+        y acepta los <a routerLink="/legal/terminos">Términos de uso</a> de MESOFTX.
+      </p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,13 @@
+.toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+.loading-wrap { display: flex; justify-content: center; padding: 48px; }
+.hint { color: var(--text-muted); font-size: 14px; padding: 24px; background: #fff; border: 1px dashed var(--border); border-radius: var(--radius-md); }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.empty-cell { text-align: center; color: var(--text-muted); padding: 24px; }
+.dialog-form { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
+.dialog-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text); }
+.muted { color: var(--text-muted); font-weight: 400; }
+.target-box { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
+.target-head { display: flex; align-items: center; gap: 10px; }
+.target-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.target-row { display: flex; align-items: center; gap: 10px; }
+.target-hint { color: var(--text-muted); font-size: 12px; }

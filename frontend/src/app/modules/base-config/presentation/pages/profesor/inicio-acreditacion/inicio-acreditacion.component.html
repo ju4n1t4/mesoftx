@@ -1,0 +1,71 @@
+<div class="content-area">
+  <!-- Hero naranja -->
+  <div class="hero-banner">
+    <div class="hero-badge">
+      <i class="pi pi-check-circle"></i>
+      <span>VISTA PÚBLICA · SIN AUTENTICACIÓN</span>
+    </div>
+    <h1>Resultados de Aprendizaje · Acreditación ABET</h1>
+    <p>Indicadores de cumplimiento de los Student Outcomes de los programas de Ingeniería de la UNAB. Información pública para evaluadores del proceso de acreditación internacional ABET.</p>
+  </div>
+
+  <div class="state-box" *ngIf="loading()">
+    <i class="pi pi-spin pi-spinner"></i>
+    <span>Cargando indicadores…</span>
+  </div>
+
+  <div class="notice" *ngIf="error()">
+    <i class="pi pi-info-circle"></i>
+    <span>{{ error() }} Se muestra la estructura en cero hasta que haya datos disponibles.</span>
+  </div>
+
+  <ng-container *ngIf="!loading()">
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="sb-val green">{{ globalPct() !== null ? globalPct() + '%' : '—' }}</div>
+        <div class="sb-label">Cumplimiento global</div>
+      </div>
+      <div class="stat-box">
+        <div class="sb-val orange">{{ inMeta() }}<span class="sb-sub">/{{ outcomes().length }}</span></div>
+        <div class="sb-label">Outcomes en meta</div>
+      </div>
+      <div class="stat-box">
+        <div class="sb-val purple">{{ studentsEvaluated() }}</div>
+        <div class="sb-label">Estudiantes evaluados</div>
+      </div>
+      <div class="stat-box">
+        <div class="sb-val dark">{{ outcomes().length }}</div>
+        <div class="sb-label">Student Outcomes</div>
+      </div>
+    </div>
+
+    <!-- Tabla de cumplimiento por SO -->
+    <div class="compliance-card">
+      <div class="cc-header">
+        <div>
+          <div class="cc-title">Cumplimiento por Student Outcome</div>
+          <div class="cc-sub">Indicadores según criterios ABET</div>
+        </div>
+      </div>
+
+      <div class="empty-inline" *ngIf="outcomes().length === 0">
+        <i class="pi pi-inbox"></i>
+        <span>Aún no se han parametrizado Student Outcomes en el sistema.</span>
+      </div>
+
+      <div class="so-list" *ngIf="outcomes().length > 0">
+        <div class="so-row" *ngFor="let so of outcomes()">
+          <span class="so-code">{{ so.code }}</span>
+          <span class="so-desc">{{ so.desc }}</span>
+          <div class="so-bar-wrap">
+            <div class="so-bar-track">
+              <div class="so-bar-fill" [style.width]="so.pct+'%'" [style.background]="so.barColor"></div>
+            </div>
+          </div>
+          <span class="so-pct" [style.color]="so.barColor">{{ so.pct }}%</span>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

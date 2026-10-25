@@ -1,0 +1,7 @@
+.toolbar { margin-bottom: 16px; }
+.block { display: block; margin-bottom: 16px; }
+.loading-wrap { display: flex; justify-content: center; padding: 48px; }
+.card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 16px; }
+.card h2 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+.empty { color: var(--text-muted); font-size: 14px; }
+.empty-cell { text-align: center; color: var(--text-muted); padding: 20px; }

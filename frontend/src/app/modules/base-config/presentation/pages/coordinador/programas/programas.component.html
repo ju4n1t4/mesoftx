@@ -1,0 +1,104 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="content-area">
+  <div class="page-header">
+    <h1>Programas académicos</h1>
+    <p>Gestiona los programas académicos asociados a cada facultad.</p>
+  </div>
+
+  <div class="notice" *ngIf="error()">
+    <i class="pi pi-info-circle"></i>
+    <span>{{ error() }}</span>
+  </div>
+
+  <div class="toolbar">
+    <button mxButton pButton type="button" label="Descargar plantilla" icon="pi pi-download" class="p-button-secondary" (click)="downloadTemplate()"></button>
+    <button mxButton pButton type="button" label="Cargar Excel" icon="pi pi-upload" class="p-button-secondary" (click)="bulkInput.click()" [disabled]="colleges().length === 0"></button>
+    <input mxInput #bulkInput type="file" accept=".xlsx" hidden (change)="onBulkFile($event)" />
+    <button mxButton pButton type="button" label="Nuevo programa" icon="pi pi-plus" (click)="openCreate()" [disabled]="colleges().length === 0"></button>
+  </div>
+
+  <div class="notice" *ngIf="!loading() && colleges().length === 0">
+    <i class="pi pi-info-circle"></i>
+    <span>Crea al menos una facultad antes de registrar programas.</span>
+  </div>
+
+  <div class="loading-wrap" *ngIf="loading()">
+    <p-progressSpinner strokeWidth="4" [style]="{ width: '40px', height: '40px' }"></p-progressSpinner>
+  </div>
+
+  <p-table *ngIf="!loading()" [value]="programs()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm" [rowHover]="true">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Código</th>
+        <th>Nombre</th>
+        <th>Facultad</th>
+        <th>Acreditación</th>
+        <th>Estado</th>
+        <th style="width:10rem">Acciones</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-p>
+      <tr>
+        <td><span class="code">{{ p.id }}</span></td>
+        <td>{{ p.name }}</td>
+        <td>{{ p.collegeName || p.college_id }}</td>
+        <td>
+          <span class="badge" [class.on]="p.accredited">{{ p.accredited ? 'Acreditado' : 'En proceso' }}</span>
+          <span class="year" *ngIf="p.accredited && p.accreditation_end_year">hasta {{ p.accreditation_end_year }}</span>
+        </td>
+        <td>
+          <button mxButton type="button" class="state-switch" [class.is-active]="p.active" (click)="toggleActive(p)" [attr.aria-label]="p.active ? 'Desactivar' : 'Activar'">
+            <span></span>
+          </button>
+        </td>
+        <td class="actions">
+          <button mxButton pButton type="button" icon="pi pi-pencil" class="p-button-sm p-button-text" (click)="openEdit(p)"></button>
+          <button mxButton pButton type="button" icon="pi pi-trash" class="p-button-sm p-button-text p-button-danger" (click)="confirmDelete(p)"></button>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="6" class="empty-cell">No hay programas registrados.</td></tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '520px' }" [header]="editing() ? 'Editar programa' : 'Nuevo programa'">
+  <form [formGroup]="form" class="dialog-form">
+    <label>Código
+      <input mxInput pInputText formControlName="id" maxlength="3" placeholder="Ej. ISI" />
+      <small class="err" *ngIf="showErr('id')">Código requerido, máximo 3 caracteres.</small>
+    </label>
+    <label>Nombre
+      <input mxInput pInputText formControlName="name" maxlength="255" placeholder="Ej. Ingenieria de Sistemas" />
+      <small class="err" *ngIf="showErr('name')">Nombre requerido.</small>
+    </label>
+    <label>Facultad
+      <p-select appendTo="body" formControlName="college_id" [options]="collegeOptions()" optionLabel="label" optionValue="value" placeholder="Selecciona una facultad"></p-select>
+      <small class="err" *ngIf="showErr('college_id')">Selecciona una facultad.</small>
+    </label>
+    <label class="check-row">
+      <input mxInput type="checkbox" formControlName="accredited" />
+      <span>Programa acreditado</span>
+    </label>
+    <label>Año fin de acreditación
+      <input mxInput pInputText type="number" formControlName="accreditation_end_year" placeholder="Ej. 2030" />
+    </label>
+    <label class="check-row">
+      <input mxInput type="checkbox" formControlName="active" />
+      <span>Activo</span>
+    </label>
+  </form>
+  <ng-template pTemplate="footer">
+    <button mxButton pButton type="button" label="Cancelar" class="p-button-text" (click)="dialogVisible = false"></button>
+    <button mxButton pButton type="button" [label]="saving() ? 'Guardando...' : 'Guardar'" [disabled]="saving()" (click)="save()"></button>
+  </ng-template>
+</p-dialog>
+
+<app-bulk-result-dialog
+  title="Resultado cargue masivo de programas"
+  [(visible)]="bulkVisible"
+  [summary]="bulkSummary">
+</app-bulk-result-dialog>

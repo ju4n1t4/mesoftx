@@ -1,0 +1,100 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="content-area">
+  <div class="page-header">
+    <h1>Materias (NRC)</h1>
+    <p>Gestiona las materias del programa. Cada NRC es una sección única en un periodo.</p>
+  </div>
+
+  <div class="toolbar">
+    <p-select appendTo="body"
+      [options]="periodOptions()"
+      [formControl]="periodFilter"
+      optionLabel="label" optionValue="value"
+      placeholder="Todos los periodos"
+      [showClear]="true"
+      styleClass="filter-select">
+    </p-select>
+    <span class="toolbar-spacer"></span>
+    <button mxButton pButton type="button" label="Descargar plantilla" icon="pi pi-download" class="p-button-secondary" (click)="downloadTemplate()"></button>
+    <button mxButton pButton type="button" label="Cargar Excel" icon="pi pi-upload" class="p-button-secondary" (click)="bulkInput.click()" [disabled]="periods().length === 0 || programs().length === 0"></button>
+    <input mxInput #bulkInput type="file" accept=".xlsx" hidden (change)="onBulkFile($event)" />
+    <button mxButton pButton type="button" label="Nueva materia" icon="pi pi-plus" (click)="openCreate()" [disabled]="periods().length === 0 || programs().length === 0"></button>
+  </div>
+
+  <div class="notice" *ngIf="!loading() && periods().length === 0">
+    <i class="pi pi-info-circle"></i>
+    <span>No hay periodos registrados. Crea un periodo antes de registrar materias.</span>
+  </div>
+
+  <div class="notice" *ngIf="!loading() && programs().length === 0">
+    <i class="pi pi-info-circle"></i>
+    <span>No hay programas activos registrados. Crea y activa un programa antes de registrar materias.</span>
+  </div>
+
+  <div class="loading-wrap" *ngIf="loading()">
+    <p-progressSpinner strokeWidth="4" [style]="{ width: '40px', height: '40px' }"></p-progressSpinner>
+  </div>
+
+  <p-table *ngIf="!loading()" [value]="filtered()" [paginator]="true" [rows]="10"
+           styleClass="p-datatable-sm" [rowHover]="true">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>NRC</th><th>Código</th><th>Nombre</th><th>Periodo</th><th>Programa</th><th style="width:9rem">Acciones</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-s>
+      <tr>
+        <td>{{ s.nrc }}</td>
+        <td>{{ s.materia_curso }}</td>
+        <td>{{ s.name }}</td>
+        <td>{{ periodCode(s.periods_id) }}</td>
+        <td>{{ s.program_id }}</td>
+        <td>
+          <button mxButton pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(s)"></button>
+          <button mxButton pButton type="button" icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm" (click)="confirmDelete(s)"></button>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="6" class="empty-cell">No hay materias registradas. Crea la primera con "Nueva materia".</td></tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '480px' }"
+          [header]="editing() ? 'Editar materia' : 'Nueva materia'" [closable]="true">
+  <form [formGroup]="form" class="dialog-form">
+    <label>NRC
+      <input mxInput pInputText type="number" formControlName="nrc" placeholder="Ej. 12345" />
+      <small class="err" *ngIf="showErr('nrc')">NRC requerido (entero positivo).</small>
+    </label>
+    <label>Código institucional (materia_curso)
+      <input mxInput pInputText formControlName="materia_curso" maxlength="25" placeholder="Ej. ISI-2301" />
+      <small class="err" *ngIf="showErr('materia_curso')">Requerido, máximo 25 caracteres.</small>
+    </label>
+    <label>Nombre
+      <input mxInput pInputText formControlName="name" maxlength="255" placeholder="Ej. Bases de Datos" />
+      <small class="err" *ngIf="showErr('name')">Requerido, máximo 255 caracteres.</small>
+    </label>
+    <label>Periodo
+      <p-select appendTo="body" formControlName="periods_id" [options]="periodOptions()" optionLabel="label" optionValue="value" placeholder="Selecciona un periodo"></p-select>
+      <small class="err" *ngIf="showErr('periods_id')">Selecciona un periodo.</small>
+    </label>
+    <label>Programa
+      <p-select appendTo="body" formControlName="program_id" [options]="programOptions()" optionLabel="label" optionValue="value" placeholder="Selecciona un programa"></p-select>
+      <small class="err" *ngIf="showErr('program_id')">Selecciona un programa.</small>
+    </label>
+  </form>
+  <ng-template pTemplate="footer">
+    <button mxButton pButton type="button" label="Cancelar" class="p-button-text" (click)="dialogVisible = false"></button>
+    <button mxButton pButton type="button" [label]="saving() ? 'Guardando...' : 'Guardar'" [disabled]="saving()" (click)="save()"></button>
+  </ng-template>
+</p-dialog>
+
+<app-bulk-result-dialog
+  title="Resultado cargue masivo de materias"
+  [(visible)]="bulkVisible"
+  [summary]="bulkSummary">
+</app-bulk-result-dialog>

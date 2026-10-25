@@ -1,0 +1,4 @@
+<mx-indicators-chart [loading]="loading()" [errorMsg]="errorMsg()" [selectedSoId]="selectedSoId()"
+ [selectedSoDescription]="selectedSoDescription()" [lockedDetail]="lockedDetail()" [soRows]="soRows()" [detailRows]="detailRows()"
+ [soRadarData]="soRadarData()" [detailChartData]="detailChartData()" [radarOptions]="radarOptions" [barOptions]="barOptions" [target]="target"
+ (detailRequested)="showDetail($event)" (backRequested)="backToSo()" />

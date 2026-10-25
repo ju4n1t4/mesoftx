@@ -1,0 +1,66 @@
+<p-toast></p-toast>
+<div class="content-area">
+  <div class="page-header">
+    <h1>Mis indicadores ABET</h1>
+    <p>Cumplimiento promedio por Student Outcome frente a la meta institucional (80%).</p>
+  </div>
+
+  <div class="toolbar">
+    <p-select appendTo="body" [options]="periodOptions()" [formControl]="periodCtrl"
+              optionLabel="label" optionValue="value" placeholder="Selecciona un periodo"></p-select>
+  </div>
+
+  <p-message *ngIf="periodCtrl.value == null && periodOptions().length > 0" severity="info" styleClass="block">
+    <span>Selecciona un periodo para ver la gráfica.</span>
+  </p-message>
+
+  <p-message *ngIf="!loading() && periodOptions().length === 0" severity="info" styleClass="block">
+    <span>Aún no tienes Student Outcomes abiertos para valorar.</span>
+  </p-message>
+
+  <div class="so-dashboard" *ngIf="periodCtrl.value != null && !selectedDetailSo()">
+    <section class="radar-card">
+      <h2>Cumplimiento por Outcome</h2>
+      <div class="empty" *ngIf="soRows().length === 0">Sin valoraciones registradas para los SO de este periodo.</div>
+      <p-chart *ngIf="soRows().length > 0" type="radar" [data]="soRadarData()" [options]="radarOptions" height="260px"></p-chart>
+      <div class="legend" *ngIf="soRows().length > 0">
+        <span><i class="dot mine"></i> Mi desempeño</span>
+        <span><i class="line-target"></i> Meta ABET 80%</span>
+      </div>
+    </section>
+
+    <section class="detail-card">
+      <h2>Detalle por Outcome</h2>
+      <div class="empty" *ngIf="soRows().length === 0">No hay datos para mostrar.</div>
+      <div class="outcome-row" *ngFor="let row of soRows()">
+        <div class="outcome-main">
+          <span class="so-badge">{{ row.so_id }}</span>
+          <div class="outcome-copy">
+            <strong>{{ row.description }}</strong>
+            <small>{{ row.done }} de {{ row.expected }} valoraciones esperadas</small>
+          </div>
+        </div>
+        <div class="progress-wrap">
+          <div class="target-marker" [style.left.%]="target"></div>
+          <div class="progress-track">
+            <div class="progress-fill" [class.ok]="row.pct >= target" [style.width.%]="barWidth(row.pct)"></div>
+          </div>
+        </div>
+        <div class="outcome-state">
+          <strong>{{ row.pct }}%</strong>
+          <span [class.ok]="row.pct >= target">{{ row.pct >= target ? 'Cumple' : 'En riesgo' }}</span>
+        </div>
+        <button mxButton pButton type="button" label="Ver Detalle" class="p-button-sm p-button-secondary"
+                (click)="selectedDetailSo.set(row.so_id)"></button>
+      </div>
+    </section>
+  </div>
+
+  <div class="card" *ngIf="periodCtrl.value != null && selectedDetailSo()">
+    <div class="detail-toolbar">
+      <button mxButton pButton type="button" label="Volver" icon="pi pi-arrow-left" class="p-button-text"
+              (click)="selectedDetailSo.set(null)"></button>
+    </div>
+    <app-indicators-chart [periodId]="periodCtrl.value" [detailSoId]="selectedDetailSo()" [detailOnly]="true"></app-indicators-chart>
+  </div>
+</div>

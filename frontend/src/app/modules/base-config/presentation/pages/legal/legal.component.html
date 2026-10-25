@@ -1,0 +1,23 @@
+<div class="lg-page">
+  <header class="lg-header">
+    <a routerLink="/" class="lg-brand"><span class="lg-logo">M</span><strong>MESOFTX</strong></a>
+    <nav>
+      <a routerLink="/legal/privacidad" [class.on]="key() === 'privacidad'">Privacidad</a>
+      <a routerLink="/legal/terminos" [class.on]="key() === 'terminos'">Términos de uso</a>
+    </nav>
+  </header>
+  <main class="lg-main">
+    <div class="lg-draft" *ngIf="borrador">
+      <i class="pi pi-info-circle"></i>
+      Texto pendiente de revisión por la Oficina Jurídica de la UNAB.
+    </div>
+    <h1>{{ doc().title }}</h1>
+    <p class="lg-intro">{{ doc().intro }}</p>
+    <section *ngFor="let s of doc().sections">
+      <h2>{{ s.title }}</h2>
+      <p *ngFor="let p of s.paragraphs">{{ p }}</p>
+      <ul *ngIf="s.items"><li *ngFor="let i of s.items">{{ i }}</li></ul>
+    </section>
+  </main>
+  <app-legal-footer />
+</div>

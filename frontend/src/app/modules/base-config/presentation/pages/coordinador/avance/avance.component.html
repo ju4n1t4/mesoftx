@@ -1,0 +1,85 @@
+<div class="content-area">
+  <div class="page-header">
+    <h1>Avance de la valoración</h1>
+    <p>Porcentaje de valoraciones registradas frente a las esperadas, por programa, por profesor y por student outcome.</p>
+  </div>
+
+  <div class="toolbar">
+    <p-select [options]="periodOptions()" [formControl]="periodCtrl"
+              optionLabel="label" optionValue="value" placeholder="Selecciona un periodo" appendTo="body"></p-select>
+  </div>
+
+  <p-message *ngIf="periodCtrl.value == null" severity="info" styleClass="block">
+    <span>Selecciona un periodo para ver el avance.</span>
+  </p-message>
+
+  <div class="loading-wrap" *ngIf="loading()">
+    <p-progressSpinner strokeWidth="4" [style]="{ width: '40px', height: '40px' }"></p-progressSpinner>
+  </div>
+
+  <!-- Error 503 (u otro): mensaje + reintentar -->
+  <div class="error-box" *ngIf="!loading() && errorMsg()">
+    <p-message severity="error" styleClass="block"><span>{{ errorMsg() }}</span></p-message>
+    <button mxButton pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="reload()"></button>
+  </div>
+
+  <p-tabs value="program" *ngIf="periodCtrl.value != null && !loading() && !errorMsg()">
+    <p-tablist>
+      <p-tab value="program">Por programa</p-tab>
+      <p-tab value="teacher">Por profesor</p-tab>
+      <p-tab value="so">Por student outcome</p-tab>
+    </p-tablist>
+    <p-tabpanels>
+      <p-tabpanel value="program">
+        <ng-container *ngTemplateOutlet="tabTpl; context: { $implicit: program(), unit: 'programa' }"></ng-container>
+      </p-tabpanel>
+      <p-tabpanel value="teacher">
+        <ng-container *ngTemplateOutlet="tabTpl; context: { $implicit: teacher(), unit: 'profesor' }"></ng-container>
+      </p-tabpanel>
+      <p-tabpanel value="so">
+        <ng-container *ngTemplateOutlet="tabTpl; context: { $implicit: so(), unit: 'student outcome' }"></ng-container>
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+</div>
+
+<!-- Plantilla común de pestaña -->
+<ng-template #tabTpl let-data let-unit="unit">
+  <ng-container *ngIf="data as d">
+    <!-- expected == 0 => sin programación -->
+    <div class="empty" *ngIf="d.rows.length === 0">
+      Sin programación en este periodo. Programa un student outcome y ábrelo para empezar a medir el avance.
+    </div>
+
+    <ng-container *ngIf="d.rows.length > 0">
+      <div class="total-card">
+        <div class="total-head">Avance del periodo</div>
+        <div class="total-pct" [class]="pctClass(d.totalPct)">{{ d.totalPct }} %</div>
+        <div class="total-sub">{{ d.totalDone }} de {{ d.totalExpected }} valoraciones</div>
+        <p-progressBar [value]="d.totalPct" [showValue]="false" [styleClass]="'pb-' + pctClass(d.totalPct)"></p-progressBar>
+      </div>
+
+      <div class="chart-wrap">
+        <p-chart type="bar" [data]="chartFor(d)" [options]="barOptions" height="320px"></p-chart>
+      </div>
+
+      <p-table [value]="d.rows" styleClass="p-datatable-sm" [paginator]="d.rows.length > 12" [rows]="12">
+        <ng-template pTemplate="header">
+          <tr><th>{{ unit | titlecase }}</th><th class="num">Esperadas</th><th class="num">Hechas</th><th class="num">Faltan</th><th style="width:220px">Avance</th></tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-r>
+          <tr>
+            <td>{{ r.name }}</td>
+            <td class="num">{{ r.expected }}</td>
+            <td class="num">{{ r.done }}</td>
+            <td class="num">{{ r.expected - r.done }}</td>
+            <td><p-progressBar [value]="r.pct" [styleClass]="'pb-' + pctClass(r.pct)"></p-progressBar></td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr><td colspan="5" class="empty-cell">Sin filas para este periodo.</td></tr>
+        </ng-template>
+      </p-table>
+    </ng-container>
+  </ng-container>
+</ng-template>

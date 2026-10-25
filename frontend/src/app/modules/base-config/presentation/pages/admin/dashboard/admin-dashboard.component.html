@@ -1,0 +1,16 @@
+<div class="content-area">
+  <div class="page-header">
+    <h1>Dashboard</h1>
+    <p>Gestiona los catálogos principales y la configuración base del sistema.</p>
+  </div>
+
+  <div class="quick-grid">
+    <a *ngFor="let item of items" class="quick-card" [routerLink]="item.route">
+      <div class="quick-icon"><i [class]="'pi ' + item.icon"></i></div>
+      <div>
+        <h2>{{ item.title }}</h2>
+        <p>{{ item.description }}</p>
+      </div>
+    </a>
+  </div>
+</div>

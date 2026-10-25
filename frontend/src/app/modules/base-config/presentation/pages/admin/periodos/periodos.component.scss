@@ -1,0 +1,13 @@
+.toolbar { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.loading-wrap { display: flex; justify-content: center; padding: 48px; }
+.actions { display: flex; gap: 6px; }
+.empty-cell { text-align: center; color: var(--text-muted); padding: 24px; }
+.period-code { color: var(--accent); font-weight: 700; }
+.state-switch { border: 0; display: inline-flex; align-items: center; width: 40px; height: 22px; padding: 2px; border-radius: 999px; background: #d1d5db; vertical-align: middle; cursor: pointer; }
+.state-switch span { width: 18px; height: 18px; border-radius: 999px; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .18); transition: transform .18s ease; }
+.state-switch.is-active { background: #10b981; }
+.state-switch.is-active span { transform: translateX(18px); }
+.dialog-form { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
+.dialog-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text); }
+.dialog-form input { width: 100%; }
+.err { color: var(--badge-expired, #dc2626); font-size: 12px; }

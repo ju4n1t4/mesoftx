@@ -1,0 +1,36 @@
+<mx-workspace-shell>
+<div sidebar class="sidebar-content">
+    <div class="sidebar-brand">
+      <div class="brand-icon">M</div>
+      <div class="brand-info">
+        <span class="brand-name">MESOFTX</span>
+        <span class="brand-sub">Facultad de Ingeniería</span>
+      </div>
+    </div>
+
+    <div class="sidebar-profile">
+      <div class="profile-avatar">{{ initial() }}</div>
+      <div class="profile-info">
+        <span class="profile-name">{{ fullName() }}</span>
+        <span class="profile-role">PROFESOR</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section-label">MENÚ PRINCIPAL</div>
+
+    <mx-sidebar-nav [items]="navItems" helpRoute="/profesor/soporte" (logoutRequested)="logout()" />
+  </div>
+<header class="topbar">
+      <div class="topbar-breadcrumb">
+        <span class="bc-item">Dashboard</span>
+        <i class="pi pi-chevron-right bc-sep"></i>
+        <span class="bc-current">Panel</span>
+      </div>
+      <div class="topbar-search">
+        <i class="pi pi-search search-icon"></i>
+        <input mxInput type="text" placeholder="Buscar curso, estudiante…" class="search-input" />
+      </div>
+      <div class="topbar-avatar" title="{{ fullName() }}">{{ initial() }}</div>
+    </header>
+<router-outlet />
+</mx-workspace-shell>

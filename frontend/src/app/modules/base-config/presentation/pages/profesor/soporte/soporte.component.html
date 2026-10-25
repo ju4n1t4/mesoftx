@@ -1,0 +1,41 @@
+<div class="content-area">
+  <div class="page-header">
+    <h1>Centro de ayuda y soporte</h1>
+    <p>Encuentra respuestas, recursos y contacta con el equipo de soporte de MESOFTX.</p>
+  </div>
+
+  <!-- Canales de contacto -->
+  <div class="section-label">¿NECESITAS AYUDA INMEDIATA?</div>
+  <div class="contact-grid">
+    <div class="contact-card" *ngFor="let c of channels">
+      <div class="contact-icon" [class]="c.color"><i [class]="'pi ' + c.icon"></i></div>
+      <div class="contact-title">{{ c.title }}</div>
+      <div class="contact-value" [class]="c.valueColor">{{ c.value }}</div>
+      <div class="contact-hint">{{ c.hint }}</div>
+    </div>
+  </div>
+
+  <!-- Recursos -->
+  <div class="section-label">CENTRO DE RECURSOS</div>
+  <div class="resources-grid">
+    <div class="resource-card" *ngFor="let r of resources">
+      <div class="resource-icon" [class]="r.color"><i [class]="'pi ' + r.icon"></i></div>
+      <div>
+        <div class="resource-title">{{ r.title }}</div>
+        <div class="resource-desc">{{ r.desc }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="section-label">PREGUNTAS FRECUENTES</div>
+  <div class="faq-list">
+    <div class="faq-item" *ngFor="let faq of faqs" (click)="faq.open = !faq.open">
+      <div class="faq-q">
+        <span>{{ faq.q }}</span>
+        <i class="pi" [class]="faq.open ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
+      </div>
+      <div class="faq-a" *ngIf="faq.open">{{ faq.a }}</div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,76 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="content-area">
+  <div class="page-header">
+    <h1>Facultades</h1>
+    <p>Administra las facultades usadas por programas, materias y resultados de aprendizaje.</p>
+  </div>
+
+  <div class="toolbar">
+    <button mxButton pButton type="button" label="Descargar plantilla" icon="pi pi-download" class="p-button-secondary" (click)="downloadTemplate()"></button>
+    <button mxButton pButton type="button" label="Cargar Excel" icon="pi pi-upload" class="p-button-secondary" (click)="bulkInput.click()"></button>
+    <input mxInput #bulkInput type="file" accept=".xlsx" hidden (change)="onBulkFile($event)" />
+    <button mxButton pButton type="button" label="Nueva facultad" icon="pi pi-plus" (click)="openCreate()"></button>
+  </div>
+
+  <div class="loading-wrap" *ngIf="loading()">
+    <p-progressSpinner strokeWidth="4" [style]="{ width: '40px', height: '40px' }"></p-progressSpinner>
+  </div>
+
+  <p-table *ngIf="!loading()" [value]="colleges()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm" [rowHover]="true">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Código</th>
+        <th>Nombre</th>
+        <th>Estado</th>
+        <th style="width:10rem">Acciones</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-c>
+      <tr>
+        <td><span class="code">{{ c.id }}</span></td>
+        <td>{{ c.name }}</td>
+        <td>
+          <button mxButton type="button" class="state-switch" [class.is-active]="c.active" (click)="toggleActive(c)" [attr.aria-label]="c.active ? 'Desactivar' : 'Activar'">
+            <span></span>
+          </button>
+        </td>
+        <td class="actions">
+          <button mxButton pButton type="button" icon="pi pi-pencil" class="p-button-sm p-button-text" (click)="openEdit(c)"></button>
+          <button mxButton pButton type="button" icon="pi pi-trash" class="p-button-sm p-button-text p-button-danger" (click)="confirmDelete(c)"></button>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="4" class="empty-cell">No hay facultades registradas.</td></tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '460px' }" [header]="editing() ? 'Editar facultad' : 'Nueva facultad'">
+  <form [formGroup]="form" class="dialog-form">
+    <label>Código
+      <input mxInput pInputText formControlName="id" maxlength="3" placeholder="Ej. ING" />
+      <small class="err" *ngIf="showErr('id')">Código requerido, máximo 3 caracteres.</small>
+    </label>
+    <label>Nombre
+      <input mxInput pInputText formControlName="name" maxlength="255" placeholder="Ej. Facultad de Ingenieria" />
+      <small class="err" *ngIf="showErr('name')">Nombre requerido.</small>
+    </label>
+    <label class="check-row">
+      <input mxInput type="checkbox" formControlName="active" />
+      <span>Activa</span>
+    </label>
+  </form>
+  <ng-template pTemplate="footer">
+    <button mxButton pButton type="button" label="Cancelar" class="p-button-text" (click)="dialogVisible = false"></button>
+    <button mxButton pButton type="button" [label]="saving() ? 'Guardando...' : 'Guardar'" [disabled]="saving()" (click)="save()"></button>
+  </ng-template>
+</p-dialog>
+
+<app-bulk-result-dialog
+  title="Resultado cargue masivo de facultades"
+  [(visible)]="bulkVisible"
+  [summary]="bulkSummary">
+</app-bulk-result-dialog>

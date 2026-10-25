@@ -1,0 +1,23 @@
+<div class="content-area">
+  <div class="page-header"><h1>Integraciones externas</h1><p>Administre conexiones y consulte la información sincronizada.</p></div>
+  <p role="status" aria-live="polite">{{ message() }}</p>
+  <button mxButton class="btn btn-primary" type="button" (click)="newConnection()" [disabled]="busy()">Nueva conexión</button>
+  <div class="integration-grid">
+    <mx-integration-connections [items]="connections()" [busy]="busy()" (selected)="select($event)" />
+    <form mxCard (ngSubmit)="save()">
+      <mx-form-field label="Nombre" forId="integration-name"><input mxInput id="integration-name" name="name" [(ngModel)]="draft.name" maxlength="120" required /></mx-form-field>
+      <mx-form-field label="Origen HTTPS" forId="integration-url"><input mxInput id="integration-url" name="base_url" [(ngModel)]="draft.base_url" type="url" required /></mx-form-field>
+      <mx-form-field label="Ruta del recurso" forId="integration-path"><input mxInput id="integration-path" name="resource_path" [(ngModel)]="draft.resource_path" /></mx-form-field>
+      <mx-form-field label="Ruta de registros en JSON" forId="integration-records"><input mxInput id="integration-records" name="records_path" [(ngModel)]="draft.records_path" /></mx-form-field>
+      <mx-form-field label="Campo identificador externo" forId="integration-key"><input mxInput id="integration-key" name="external_id_field" [(ngModel)]="draft.external_id_field" required /></mx-form-field>
+      <mx-form-field label="Autenticación" forId="integration-auth"><select mxInput id="integration-auth" name="auth_type" [(ngModel)]="draft.auth_type"><option value="none">Sin credencial</option><option value="bearer">Bearer token</option><option value="api_key">API key</option></select></mx-form-field>
+      <mx-form-field label="Nueva credencial (vacío conserva la actual)" forId="integration-secret"><input mxInput id="integration-secret" name="secret" [(ngModel)]="draft.secret" type="password" autocomplete="new-password" /></mx-form-field>
+      <label><input mxInput type="checkbox" name="enabled" [(ngModel)]="draft.enabled" /> Habilitada</label>
+      <div class="actions"><button mxButton class="btn btn-primary" type="submit" [disabled]="busy()">Guardar</button>
+        <button mxButton class="btn btn-outline" type="button" (click)="probe()" [disabled]="busy() || selectedId() === null">Probar conexión</button>
+        <button mxButton class="btn btn-accent" type="button" (click)="sync()" [disabled]="busy() || selectedId() === null">Sincronizar</button></div>
+    </form>
+  </div>
+  <section mxCard aria-label="Historial"><h2>Últimas sincronizaciones</h2><p *ngFor="let run of runs()">{{ run.started_at | date:'short' }} · {{ run.status }} · {{ run.records_count }} registros <span *ngIf="run.error_code">· {{ run.error_code }}</span></p></section>
+  <section mxCard aria-label="Registros persistidos"><h2>Registros sincronizados (primeros 100)</h2><details *ngFor="let record of records()"><summary>{{ record.external_id }} · {{ record.updated_at | date:'short' }}</summary><pre>{{ record.payload | json }}</pre></details></section>
+</div>

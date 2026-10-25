@@ -1,0 +1,8 @@
+:host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+nav { flex: 1; overflow-y: auto; }
+nav, .sidebar-bottom { padding: 0 .5rem; display: flex; flex-direction: column; gap: 1px; }
+.sidebar-bottom { padding-bottom: .7rem; }
+.nav-item { display: flex; align-items: center; gap: .65rem; padding: .6rem; border-radius: var(--radius-sm); color: var(--sidebar-text); font-size: .93rem; text-decoration: none; }
+.nav-item:hover { background: var(--sidebar-hover); color: white; }
+.nav-item.active { background: var(--sidebar-active-bg); color: var(--sidebar-active-text); font-weight: 600; }
+.logout-item { width: 100%; text-align: left; background: none; border: 0; color: #EF6B6B; }

@@ -1,0 +1,72 @@
+<div class="pub-page">
+  <header class="pub-header">
+    <div class="pub-header-inner">
+      <div class="pub-brand">
+        <div class="brand-icon">M</div>
+        <div>
+          <div class="brand-name">MESOFTX</div>
+          <div class="brand-sub">Vista pública · Indicadores ABET</div>
+        </div>
+      </div>
+      <a routerLink="/auth/login" class="btn-login">Iniciar sesión</a>
+    </div>
+  </header>
+
+  <div class="pub-content">
+    <div class="pub-hero">
+      <h1>Indicadores de Resultados de Aprendizaje ABET</h1>
+      <p>Facultad de Ingeniería · Universidad Autónoma de Bucaramanga</p>
+      <div class="pub-stats">
+        <div class="pub-stat"><span class="ps-val">{{ outcomes().length }}</span><span class="ps-label">Student Outcomes</span></div>
+        <div class="pub-stat"><span class="ps-val">{{ totalAssessments() }}</span><span class="ps-label">Valoraciones</span></div>
+        <div class="pub-stat"><span class="ps-val">{{ avgPct() !== null ? avgPct() + '%' : '—' }}</span><span class="ps-label">Promedio logro</span></div>
+      </div>
+    </div>
+
+    <div class="state-box" *ngIf="loading()">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Cargando indicadores…</span>
+    </div>
+
+    <div class="notice" *ngIf="error()">
+      <i class="pi pi-info-circle"></i>
+      <span>{{ error() }}</span>
+    </div>
+
+    <div class="empty-box" *ngIf="!loading() && outcomes().length === 0">
+      <div class="empty-icon"><i class="pi pi-inbox"></i></div>
+      <div class="empty-title">Aún no hay indicadores publicados</div>
+      <div class="empty-desc">Cuando la facultad parametrice los Student Outcomes y registre valoraciones, los indicadores aparecerán en esta vista.</div>
+    </div>
+
+    <!-- SO Cards -->
+    <div class="so-grid" *ngIf="!loading() && outcomes().length > 0">
+      <div class="so-pub-card" *ngFor="let so of outcomes()">
+        <div class="so-card-header">
+          <div class="so-pub-badge" [style.background]="so.color">{{ so.code }}</div>
+          <div class="so-card-title">{{ so.desc }}</div>
+        </div>
+        <div class="notice" *ngIf="so.suppressed">
+          <i class="pi pi-lock"></i>
+          <span>Datos reservados: el grupo valorado es menor a {{ minGroup() }} estudiantes y no se publica para proteger su privacidad.</span>
+        </div>
+        <div class="so-levels" *ngIf="!so.suppressed">
+          <div class="sl-row" *ngFor="let lv of so.levels">
+            <span class="sl-label" [class]="lv.class">{{ lv.label }}</span>
+            <div class="sl-track"><div class="sl-fill" [style.width]="lv.pct+'%'" [style.background]="lv.barColor"></div></div>
+            <span class="sl-pct">{{ lv.pct }}%</span>
+          </div>
+        </div>
+        <div class="so-card-footer">
+          <span class="so-students">{{ so.students }} estudiantes valorados</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pub-note">
+      <i class="pi pi-info-circle"></i>
+      Esta vista es de acceso público y no requiere autenticación. Muestra únicamente resultados agregados: no incluye nombres, documentos ni cursos, y no se publican grupos de menos de {{ minGroup() }} estudiantes. Los datos son actualizados por los profesores de la facultad.
+    </div>
+  </div>
+  <app-legal-footer />
+</div>

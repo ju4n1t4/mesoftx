@@ -1,0 +1,22 @@
+.toolbar { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+.loading-wrap { display: flex; justify-content: center; padding: 48px; }
+.actions { display: flex; gap: 6px; }
+.empty-cell { text-align: center; color: var(--text-muted); padding: 24px; }
+.dialog-form { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
+.dialog-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text); }
+.err { color: var(--badge-expired, #dc2626); font-size: 12px; }
+.permission-dialog { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
+.permission-head { display: flex; justify-content: space-between; gap: 12px; color: var(--text); font-size: 13px; font-weight: 600; }
+.permission-head span:last-child { color: var(--text-muted); font-weight: 500; white-space: nowrap; }
+.permission-list { border: 1px solid var(--border); border-radius: 8px; max-height: 380px; overflow-y: auto; background: var(--surface); }
+.permission-group { padding: 14px; border-bottom: 1px solid var(--border); }
+.permission-group:last-child { border-bottom: 0; }
+.permission-group h3 { margin: 0 0 10px; color: var(--text); font-size: 13px; font-weight: 700; }
+.permission-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
+.permission-action { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; background: #fff; }
+.permission-action:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
+.permission-action input { width: 16px; height: 16px; flex: 0 0 auto; accent-color: var(--primary); cursor: pointer; }
+.permission-action span { min-width: 0; overflow-wrap: anywhere; }
+.permission-action.is-disabled { color: var(--text-muted); background: #f3f4f6; opacity: .68; cursor: not-allowed; }
+.permission-action.is-disabled input { cursor: not-allowed; }
+.permission-action.is-disabled:hover { background: #f3f4f6; }

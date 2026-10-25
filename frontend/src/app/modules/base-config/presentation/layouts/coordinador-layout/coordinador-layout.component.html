@@ -1,0 +1,38 @@
+<mx-workspace-shell>
+<div sidebar class="sidebar-content">
+    <div class="sidebar-brand">
+      <div class="brand-icon">M</div>
+      <div class="brand-info">
+        <span class="brand-name">MESOFTX</span>
+        <span class="brand-sub">Coordinación ABET</span>
+      </div>
+    </div>
+
+    <div class="coord-badge-wrap">
+      <span class="coord-badge"><i class="pi pi-shield"></i> Coordinador de Acreditación</span>
+    </div>
+
+    <div class="sidebar-profile">
+      <div class="profile-avatar">{{ initial() }}</div>
+      <div class="profile-info">
+        <span class="profile-name">{{ fullName() }}</span>
+        <div class="online-row"><span class="dot green"></span><span class="online-label">En línea</span></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section-label">PANEL PRINCIPAL</div>
+
+    <mx-sidebar-nav [items]="navItems" helpRoute="/coordinador/soporte" (logoutRequested)="logout()" />
+  </div>
+<header class="topbar">
+      <div class="topbar-breadcrumb">
+        <span class="bc-item">Gestión</span>
+        <i class="pi pi-chevron-right bc-sep"></i>
+        <span class="bc-current">Panel</span>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-avatar" title="{{ fullName() }}">{{ initial() }}</div>
+      </div>
+    </header>
+<router-outlet />
+</mx-workspace-shell>

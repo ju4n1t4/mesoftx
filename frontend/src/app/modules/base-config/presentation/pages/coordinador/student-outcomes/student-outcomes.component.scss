@@ -1,0 +1,31 @@
+.toolbar { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+.loading-wrap { display: flex; justify-content: center; padding: 40px; }
+.so-head { display: flex; align-items: center; gap: 12px; }
+.so-badge { background: var(--accent); color: #fff; font-weight: 800; font-size: 12px; padding: 4px 10px; border-radius: 8px; }
+.so-desc { font-weight: 600; }
+.so-actions { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.perf-empty, .edit-note { font-size: 13px; color: var(--text-muted); padding: 8px 0; }
+.perf-card { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 10px; }
+.perf-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.perf-id { font-weight: 700; color: var(--text); }
+.perf-desc { color: var(--text-muted); font-size: 13px; }
+.perf-spacer { flex: 1; }
+.level-row { display: flex; align-items: baseline; gap: 10px; padding: 4px 0; border-top: 1px solid var(--border); }
+.level-rank { width: 18px; font-weight: 700; color: var(--accent); }
+.level-name { width: 170px; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.level-text { flex: 1; font-size: 13px; }
+.dialog-form { display: flex; flex-direction: column; gap: 14px; padding-top: 6px; }
+.dialog-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; }
+.dialog-form input, .dialog-form textarea, .dialog-form p-select { width: 100%; }
+.grid-2 { display: grid; grid-template-columns: 120px 1fr; gap: 12px; }
+.hint { font-weight: 400; color: var(--text-muted); }
+.err { color: var(--badge-expired, #DC2626); font-weight: 500; }
+.levels-title { font-size: 13px; font-weight: 700; margin-top: 6px; }
+.level-form { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px; }
+.lf-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lf-rank { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+.lf-id { width: 260px; font-family: monospace; font-size: 12px; }
+.empty-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 48px 24px; text-align: center; }
+.empty-card i { font-size: 32px; color: var(--text-light); }
+.empty-title { font-size: 15px; font-weight: 700; margin: 12px 0 4px; }
+.empty-desc { font-size: 13px; color: var(--text-muted); max-width: 420px; margin: 0 auto; line-height: 1.6; }

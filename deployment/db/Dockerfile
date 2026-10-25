@@ -6,6 +6,7 @@ LABEL org.opencontainers.image.description="PostgreSQL image initialized with Me
 ENV POSTGRES_DB=postgres
 
 COPY scripts/*.sql /docker-entrypoint-initdb.d/
+COPY migrations/*.sql /docker-entrypoint-initdb.d/
 
 RUN chown -R postgres:postgres /docker-entrypoint-initdb.d/*.sql \
     && chmod 400 /docker-entrypoint-initdb.d/*.sql

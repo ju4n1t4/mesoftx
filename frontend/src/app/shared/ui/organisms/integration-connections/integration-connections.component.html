@@ -1,0 +1,5 @@
+<p *ngIf="items.length === 0">No hay conexiones configuradas.</p>
+<button mxButton type="button" *ngFor="let item of items" (click)="selected.emit(item.id)" [disabled]="busy">
+  <strong>{{ item.name }}</strong><span mxBadge>{{ item.enabled ? 'Habilitada' : 'Deshabilitada' }}</span>
+  <small>{{ item.credential_configured ? 'Credencial configurada' : 'Sin credencial' }}</small>
+</button>

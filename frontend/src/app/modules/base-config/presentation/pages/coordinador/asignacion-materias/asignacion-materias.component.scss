@@ -1,0 +1,19 @@
+.loading-wrap { display: flex; justify-content: center; padding: 48px; }
+.asg-layout { display: grid; grid-template-columns: 300px 1fr; gap: 16px; align-items: start; }
+.teacher-panel { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.tp-label { font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: .08em; padding: 6px 8px; }
+.teacher-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid transparent; border-radius: var(--radius-sm); background: none; cursor: pointer; font-family: inherit; text-align: left; width: 100%; }
+.teacher-item:hover { background: var(--surface-2); }
+.teacher-item.active { background: rgba(124,58,237,0.06); border-color: rgba(124,58,237,0.3); }
+.ti-av { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
+.ti-info { display: flex; flex-direction: column; }
+.ti-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.ti-doc { font-size: 11px; color: var(--text-muted); }
+.detail-panel { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px 20px; min-height: 200px; }
+.empty-detail { color: var(--text-muted); font-size: 14px; display: flex; align-items: center; gap: 8px; justify-content: center; padding: 48px; }
+.dp-head { margin-bottom: 14px; }
+.dp-title { font-size: 15px; font-weight: 800; color: var(--text); }
+.add-row { display: flex; gap: 10px; margin-bottom: 16px; }
+.add-ms { flex: 1; }
+.empty-inline { font-size: 13px; color: var(--text-muted); padding: 12px 8px; }
+.empty-cell { text-align: center; color: var(--text-muted); padding: 20px; }

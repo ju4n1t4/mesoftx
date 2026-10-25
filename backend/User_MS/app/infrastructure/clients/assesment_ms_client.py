@@ -1,7 +1,19 @@
+from functools import wraps
+from app.application.ports.errors import RemoteServiceError
 import httpx
 
 from app.core.config import get_settings
 
+
+
+def translate_transport_errors(operation):
+    @wraps(operation)
+    async def call(*args, **kwargs):
+        try:
+            return await operation(*args, **kwargs)
+        except httpx.HTTPError as exc:
+            raise RemoteServiceError("Remote service unavailable.") from exc
+    return call
 
 class AssesmentMsClient:
     def __init__(self) -> None:
@@ -9,6 +21,7 @@ class AssesmentMsClient:
         self.base_url = settings.assesment_ms_url
         self.headers = {"X-Service-Token": settings.service_token}
 
+    @translate_transport_errors
     async def delete_rubrics(self, **filters: int) -> tuple[bool, list[str]]:
         """filters: evaluator_user_id= | subjects_id= | student_id=
         Devuelve (ok, periodos_cerrados). Si hay cerrados, ok=False y no borra."""
@@ -23,6 +36,7 @@ class AssesmentMsClient:
             resp.raise_for_status()
             return True, []
 
+    @translate_transport_errors
     async def delete_schedule_subjects(self, subjects_id: int) -> None:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.delete(
@@ -32,6 +46,7 @@ class AssesmentMsClient:
             )
             resp.raise_for_status()
 
+    @translate_transport_errors
     async def delete_so_schedule_by_period(self, period_id: int) -> tuple[bool, list[str]]:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.delete(
@@ -44,6 +59,7 @@ class AssesmentMsClient:
             resp.raise_for_status()
             return True, []
 
+    @translate_transport_errors
     async def delete_so_by_college(self, college_id: str) -> tuple[bool, list[str]]:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.delete(

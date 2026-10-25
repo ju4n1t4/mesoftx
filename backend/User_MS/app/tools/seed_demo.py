@@ -58,6 +58,18 @@ def main() -> int:
             print("Falta el perfil Administrativo: ejecute primero los scripts SQL de deployment/db.")
             return 1
 
+        # Preflight prevents silently reusing a reserved identity with the wrong profile.
+        by_document = {user.document_number: user for user in users.list_all()}
+        for i, (key, role_name) in enumerate(DEMO_ROLES.items(), start=1):
+            user = users.get_by_email(demo_email(key))
+            collision = by_document.get(f"DEMO{i:03d}")
+            if (user and (user.role.name != role_name or not user.active)) or (collision and collision.email != demo_email(key)):
+                print("Identidad de demostración en conflicto; revise las cuentas reservadas antes de continuar.")
+                return 1
+            if key == "profesor" and user and user.program_id != args.program_id:
+                print("El profesor demo ya pertenece a otro programa; no se modifica su alcance automáticamente.")
+                return 1
+
         for role_name, codes in PERMS.items():
             if roles.get_by_name(role_name):
                 print(f"Perfil {role_name}: ya existe (no se modifica)")

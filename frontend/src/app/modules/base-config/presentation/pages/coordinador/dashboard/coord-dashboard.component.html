@@ -1,0 +1,78 @@
+<div class="content-area">
+  <div class="page-header">
+    <h1>Panel de coordinación</h1>
+    <p>Estado general del proceso de valoración ABET en el período activo.</p>
+  </div>
+
+  <!-- Aviso discreto: no bloquea la estructura -->
+  <div class="notice" *ngIf="error()">
+    <i class="pi pi-info-circle"></i>
+    <span>{{ error() }} Se muestran los indicadores en cero hasta que haya datos disponibles.</span>
+  </div>
+
+  <ng-container>
+    <!-- KPIs con conteos reales -->
+    <div class="kpi-grid">
+      <div class="kpi-card" style="border-top-color: var(--primary)">
+        <div class="kpi-label">Programas (carreras)</div>
+        <div class="kpi-value">{{ careersCount() }}</div>
+        <div class="kpi-sub">Registradas en el sistema</div>
+      </div>
+      <div class="kpi-card" style="border-top-color: var(--accent)">
+        <div class="kpi-label">Profesores</div>
+        <div class="kpi-value">{{ teachersCount() }}</div>
+        <div class="kpi-sub">Usuarios con rol Profesor</div>
+      </div>
+      <div class="kpi-card" style="border-top-color: var(--badge-open)">
+        <div class="kpi-label">Student Outcomes</div>
+        <div class="kpi-value">{{ sosCount() }}</div>
+        <div class="kpi-sub">Configurados</div>
+      </div>
+      <div class="kpi-card" style="border-top-color: var(--n2-color)">
+        <div class="kpi-label">Valoraciones</div>
+        <div class="kpi-value">{{ resultsCount() }}</div>
+        <div class="kpi-sub">Resultados registrados</div>
+      </div>
+    </div>
+
+    <div class="dash-row">
+      <div class="progress-card">
+        <h2>Avance de valoración por programa</h2>
+        <div class="empty-inline" *ngIf="careers().length === 0">
+          Sin programas registrados en la base de datos.
+        </div>
+        <div class="prog-list" *ngIf="careers().length > 0">
+          <div class="prog-row" *ngFor="let c of careers()">
+            <span class="prog-name">{{ c.name }}</span>
+            <span class="prog-note">Sin valoraciones registradas</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions-card">
+        <h3>Acciones rápidas</h3>
+        <a routerLink="/coordinador/student-outcomes" class="action-btn">
+          <span class="ab-icon orange"><i class="pi pi-sliders-h"></i></span>
+          <span class="ab-text">
+            <span class="ab-title">Parametrizar rúbrica</span>
+            <span class="ab-sub">Editar Student Outcomes</span>
+          </span>
+        </a>
+        <a routerLink="/coordinador/profesores" class="action-btn">
+          <span class="ab-icon purple"><i class="pi pi-users"></i></span>
+          <span class="ab-text">
+            <span class="ab-title">Gestionar profesores</span>
+            <span class="ab-sub">Roles y asignaciones</span>
+          </span>
+        </a>
+        <a routerLink="/coordinador/valoraciones" class="action-btn">
+          <span class="ab-icon green"><i class="pi pi-check-square"></i></span>
+          <span class="ab-text">
+            <span class="ab-title">Revisar valoraciones</span>
+            <span class="ab-sub">Estado por curso</span>
+          </span>
+        </a>
+      </div>
+    </div>
+  </ng-container>
+</div>

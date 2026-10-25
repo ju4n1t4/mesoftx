@@ -1,0 +1,172 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="content-area">
+  <div class="page-header">
+    <h1>Parametrización de la rúbrica</h1>
+    <p>Crea los Student Outcomes, sus indicadores de desempeño y los 4 niveles de logro de cada uno. Es exactamente la rúbrica que verá el profesor al valorar.</p>
+  </div>
+
+  <div class="toolbar">
+    <button mxButton pButton type="button" label="Descargar plantilla" icon="pi pi-download"
+            class="p-button-secondary" (click)="downloadImportTemplate()"></button>
+    <button mxButton pButton type="button" label="Importar Excel" icon="pi pi-upload"
+            class="p-button-secondary" (click)="rubricImportInput.click()" [disabled]="saving()"></button>
+    <input mxInput #rubricImportInput type="file" accept=".xlsx" hidden (change)="onImportFile($event)" />
+    <button mxButton pButton type="button" label="Nuevo student outcome" icon="pi pi-plus" (click)="openSoForm()"></button>
+  </div>
+
+  <div class="loading-wrap" *ngIf="loading()">
+    <p-progressSpinner strokeWidth="4" [style]="{ width: '40px', height: '40px' }"></p-progressSpinner>
+  </div>
+
+  <ng-container *ngIf="!loading()">
+    <!-- Estado vacío -->
+    <div class="empty-card" *ngIf="tree().length === 0">
+      <i class="pi pi-inbox"></i>
+      <div class="empty-title">Aún no hay Student Outcomes</div>
+      <div class="empty-desc">Crea el primero con el botón "Nuevo student outcome" para empezar a parametrizar la rúbrica.</div>
+    </div>
+
+    <p-accordion *ngIf="tree().length > 0" [multiple]="true">
+      <p-accordion-panel *ngFor="let node of tree()" [value]="node.so.id">
+        <p-accordion-header>
+          <div class="so-head">
+            <span class="so-badge">{{ node.so.id }}</span>
+            <span class="so-desc">{{ node.so.description }}</span>
+            <p-tag *ngIf="node.performances.length === 0" severity="warn"
+                   value="Sin indicadores: no se puede valorar"></p-tag>
+          </div>
+        </p-accordion-header>
+        <p-accordion-content>
+
+        <div class="so-actions">
+          <button mxButton pButton type="button" label="Añadir indicador" icon="pi pi-plus"
+                  class="p-button-sm p-button-text" (click)="openPerfForm(node.so)"></button>
+          <button mxButton pButton type="button" label="Editar SO" icon="pi pi-pencil"
+                  class="p-button-sm p-button-text" (click)="openSoForm(node.so)"></button>
+          <button mxButton pButton type="button" label="Borrar SO" icon="pi pi-trash"
+                  class="p-button-sm p-button-text p-button-danger" (click)="confirmDeleteSo(node)"></button>
+        </div>
+
+        <div class="perf-empty" *ngIf="node.performances.length === 0">
+          Este student outcome no tiene indicadores todavía.
+        </div>
+
+        <div class="perf-card" *ngFor="let pn of node.performances">
+          <div class="perf-head">
+            <span class="perf-id">{{ perfCode(pn.perf) }}</span>
+            <span class="perf-desc">{{ pn.perf.description }}</span>
+            <p-tag *ngIf="pn.levels.length < 4" severity="warn"
+                   [value]="'Faltan ' + (4 - pn.levels.length) + ' niveles'"></p-tag>
+            <span class="perf-spacer"></span>
+            <button mxButton pButton type="button" icon="pi pi-plus" label="Completar niveles"
+                    *ngIf="pn.levels.length < 4"
+                    class="p-button-sm p-button-text" (click)="openCompleteLevels(node.so, pn)"></button>
+            <button mxButton pButton type="button" icon="pi pi-pencil"
+                    class="p-button-sm p-button-text" (click)="openPerfForm(node.so, pn.perf)"></button>
+            <button mxButton pButton type="button" icon="pi pi-trash"
+                    class="p-button-sm p-button-text p-button-danger" (click)="confirmDeletePerf(node, pn)"></button>
+          </div>
+          <div class="level-row" *ngFor="let lv of pn.levels">
+            <span class="level-rank">{{ lv.rank }}</span>
+            <span class="level-name">{{ levelName(lv.rank) }}</span>
+            <span class="level-text">{{ lv.description }}</span>
+          </div>
+        </div>
+        </p-accordion-content>
+      </p-accordion-panel>
+    </p-accordion>
+  </ng-container>
+
+  <!-- ── Diálogo Student Outcome ── -->
+  <p-dialog [(visible)]="soDialog" [modal]="true" [style]="{ width: '520px' }"
+            [header]="editingSo() ? 'Editar student outcome' : 'Nuevo student outcome'">
+    <form [formGroup]="soForm" class="dialog-form">
+      <label>Identificador
+        <input mxInput pInputText formControlName="id" maxlength="5" />
+        <small class="hint">Propuesto; puedes cambiarlo. Máx 5 caracteres.</small>
+        <small class="err" *ngIf="soForm.controls['id'].invalid && soForm.controls['id'].touched">Requerido (máx 5).</small>
+      </label>
+      <label>Descripción
+        <textarea pTextarea formControlName="description" rows="3" maxlength="255"></textarea>
+        <small class="err" *ngIf="soForm.controls['description'].invalid && soForm.controls['description'].touched">Requerida (máx 255).</small>
+      </label>
+      <label>Facultad
+        <p-select formControlName="college_id" [options]="activeColleges()" optionLabel="name" optionValue="id"
+                  placeholder="Selecciona la facultad" appendTo="body"></p-select>
+        <small class="err" *ngIf="soForm.controls['college_id'].invalid && soForm.controls['college_id'].touched">Requerida.</small>
+      </label>
+    </form>
+    <ng-template pTemplate="footer">
+      <button mxButton pButton type="button" label="Cancelar" class="p-button-text" (click)="soDialog = false"></button>
+      <button mxButton pButton type="button" [label]="editingSo() ? 'Guardar' : 'Crear'" [disabled]="saving()" (click)="saveSo()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- ── Diálogo Indicador (con sus 4 niveles) ── -->
+  <p-dialog [(visible)]="perfDialog" [modal]="true" [style]="{ width: '680px' }"
+            [header]="perfDialogHeader()">
+    <form [formGroup]="perfForm" class="dialog-form">
+      <div class="grid-2">
+        <label>ID del indicador
+          <input mxInput pInputText formControlName="id" maxlength="3" />
+          <small class="err" *ngIf="perfForm.controls['id'].invalid && perfForm.controls['id'].touched">Requerido (máx 3).</small>
+        </label>
+        <label>Descripción
+          <input mxInput pInputText formControlName="description" maxlength="255" />
+          <small class="err" *ngIf="perfForm.controls['description'].invalid && perfForm.controls['description'].touched">Requerida.</small>
+        </label>
+      </div>
+
+      <div class="levels-title" *ngIf="!editingPerf()">Niveles (los 4 son obligatorios)</div>
+      <div formArrayName="levels" *ngIf="!editingPerf()">
+        <div class="level-form" *ngFor="let ctrl of levelControls; let i = index" [formGroupName]="i">
+          <div class="lf-head">
+            <span class="lf-rank">{{ ctrl.value.rank }} · {{ ctrl.value.name }}</span>
+            <input mxInput pInputText class="lf-id" formControlName="id" maxlength="100" />
+          </div>
+          <textarea pTextarea formControlName="description" rows="2" maxlength="255"
+                    [placeholder]="'Descriptor de ' + ctrl.value.name"></textarea>
+          <small class="err" *ngIf="ctrl.get('description')?.invalid && ctrl.get('description')?.touched">Descriptor obligatorio.</small>
+        </div>
+      </div>
+
+      <div class="edit-note" *ngIf="editingPerf()">
+        Los niveles se editan desde la lista del indicador. Aquí solo cambias su descripción.
+      </div>
+    </form>
+    <ng-template pTemplate="footer">
+      <button mxButton pButton type="button" label="Cancelar" class="p-button-text" (click)="perfDialog = false"></button>
+      <button mxButton pButton type="button" [label]="editingPerf() ? 'Guardar' : 'Crear indicador'" [disabled]="saving()" (click)="savePerf()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- ── Diálogo Completar niveles faltantes ── -->
+  <p-dialog [(visible)]="completeDialog" [modal]="true" [style]="{ width: '620px' }"
+            header="Completar niveles del indicador">
+    <form [formGroup]="completeForm" class="dialog-form">
+      <div formArrayName="levels">
+        <div class="level-form" *ngFor="let ctrl of completeControls; let i = index" [formGroupName]="i">
+          <div class="lf-head">
+            <span class="lf-rank">{{ ctrl.value.rank }} · {{ ctrl.value.name }}</span>
+            <input mxInput pInputText class="lf-id" formControlName="id" maxlength="100" />
+          </div>
+          <textarea pTextarea formControlName="description" rows="2" maxlength="255"
+                    [placeholder]="'Descriptor de ' + ctrl.value.name"></textarea>
+          <small class="err" *ngIf="ctrl.get('description')?.invalid && ctrl.get('description')?.touched">Descriptor obligatorio.</small>
+        </div>
+      </div>
+    </form>
+    <ng-template pTemplate="footer">
+      <button mxButton pButton type="button" label="Cancelar" class="p-button-text" (click)="completeDialog = false"></button>
+      <button mxButton pButton type="button" label="Crear niveles" [disabled]="saving()" (click)="saveCompleteLevels()"></button>
+    </ng-template>
+  </p-dialog>
+
+  <app-bulk-result-dialog
+    title="Resultado importación de rúbrica"
+    [(visible)]="importResultVisible"
+    [summary]="importSummary">
+  </app-bulk-result-dialog>
+</div>

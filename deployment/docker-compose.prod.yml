@@ -51,6 +51,9 @@ services:
       JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-60}
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-mesoftx}:${POSTGRES_PASSWORD}@mesoftx-db:5432/users_db
       ASSESMENT_MS_URL: http://assesment-ms:8002
+      INTEGRATIONS_ENCRYPTION_KEY: ${INTEGRATIONS_ENCRYPTION_KEY:-}
+      INTEGRATIONS_PREVIOUS_KEYS: ${INTEGRATIONS_PREVIOUS_KEYS:-}
+      EXTERNAL_API_ALLOWED_HOSTS: ${EXTERNAL_API_ALLOWED_HOSTS:-}
     networks: [internal]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3).read()"]

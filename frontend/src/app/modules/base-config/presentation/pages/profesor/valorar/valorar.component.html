@@ -1,0 +1,141 @@
+<p-toast></p-toast>
+<div class="content-area">
+  <div class="page-header">
+    <h1>Valorar rúbrica</h1>
+    <p>Registra las valoraciones de tus estudiantes en los Student Outcomes abiertos.</p>
+  </div>
+
+  <div class="loading-wrap" *ngIf="loading()">
+    <p-progressSpinner strokeWidth="4" [style]="{ width: '40px', height: '40px' }"></p-progressSpinner>
+  </div>
+
+  <ng-container *ngIf="!loading()">
+    <section class="step" *ngIf="nrcOptions().length > 0 && !student()">
+      <div class="step-title">Seleccione el NRC a evaluar.</div>
+      <div class="nrc-cards">
+        <button mxButton class="nrc-card" *ngFor="let s of nrcOptions()"
+                [class.selected]="selectedNrc() === s.nrc"
+                (click)="pickNrc(s.nrc)">
+          <span class="ac-so">NRC {{ s.nrc }}</span>
+          <span class="ac-desc">{{ s.materia_curso }} · {{ s.name }}</span>
+          <span class="ac-nrc">Programa {{ s.program_id }}</span>
+        </button>
+      </div>
+    </section>
+
+    <div class="valuation-grid" *ngIf="!student()">
+      <section class="step">
+        <div class="step-title">Seleccione el SO a evaluar.</div>
+        <div class="empty-box" *ngIf="assessmentsForSelectedNrc().length === 0">
+          No tienes valoraciones pendientes. El coordinador aún no ha abierto ningún Student Outcome para tus cursos.
+        </div>
+        <div class="cards" *ngIf="assessmentsForSelectedNrc().length > 0">
+          <button mxButton class="ass-card" *ngFor="let a of assessmentsForSelectedNrc()"
+                  [class.selected]="assessment()?.schedule_id === a.schedule_id && assessment()?.nrc === a.nrc"
+                  (click)="pickAssessment(a)">
+            <span class="ac-so">{{ a.so_id }}</span>
+            <span class="ac-desc">{{ a.description }}</span>
+            <span class="ac-nrc">NRC {{ a.nrc }}</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="step" *ngIf="assessment()">
+        <div class="step-title">Estudiantes a evaluar</div>
+        <div class="ctx">{{ assessment()!.so_id }} · NRC {{ assessment()!.nrc }}</div>
+        <p-table [value]="students()" styleClass="p-datatable-sm" [rowHover]="true">
+          <ng-template pTemplate="header">
+            <tr><th>Documento</th><th>Nombre</th><th>Estado</th><th style="width:8rem"></th></tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-s>
+            <tr>
+              <td>{{ s.document_number }}</td>
+              <td>{{ s.name }}</td>
+              <td>
+                <p-tag [severity]="s.evaluated ? 'success' : 'warn'" [value]="s.evaluated ? 'Evaluado' : 'Pendiente'"></p-tag>
+              </td>
+              <td><button mxButton pButton type="button" [label]="s.evaluated ? 'Ver' : 'Valorar'" class="p-button-sm" (click)="pickStudent(s)"></button></td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage"><tr><td colspan="4" class="empty-cell">No hay estudiantes matriculados en este curso.</td></tr></ng-template>
+        </p-table>
+      </section>
+
+      <section class="step placeholder-step" *ngIf="!assessment() && assessmentsForSelectedNrc().length > 0">
+        <div class="step-title">Estudiantes a evaluar</div>
+        <div class="empty-box">Selecciona un Student Outcome para ver sus estudiantes.</div>
+      </section>
+    </div>
+    <!-- Paso 3: la rúbrica -->
+    <div class="rubric-workspace" *ngIf="assessment() && student()">
+      <div class="step-title compact">
+        Evaluación Individual por Estudiante
+        <button mxButton pButton type="button" label="Cambiar estudiante" icon="pi pi-arrow-left" class="p-button-text p-button-sm" (click)="backToStudents()"></button>
+      </div>
+
+      <section class="info-card so-card">
+        <div>
+          <span class="eyebrow">Student Outcome</span>
+          <h2>{{ assessment()!.so_id }}</h2>
+          <p>{{ assessment()!.description }}</p>
+        </div>
+      </section>
+
+      <div class="meta-grid">
+        <section class="info-card">
+          <span class="eyebrow">Estudiante</span>
+          <div class="kv"><span>Nombre</span><strong>{{ student()!.name }}</strong></div>
+          <div class="kv"><span>Documento</span><strong>{{ student()!.document_number }}</strong></div>
+          <div class="kv"><span>Programa</span><strong>{{ student()!.program_id || 'Sin programa' }}</strong></div>
+        </section>
+
+        <section class="info-card">
+          <span class="eyebrow">Contexto académico</span>
+          <div class="kv"><span>Periodo</span><strong>{{ periodLabel() }}</strong></div>
+          <div class="kv"><span>Materia</span><strong>{{ subjectLabel() }}</strong></div>
+          <div class="kv"><span>NRC</span><strong>{{ assessment()!.nrc }}</strong></div>
+          <div class="kv"><span>Profesor</span><strong>{{ professorName() }}</strong></div>
+          <div class="kv"><span>Programa</span><strong>{{ subjectProgram() }}</strong></div>
+        </section>
+      </div>
+
+      <section class="rubric-card">
+        <div class="rubric-head">
+          <div>
+            <span class="eyebrow">Evaluación</span>
+            <h2>Identificadores de desempeño</h2>
+          </div>
+          <button mxButton pButton type="button" [label]="saving() ? 'Guardando...' : 'Guardar valoración'"
+                  icon="pi pi-save" [disabled]="!canSave() || saving()" (click)="save()"></button>
+        </div>
+
+        <div class="empty-box" *ngIf="indicators().length === 0">
+          No hay identificadores de desempeño configurados para este Student Outcome.
+        </div>
+
+        <div class="rubric-list" *ngIf="indicators().length > 0">
+          <div class="rubric-row" *ngFor="let ind of indicators(); let i = index">
+            <div class="performance-cell">
+              <div class="ind-head">
+                <span class="ind-id">{{ performanceCode(ind.performance) }}</span>
+                <p-tag *ngIf="ind.alreadyRated" severity="success" value="Ya valorado"></p-tag>
+              </div>
+              <p>{{ ind.performance.description }}</p>
+            </div>
+
+            <div class="level-grid" role="radiogroup" [attr.aria-label]="'Categorías de ' + performanceCode(ind.performance)">
+              <button mxButton type="button" class="level-card"
+                      *ngFor="let level of ind.levels"
+                      [class.selected]="levelControl(i).value === level.id"
+                      [disabled]="ind.alreadyRated"
+                      (click)="chooseLevel(i, level.id)">
+                <span class="level-name">{{ levelName(level.rank) }}</span>
+                <span class="level-desc">{{ level.description }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </ng-container>
+</div>

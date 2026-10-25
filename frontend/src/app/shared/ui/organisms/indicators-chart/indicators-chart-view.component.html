@@ -1,0 +1,84 @@
+<div class="loading-wrap" *ngIf="loading">
+  <p-progressSpinner strokeWidth="4" [style]="{ width: '36px', height: '36px' }"></p-progressSpinner>
+</div>
+
+<p-message *ngIf="!loading && errorMsg" severity="error" styleClass="block">
+  <span>{{ errorMsg }}</span>
+</p-message>
+
+<ng-container *ngIf="!loading && !errorMsg">
+  <ng-container *ngIf="!selectedSoId; else detailView">
+    <div class="empty" *ngIf="soRows.length === 0">Sin Student Outcomes programados en este periodo.</div>
+
+    <div class="so-dashboard" *ngIf="soRows.length > 0">
+      <section class="radar-card">
+        <h2>Cumplimiento por Outcome</h2>
+        <p-chart type="radar" [data]="soRadarData" [options]="radarOptions" height="260px"></p-chart>
+        <div class="legend">
+          <span><i class="dot mine"></i> Desempeño</span>
+          <span><i class="line-target"></i> Meta ABET 80%</span>
+        </div>
+      </section>
+
+      <section class="detail-card">
+        <h2>Detalle por Outcome</h2>
+        <div class="outcome-row" *ngFor="let row of soRows">
+          <div class="outcome-main">
+            <span class="so-badge">{{ row.so_id }}</span>
+            <div class="outcome-copy">
+              <strong>{{ row.description }}</strong>
+              <small>{{ row.done }} de {{ row.expected }} valoraciones esperadas</small>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="target-marker" [style.left.%]="target"></div>
+            <div class="progress-track">
+              <div class="progress-fill" [class.ok]="row.pct >= target" [style.width.%]="barWidth(row.pct)"></div>
+            </div>
+          </div>
+          <div class="outcome-state">
+            <strong>{{ row.pct }}%</strong>
+            <span [class.ok]="row.pct >= target">{{ row.pct >= target ? 'Cumple' : 'En riesgo' }}</span>
+          </div>
+          <button mxButton pButton type="button" label="Ver Detalle" class="p-button-sm p-button-secondary"
+                  (click)="detailRequested.emit(row.so_id)"></button>
+        </div>
+      </section>
+    </div>
+  </ng-container>
+
+  <ng-template #detailView>
+    <div class="detail-header">
+      <div>
+        <h2>Detalle por Identificador de Desempeño</h2>
+        <p>{{ selectedSoId }} · {{ selectedSoDescription }}</p>
+      </div>
+      <button mxButton pButton type="button" label="Volver" icon="pi pi-arrow-left" class="p-button-text"
+              *ngIf="!lockedDetail" (click)="backRequested.emit()"></button>
+    </div>
+
+    <div class="empty" *ngIf="detailRows.length === 0">
+      Sin valoraciones registradas para este Student Outcome.
+    </div>
+
+    <ng-container *ngIf="detailRows.length > 0">
+      <div class="chart-wrap">
+        <p-chart type="bar" [data]="detailChartData" [options]="barOptions" height="320px"></p-chart>
+      </div>
+
+      <p-table [value]="detailRows" styleClass="p-datatable-sm" [paginator]="detailRows.length > 12" [rows]="12">
+        <ng-template pTemplate="header">
+          <tr><th>ID</th><th>Nivel</th><th class="num">Total</th><th class="num">% del ID</th></tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-r>
+          <tr>
+            <td>{{ r.indicator }}</td>
+            <td><span class="rank-dot" [style.background]="colorForRank(r.rank)"></span>{{ r.rank }} · {{ r.name }}</td>
+            <td class="num">{{ r.total }}</td>
+            <td class="num">{{ r.pct }} %</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </ng-container>
+  </ng-template>
+</ng-container>

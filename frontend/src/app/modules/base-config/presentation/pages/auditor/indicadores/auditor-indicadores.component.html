@@ -1,0 +1,39 @@
+<p-toast></p-toast>
+<div class="content-area">
+  <div class="page-header">
+    <h1>Indicadores y resultados de rÃºbricas</h1>
+    <p>Consulta de solo lectura del desempeÃ±o por indicador y de las valoraciones registradas.</p>
+  </div>
+
+  <div class="toolbar">
+    <p-select appendTo="body" [options]="periodOptions()" [formControl]="periodCtrl"
+              optionLabel="label" optionValue="value" placeholder="Selecciona un periodo"></p-select>
+  </div>
+
+  <p-message *ngIf="periodCtrl.value == null" severity="info" styleClass="block">
+    <span>Selecciona un periodo para ver la grÃ¡fica de indicadores y las rÃºbricas.</span>
+  </p-message>
+
+  <div class="loading-wrap" *ngIf="loading()">
+    <p-progressSpinner strokeWidth="4" [style]="{ width: '40px', height: '40px' }"></p-progressSpinner>
+  </div>
+
+  <ng-container *ngIf="periodCtrl.value != null && !loading()">
+    <app-indicators-chart [periodId]="periodCtrl.value"></app-indicators-chart>
+
+    <!-- Resultados de rÃºbricas -->
+    <div class="card">
+      <h2>Resultados de rÃºbricas</h2>
+      <p-table [value]="rubrics()" styleClass="p-datatable-sm" [paginator]="true" [rows]="10">
+        <ng-template pTemplate="header"><tr><th>Estudiante</th><th>NRC</th><th>Indicador</th><th>Nivel</th><th>Evaluador</th></tr></ng-template>
+        <ng-template pTemplate="body" let-r>
+          <tr>
+            <td>{{ r.student_id }}</td><td>{{ r.subjects_id }}</td>
+            <td>{{ r.performance_id }}</td><td>{{ r.level_id }}</td><td>{{ r.evaluator_user_id }}</td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage"><tr><td colspan="5" class="empty-cell">Sin rÃºbricas en este periodo.</td></tr></ng-template>
+      </p-table>
+    </div>
+  </ng-container>
+</div>

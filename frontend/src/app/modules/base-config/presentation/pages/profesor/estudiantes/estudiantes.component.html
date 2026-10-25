@@ -1,0 +1,70 @@
+<p-toast></p-toast>
+<div class="content-area">
+  <div class="page-header">
+    <h1>Listado de Estudiantes</h1>
+    <p *ngIf="subject() as s">{{ s.materia_curso }} · {{ s.name }} (NRC {{ s.nrc }})</p>
+  </div>
+
+  <p-message *ngIf="forbidden()" severity="error" styleClass="block-msg">
+    <span>Este curso no está asignado a ti. <a routerLink="/profesor/mis-cursos" class="link">Volver a mis cursos</a></span>
+  </p-message>
+
+  <ng-container *ngIf="!forbidden()">
+    <div class="explain">
+      Si un estudiante ya fue cargado por otro profesor en otro curso, se reutiliza el registro
+      existente y solo se matricula en este curso. Los estudiantes no tienen usuario ni contraseña:
+      solo existen para poder valorarlos.
+    </div>
+
+    <div class="upload-card">
+      <div class="upload-row">
+        <div>
+          <div class="uc-title">Carga masiva de estudiantes</div>
+          <div class="uc-subtitle">Archivo Excel con encabezados <code>document_number</code> y <code>name</code>.</div>
+        </div>
+        <div class="upload-actions">
+          <button mxButton pButton type="button" label="Nuevo estudiante" icon="pi pi-user-plus"
+                  class="p-button-sm" (click)="openCreate()"></button>
+          <button mxButton pButton type="button" label="Descargar plantilla Excel" icon="pi pi-download"
+                  class="p-button-sm p-button-secondary" (click)="downloadTemplate()"></button>
+          <button mxButton pButton type="button" label="Cargar Excel" icon="pi pi-upload"
+                  class="p-button-sm p-button-secondary" (click)="bulkInput.click()" [disabled]="saving()"></button>
+          <input mxInput #bulkInput type="file" accept=".xlsx" hidden (change)="onBulkFile($event)" />
+        </div>
+      </div>
+    </div>
+
+    <div class="enrolled">
+      <div class="en-title">Estudiantes matriculados en este curso</div>
+      <p-table [value]="enrolled()" styleClass="p-datatable-sm">
+        <ng-template pTemplate="header"><tr><th>Documento</th><th>Nombre</th><th>Programa</th></tr></ng-template>
+        <ng-template pTemplate="body" let-s>
+          <tr><td>{{ s.document_number }}</td><td>{{ s.name }}</td><td>{{ s.program_id }}</td></tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage"><tr><td colspan="3" class="empty-cell">Todavía no hay estudiantes matriculados.</td></tr></ng-template>
+      </p-table>
+    </div>
+  </ng-container>
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '440px' }" header="Nuevo estudiante">
+  <div class="dialog-form">
+    <label>Documento
+      <input mxInput pInputText [(ngModel)]="studentForm.document_number" maxlength="25" placeholder="Ej. 100200300" />
+    </label>
+    <label>Nombre
+      <input mxInput pInputText [(ngModel)]="studentForm.name" maxlength="255" placeholder="Ej. Juan Lozada" />
+    </label>
+    <small class="err" *ngIf="formError()">{{ formError() }}</small>
+  </div>
+  <ng-template pTemplate="footer">
+    <button mxButton pButton type="button" label="Cancelar" class="p-button-text" (click)="dialogVisible = false"></button>
+    <button mxButton pButton type="button" [label]="saving() ? 'Guardando...' : 'Guardar'" [disabled]="saving()" (click)="saveManual()"></button>
+  </ng-template>
+</p-dialog>
+
+<app-bulk-result-dialog
+  title="Resultado cargue masivo de estudiantes"
+  [(visible)]="bulkVisible"
+  [summary]="bulkSummary">
+</app-bulk-result-dialog>

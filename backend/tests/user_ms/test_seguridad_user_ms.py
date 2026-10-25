@@ -250,7 +250,7 @@ def test_hash_semilla_publico_no_se_acepta_en_produccion(monkeypatch):
     class Repo:
         def get_by_email(self, e): return U()
 
-    svc = AuthService(Repo())
+    svc = AuthService(Repo(), get_settings(), verify_password, create_access_token)
     monkeypatch.setattr(svc.settings.__class__, "is_production", property(lambda self: True))
     with pytest.raises(DefaultPasswordError):
         svc.login("admin@unab.edu.co", "Mesoftx2026!")
@@ -278,8 +278,9 @@ def test_no_hay_autoelevacion_de_privilegios(monkeypatch):
         def __init__(self, db): ...
         def get_by_id(self, i): return roles.get(i)
 
-    monkeypatch.setattr(users_mod, "UserRepository", FakeUsers)
-    monkeypatch.setattr(users_mod, "RoleRepository", FakeRoles)
+    from app.infrastructure.repositories import sqlalchemy_repositories as repositories
+    monkeypatch.setattr(repositories, "UserRepository", FakeUsers)
+    monkeypatch.setattr(repositories, "RoleRepository", FakeRoles)
     caller = NS(id=10, permissions=["TEACHER_CRUD"])
     app.dependency_overrides[deps.get_current_user] = lambda: caller
     app.dependency_overrides[deps.get_db_session if hasattr(deps, "get_db_session") else deps.db_session] = lambda: None
@@ -335,7 +336,6 @@ def test_modo_exposicion_emite_token_real_solo_para_cuentas_demo(monkeypatch):
 
     on = _demo_settings(demo_mode=True)
     monkeypatch.setattr(auth_mod, "get_settings", lambda: on)
-    monkeypatch.setattr(svc_mod, "get_settings", lambda: on)
     monkeypatch.setattr(auth_mod, "UserRepository", FakeUsers)
     app.dependency_overrides[deps.db_session] = lambda: None
     try:
@@ -349,7 +349,7 @@ def test_modo_exposicion_emite_token_real_solo_para_cuentas_demo(monkeypatch):
         assert client.post("/api/v1/auth/demo-login", json={"role": "profesor"}).status_code == 404
         assert client.post("/api/v1/auth/demo-login", json={"role": "../admin"}).status_code == 404
         # las cuentas demo nunca entran por contraseña, ni con el modo encendido
-        monkeypatch.setattr(svc_mod, "verify_password", lambda *a, **k: True)
+        monkeypatch.setattr(auth_mod, "verify_password", lambda *a, **k: True)
         bad = client.post("/api/v1/auth/login", json={"email": demo_user.email, "password": "cualquiera123"})
         assert bad.status_code == 401
     finally:
@@ -367,7 +367,7 @@ def test_cuentas_demo_no_funcionan_con_el_modo_apagado(monkeypatch):
     class FakeUsers:
         def get_by_email(self, e): return user
 
-    svc = AuthService(FakeUsers())
+    svc = AuthService(FakeUsers(), get_settings(), lambda *args: False, create_access_token)
     svc.settings = _demo_settings(demo_mode=False)
     with pytest.raises(DemoUnavailableError):
         svc.demo_login("administrativo")

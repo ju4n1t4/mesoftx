@@ -1,0 +1,8 @@
+.loading-wrap { display: flex; justify-content: center; padding: 48px; }
+.pending-banner { display: block; margin-bottom: 16px; }
+.pending-link { color: var(--primary); font-weight: 600; cursor: pointer; }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.empty-box { background: #fff; border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 48px 24px; text-align: center; }
+.empty-icon { width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 14px; background: var(--surface-2); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.empty-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.empty-desc { font-size: 13px; color: var(--text-muted); }

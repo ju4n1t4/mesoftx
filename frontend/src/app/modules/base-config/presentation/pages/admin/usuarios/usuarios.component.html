@@ -1,0 +1,77 @@
+<p-toast></p-toast>
+<div class="content-area">
+  <div class="page-header">
+    <h1>Usuarios</h1>
+    <p>Usuarios del sistema. El administrador crea usuarios y asigna el perfil correspondiente.</p>
+  </div>
+
+  <div class="toolbar">
+    <button mxButton pButton type="button" label="Nuevo usuario" icon="pi pi-plus"
+            [disabled]="roles().length === 0" (click)="openCreate()"></button>
+  </div>
+
+  <p-message *ngIf="roles().length === 0 && !loading()" severity="warn" styleClass="block">
+    <span>No existen perfiles. Crealos primero en "Perfiles y permisos".</span>
+  </p-message>
+
+  <div class="loading-wrap" *ngIf="loading()">
+    <p-progressSpinner strokeWidth="4" [style]="{ width: '40px', height: '40px' }"></p-progressSpinner>
+  </div>
+
+  <p-table *ngIf="!loading()" [value]="users()" styleClass="p-datatable-sm" [rowHover]="true">
+    <ng-template pTemplate="header"><tr><th>Documento</th><th>Nombre</th><th>Email</th><th>Perfil</th><th>Estado</th><th style="width:7rem">Acciones</th></tr></ng-template>
+    <ng-template pTemplate="body" let-u>
+      <tr>
+        <td>{{ u.document_number }}</td>
+        <td>{{ u.name }}</td>
+        <td>{{ u.email || '-' }}</td>
+        <td>{{ roleName(u.role_id) }}</td>
+        <td>
+          <span class="state-switch" [class.is-active]="u.active" [attr.aria-label]="u.active ? 'Activo' : 'Inactivo'">
+            <span></span>
+          </span>
+        </td>
+        <td class="actions">
+          <button mxButton pButton type="button" icon="pi pi-pencil" class="p-button-sm p-button-text" (click)="openEdit(u)"></button>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage"><tr><td colspan="6" class="empty-cell">No hay usuarios.</td></tr></ng-template>
+  </p-table>
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '460px' }" [header]="editing() ? 'Editar usuario' : 'Nuevo usuario'">
+  <form [formGroup]="form" class="dialog-form">
+    <label>Documento
+      <input mxInput pInputText formControlName="document_number" maxlength="25" />
+      <small class="err" *ngIf="showErr('document_number')">Requerido.</small>
+    </label>
+    <label>Nombre
+      <input mxInput pInputText formControlName="name" maxlength="255" />
+      <small class="err" *ngIf="showErr('name')">Requerido.</small>
+    </label>
+    <label>Email
+      <input mxInput pInputText formControlName="email" maxlength="255" />
+      <small class="err" *ngIf="showErr('email')">Email valido requerido.</small>
+    </label>
+    <label>Contrasena
+      <input mxInput pInputText type="password" formControlName="password" />
+      <small class="err" *ngIf="showErr('password')">{{ editing() ? 'Minimo 8 caracteres si deseas cambiarla.' : 'Minimo 8 caracteres.' }}</small>
+    </label>
+    <label>Perfil
+      <p-select
+        formControlName="role_id"
+        [options]="roleOptions()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Selecciona un perfil"
+        appendTo="body"
+      ></p-select>
+      <small class="err" *ngIf="showErr('role_id')">Selecciona un perfil.</small>
+    </label>
+  </form>
+  <ng-template pTemplate="footer">
+    <button mxButton pButton type="button" label="Cancelar" class="p-button-text" (click)="dialogVisible = false"></button>
+    <button mxButton pButton type="button" [label]="editing() ? 'Guardar' : 'Crear'" [disabled]="saving()" (click)="save()"></button>
+  </ng-template>
+</p-dialog>

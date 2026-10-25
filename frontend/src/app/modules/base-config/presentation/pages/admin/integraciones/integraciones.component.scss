@@ -1,0 +1,6 @@
+.integration-grid { display: grid; grid-template-columns: minmax(15rem, 1fr) minmax(20rem, 2fr); gap: 1rem; margin: 1rem 0; }
+form { display: grid; gap: 1rem; }
+input:not([type=checkbox]), select { width: 100%; padding: .6rem; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.actions { display: flex; gap: .6rem; flex-wrap: wrap; }
+section { margin-top: 1rem; } pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 50rem) { .integration-grid { grid-template-columns: 1fr; } }

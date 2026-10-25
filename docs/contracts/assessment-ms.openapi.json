@@ -1,0 +1,2904 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Assesment_MS",
+    "description": "ABET assesment management microservice for MesoftX.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Check Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/so": {
+      "get": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "List So",
+        "operationId": "list_so_api_v1_so_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StudentOutcomeResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List So Api V1 So Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Create So",
+        "operationId": "create_so_api_v1_so_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudentOutcomeCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentOutcomeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/so/{so_id}": {
+      "put": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Update So",
+        "operationId": "update_so_api_v1_so__so_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "so_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "So Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudentOutcomeUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentOutcomeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Delete So",
+        "operationId": "delete_so_api_v1_so__so_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "so_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "So Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/performance": {
+      "get": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "List Performance",
+        "operationId": "list_performance_api_v1_performance_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "so_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "So Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PerformanceResponse"
+                  },
+                  "title": "Response List Performance Api V1 Performance Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Create Performance",
+        "operationId": "create_performance_api_v1_performance_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerformanceCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerformanceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/performance/{performance_id}/levels": {
+      "get": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "List Levels",
+        "operationId": "list_levels_api_v1_performance__performance_id__levels_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "performance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Performance Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LevelResponse"
+                  },
+                  "title": "Response List Levels Api V1 Performance  Performance Id  Levels Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/performance/{performance_id}": {
+      "put": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Update Performance",
+        "operationId": "update_performance_api_v1_performance__performance_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "performance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Performance Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerformanceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerformanceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Delete Performance",
+        "operationId": "delete_performance_api_v1_performance__performance_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "performance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Performance Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/level": {
+      "post": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Create Level",
+        "operationId": "create_level_api_v1_level_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LevelCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LevelResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/level/{level_id}": {
+      "put": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Update Level",
+        "operationId": "update_level_api_v1_level__level_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "level_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Level Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LevelUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LevelResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Delete Level",
+        "operationId": "delete_level_api_v1_level__level_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "level_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Level Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/so-schedule": {
+      "get": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "List So Schedule",
+        "operationId": "list_so_schedule_api_v1_so_schedule_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SoScheduleResponse"
+                  },
+                  "title": "Response List So Schedule Api V1 So Schedule Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Create So Schedule",
+        "operationId": "create_so_schedule_api_v1_so_schedule_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SoScheduleCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SoScheduleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/so-schedule/current": {
+      "get": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "List Current Schedule",
+        "operationId": "list_current_schedule_api_v1_so_schedule_current_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SoScheduleResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Current Schedule Api V1 So Schedule Current Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/so-schedule/{schedule_id}": {
+      "delete": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Delete So Schedule",
+        "operationId": "delete_so_schedule_api_v1_so_schedule__schedule_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Schedule Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/so-schedule/{schedule_id}/subjects": {
+      "get": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Get Schedule Subjects",
+        "description": "NRC asignados a una programación. Lo usa la UI para precargar el diálogo\nde NRC y para contar cuántos NRC valoran cada SO.",
+        "operationId": "get_schedule_subjects_api_v1_so_schedule__schedule_id__subjects_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Schedule Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "title": "Response Get Schedule Subjects Api V1 So Schedule  Schedule Id  Subjects Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Set Schedule Subjects",
+        "operationId": "set_schedule_subjects_api_v1_so_schedule__schedule_id__subjects_put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Schedule Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleSubjectsUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SoScheduleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/so-schedule/{schedule_id}/status": {
+      "patch": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Change Status",
+        "operationId": "change_status_api_v1_so_schedule__schedule_id__status_patch",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Schedule Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SoScheduleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/period-target/{period_id}": {
+      "get": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Get Period Target",
+        "description": "Devuelve la meta de logro configurada para el periodo. 404 si no existe.",
+        "operationId": "get_period_target_api_v1_period_target__period_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Period Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodTargetResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Set Period Target",
+        "description": "Fija o actualiza la meta de logro del periodo. Rechaza el cambio si el\nperiodo ya tiene programaciones cerradas, para no alterar el histórico.",
+        "operationId": "set_period_target_api_v1_period_target__period_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Period Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PeriodTargetUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodTargetResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/assessments": {
+      "get": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "My Assessments",
+        "operationId": "my_assessments_api_v1_me_assessments_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AssessmentToDoResponse"
+                  },
+                  "type": "array",
+                  "title": "Response My Assessments Api V1 Me Assessments Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/rubric": {
+      "get": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "List Rubric",
+        "operationId": "list_rubric_api_v1_rubric_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period Id"
+            }
+          },
+          {
+            "name": "schedule_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Schedule Id"
+            }
+          },
+          {
+            "name": "subjects_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Subjects Id"
+            }
+          },
+          {
+            "name": "student_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Student Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RubricResponse"
+                  },
+                  "title": "Response List Rubric Api V1 Rubric Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Create Rubric",
+        "operationId": "create_rubric_api_v1_rubric_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RubricCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RubricResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rubric/{rubric_id}": {
+      "put": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Update Rubric",
+        "operationId": "update_rubric_api_v1_rubric__rubric_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "rubric_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Rubric Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RubricUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RubricResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evidence": {
+      "post": {
+        "tags": [
+          "Assesment"
+        ],
+        "summary": "Create Evidence",
+        "operationId": "create_evidence_api_v1_evidence_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvidenceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/dashboard/program": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Dashboard Program",
+        "operationId": "dashboard_program_api_v1_dashboard_program_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Period Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardProgramResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/so": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Dashboard So",
+        "operationId": "dashboard_so_api_v1_dashboard_so_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Period Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/teacher": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Dashboard Teacher",
+        "operationId": "dashboard_teacher_api_v1_dashboard_teacher_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Period Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardTeacherResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/indicators/chart": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Indicators Chart",
+        "operationId": "indicators_chart_api_v1_indicators_chart_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Period Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndicatorsChartResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/indicators": {
+      "get": {
+        "tags": [
+          "Vista pública"
+        ],
+        "summary": "Public Indicators",
+        "operationId": "public_indicators_api_v1_public_indicators_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicIndicatorsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/internal/rubric": {
+      "delete": {
+        "tags": [
+          "Internal"
+        ],
+        "summary": "Delete Rubric",
+        "description": "Borra rúbricas Y evidencias del id dado. Idempotente: si no hay nada,\ndevuelve {\"deleted\": 0} con 200 (no 404). 409 si toca periodos cerrados.",
+        "operationId": "delete_rubric_api_v1_internal_rubric_delete",
+        "parameters": [
+          {
+            "name": "evaluator_user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Evaluator User Id"
+            }
+          },
+          {
+            "name": "subjects_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Subjects Id"
+            }
+          },
+          {
+            "name": "student_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Student Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/internal/schedule-subjects": {
+      "delete": {
+        "tags": [
+          "Internal"
+        ],
+        "summary": "Delete Schedule Subjects",
+        "operationId": "delete_schedule_subjects_api_v1_internal_schedule_subjects_delete",
+        "parameters": [
+          {
+            "name": "subjects_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Subjects Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/internal/so-schedule": {
+      "delete": {
+        "tags": [
+          "Internal"
+        ],
+        "summary": "Delete So Schedule By Period",
+        "operationId": "delete_so_schedule_by_period_api_v1_internal_so_schedule_delete",
+        "parameters": [
+          {
+            "name": "period_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Period Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/internal/so": {
+      "delete": {
+        "tags": [
+          "Internal"
+        ],
+        "summary": "Delete So By College",
+        "operationId": "delete_so_by_college_api_v1_internal_so_delete",
+        "parameters": [
+          {
+            "name": "college_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "College Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AssessmentToDoResponse": {
+        "properties": {
+          "schedule_id": {
+            "type": "integer",
+            "title": "Schedule Id"
+          },
+          "so_id": {
+            "type": "string",
+            "title": "So Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "nrc": {
+            "type": "integer",
+            "title": "Nrc"
+          },
+          "period_id": {
+            "type": "integer",
+            "title": "Period Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "schedule_id",
+          "so_id",
+          "description",
+          "nrc",
+          "period_id"
+        ],
+        "title": "AssessmentToDoResponse"
+      },
+      "ChartLevelItem": {
+        "properties": {
+          "performance_id": {
+            "type": "string",
+            "title": "Performance Id"
+          },
+          "rank": {
+            "type": "integer",
+            "title": "Rank"
+          },
+          "level_id": {
+            "type": "string",
+            "title": "Level Id"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "performance_id",
+          "rank",
+          "level_id",
+          "total"
+        ],
+        "title": "ChartLevelItem"
+      },
+      "DashboardProgramResponse": {
+        "properties": {
+          "period_id": {
+            "type": "integer",
+            "title": "Period Id"
+          },
+          "expected": {
+            "type": "integer",
+            "title": "Expected"
+          },
+          "done": {
+            "type": "integer",
+            "title": "Done"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProgramProgressItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period_id",
+          "expected",
+          "done",
+          "items"
+        ],
+        "title": "DashboardProgramResponse"
+      },
+      "DashboardSoResponse": {
+        "properties": {
+          "period_id": {
+            "type": "integer",
+            "title": "Period Id"
+          },
+          "expected": {
+            "type": "integer",
+            "title": "Expected"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SoProgressItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period_id",
+          "expected",
+          "items"
+        ],
+        "title": "DashboardSoResponse"
+      },
+      "DashboardTeacherResponse": {
+        "properties": {
+          "period_id": {
+            "type": "integer",
+            "title": "Period Id"
+          },
+          "expected": {
+            "type": "integer",
+            "title": "Expected"
+          },
+          "done": {
+            "type": "integer",
+            "title": "Done"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TeacherProgressItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period_id",
+          "expected",
+          "done",
+          "items"
+        ],
+        "title": "DashboardTeacherResponse"
+      },
+      "EvidenceCreate": {
+        "properties": {
+          "schedule_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Schedule Id"
+          },
+          "subjects_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Subjects Id"
+          },
+          "student_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Student Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "file_url": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "File Url"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "schedule_id",
+          "subjects_id",
+          "student_id",
+          "name",
+          "file_url"
+        ],
+        "title": "EvidenceCreate"
+      },
+      "EvidenceResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "schedule_id": {
+            "type": "integer",
+            "title": "Schedule Id"
+          },
+          "subjects_id": {
+            "type": "integer",
+            "title": "Subjects Id"
+          },
+          "student_id": {
+            "type": "integer",
+            "title": "Student Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "file_url": {
+            "type": "string",
+            "title": "File Url"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "uploaded_by": {
+            "type": "integer",
+            "title": "Uploaded By"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "schedule_id",
+          "subjects_id",
+          "student_id",
+          "name",
+          "file_url",
+          "uploaded_by"
+        ],
+        "title": "EvidenceResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IndicatorsChartResponse": {
+        "properties": {
+          "period_id": {
+            "type": "integer",
+            "title": "Period Id"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ChartLevelItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period_id",
+          "items"
+        ],
+        "title": "IndicatorsChartResponse"
+      },
+      "LevelCreate": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Id"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Description"
+          },
+          "rank": {
+            "type": "integer",
+            "maximum": 4.0,
+            "minimum": 1.0,
+            "title": "Rank"
+          },
+          "performance_id": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Performance Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "description",
+          "rank",
+          "performance_id"
+        ],
+        "title": "LevelCreate"
+      },
+      "LevelResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Id"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Description"
+          },
+          "rank": {
+            "type": "integer",
+            "maximum": 4.0,
+            "minimum": 1.0,
+            "title": "Rank"
+          },
+          "performance_id": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Performance Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "description",
+          "rank",
+          "performance_id"
+        ],
+        "title": "LevelResponse"
+      },
+      "LevelUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          }
+        },
+        "type": "object",
+        "title": "LevelUpdate"
+      },
+      "PerformanceCreate": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Id"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Description"
+          },
+          "so_id": {
+            "type": "string",
+            "maxLength": 5,
+            "title": "So Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "description",
+          "so_id"
+        ],
+        "title": "PerformanceCreate"
+      },
+      "PerformanceResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Code"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Description"
+          },
+          "so_id": {
+            "type": "string",
+            "maxLength": 5,
+            "title": "So Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "description",
+          "so_id"
+        ],
+        "title": "PerformanceResponse"
+      },
+      "PerformanceUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "so_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "So Id"
+          }
+        },
+        "type": "object",
+        "title": "PerformanceUpdate"
+      },
+      "PeriodTargetResponse": {
+        "properties": {
+          "period_id": {
+            "type": "integer",
+            "title": "Period Id"
+          },
+          "target_pct": {
+            "type": "integer",
+            "title": "Target Pct"
+          },
+          "updated_by": {
+            "type": "integer",
+            "title": "Updated By"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period_id",
+          "target_pct",
+          "updated_by"
+        ],
+        "title": "PeriodTargetResponse"
+      },
+      "PeriodTargetUpdate": {
+        "properties": {
+          "target_pct": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Target Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_pct"
+        ],
+        "title": "PeriodTargetUpdate"
+      },
+      "ProgramProgressItem": {
+        "properties": {
+          "program_id": {
+            "type": "string",
+            "title": "Program Id"
+          },
+          "expected": {
+            "type": "integer",
+            "title": "Expected"
+          },
+          "done": {
+            "type": "integer",
+            "title": "Done"
+          }
+        },
+        "type": "object",
+        "required": [
+          "program_id",
+          "expected",
+          "done"
+        ],
+        "title": "ProgramProgressItem"
+      },
+      "PublicIndicatorsResponse": {
+        "properties": {
+          "min_group_size": {
+            "type": "integer",
+            "title": "Min Group Size"
+          },
+          "average_pct": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Pct"
+          },
+          "total_assessments": {
+            "type": "integer",
+            "title": "Total Assessments"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PublicSoIndicator"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "min_group_size",
+          "average_pct",
+          "total_assessments",
+          "items"
+        ],
+        "title": "PublicIndicatorsResponse",
+        "description": "Vista pública: SOLO agregados. Sin ids de estudiantes, profesores ni NRC."
+      },
+      "PublicLevelItem": {
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "title": "Rank"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "pct": {
+            "type": "integer",
+            "title": "Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rank",
+          "label",
+          "pct"
+        ],
+        "title": "PublicLevelItem"
+      },
+      "PublicSoIndicator": {
+        "properties": {
+          "so_id": {
+            "type": "string",
+            "title": "So Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "assessments": {
+            "type": "integer",
+            "title": "Assessments"
+          },
+          "students": {
+            "type": "integer",
+            "title": "Students"
+          },
+          "suppressed": {
+            "type": "boolean",
+            "title": "Suppressed"
+          },
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/PublicLevelItem"
+            },
+            "type": "array",
+            "title": "Levels"
+          }
+        },
+        "type": "object",
+        "required": [
+          "so_id",
+          "description",
+          "assessments",
+          "students",
+          "suppressed",
+          "levels"
+        ],
+        "title": "PublicSoIndicator"
+      },
+      "RubricCreate": {
+        "properties": {
+          "schedule_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Schedule Id"
+          },
+          "student_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Student Id"
+          },
+          "subjects_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Subjects Id"
+          },
+          "performance_id": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Performance Id"
+          },
+          "level_id": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Level Id"
+          },
+          "evidence_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "schedule_id",
+          "student_id",
+          "subjects_id",
+          "performance_id",
+          "level_id"
+        ],
+        "title": "RubricCreate"
+      },
+      "RubricResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "schedule_id": {
+            "type": "integer",
+            "title": "Schedule Id"
+          },
+          "evaluator_user_id": {
+            "type": "integer",
+            "title": "Evaluator User Id"
+          },
+          "student_id": {
+            "type": "integer",
+            "title": "Student Id"
+          },
+          "subjects_id": {
+            "type": "integer",
+            "title": "Subjects Id"
+          },
+          "performance_id": {
+            "type": "string",
+            "title": "Performance Id"
+          },
+          "level_id": {
+            "type": "string",
+            "title": "Level Id"
+          },
+          "evidence_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Id"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "schedule_id",
+          "evaluator_user_id",
+          "student_id",
+          "subjects_id",
+          "performance_id",
+          "level_id"
+        ],
+        "title": "RubricResponse"
+      },
+      "RubricUpdate": {
+        "properties": {
+          "performance_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Performance Id"
+          },
+          "level_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level Id"
+          },
+          "evidence_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Id"
+          }
+        },
+        "type": "object",
+        "title": "RubricUpdate"
+      },
+      "ScheduleStatusUpdate": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "ScheduleStatusUpdate"
+      },
+      "ScheduleSubjectsUpdate": {
+        "properties": {
+          "nrcs": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Nrcs"
+          }
+        },
+        "type": "object",
+        "title": "ScheduleSubjectsUpdate"
+      },
+      "SoProgressItem": {
+        "properties": {
+          "so_id": {
+            "type": "string",
+            "title": "So Id"
+          },
+          "expected": {
+            "type": "integer",
+            "title": "Expected"
+          },
+          "done": {
+            "type": "integer",
+            "title": "Done"
+          }
+        },
+        "type": "object",
+        "required": [
+          "so_id",
+          "expected",
+          "done"
+        ],
+        "title": "SoProgressItem"
+      },
+      "SoScheduleCreate": {
+        "properties": {
+          "so_id": {
+            "type": "string",
+            "maxLength": 5,
+            "title": "So Id"
+          },
+          "period_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Period Id"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Status",
+            "default": "PLANIFICADO"
+          }
+        },
+        "type": "object",
+        "required": [
+          "so_id",
+          "period_id"
+        ],
+        "title": "SoScheduleCreate"
+      },
+      "SoScheduleResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "so_id": {
+            "type": "string",
+            "title": "So Id"
+          },
+          "period_id": {
+            "type": "integer",
+            "title": "Period Id"
+          },
+          "coordinator_user_id": {
+            "type": "integer",
+            "title": "Coordinator User Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_by": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated By"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "so_id",
+          "period_id",
+          "coordinator_user_id",
+          "status"
+        ],
+        "title": "SoScheduleResponse"
+      },
+      "StudentOutcomeCreate": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 5,
+            "title": "Id"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Description"
+          },
+          "college_id": {
+            "type": "string",
+            "maxLength": 3,
+            "title": "College Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "description",
+          "college_id"
+        ],
+        "title": "StudentOutcomeCreate"
+      },
+      "StudentOutcomeResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 5,
+            "title": "Id"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Description"
+          },
+          "college_id": {
+            "type": "string",
+            "maxLength": 3,
+            "title": "College Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "description",
+          "college_id"
+        ],
+        "title": "StudentOutcomeResponse"
+      },
+      "StudentOutcomeUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "college_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "College Id"
+          }
+        },
+        "type": "object",
+        "title": "StudentOutcomeUpdate"
+      },
+      "TeacherProgressItem": {
+        "properties": {
+          "evaluator_user_id": {
+            "type": "integer",
+            "title": "Evaluator User Id"
+          },
+          "expected": {
+            "type": "integer",
+            "title": "Expected"
+          },
+          "done": {
+            "type": "integer",
+            "title": "Done"
+          }
+        },
+        "type": "object",
+        "required": [
+          "evaluator_user_id",
+          "expected",
+          "done"
+        ],
+        "title": "TeacherProgressItem"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "OAuth2PasswordBearer": {
+        "type": "oauth2",
+        "flows": {
+          "password": {
+            "scopes": {},
+            "tokenUrl": "/api/v1/auth/login"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,61 @@
+<div class="content-area">
+  <div class="page-header">
+    <h1>Periodos académicos</h1>
+    <p>Gestión de años, semestres y períodos del proceso de acreditación.</p>
+  </div>
+
+  <div class="toolbar">
+    <div></div>
+    <button mxButton class="btn btn-primary btn-sm" (click)="showForm.set(true)">
+      <i class="pi pi-plus"></i> Nuevo período
+    </button>
+  </div>
+
+  <!-- Nuevo período form -->
+  <div class="form-card" *ngIf="showForm()">
+    <h2>Crear período académico</h2>
+    <div class="form-row">
+      <div class="form-field">
+        <label class="form-label">Año</label>
+        <input mxInput [(ngModel)]="newYear" class="form-control" placeholder="2026" />
+      </div>
+      <div class="form-field">
+        <label class="form-label">Semestre (período)</label>
+        <input mxInput [(ngModel)]="newPeriod" class="form-control" placeholder="10" />
+      </div>
+    </div>
+    <div class="form-actions">
+      <button mxButton class="btn btn-outline btn-sm" (click)="showForm.set(false)">Cancelar</button>
+      <button mxButton class="btn btn-primary btn-sm" (click)="addPeriod()" [disabled]="saving()">Guardar</button>
+    </div>
+    <div class="form-error" *ngIf="formError()">{{ formError() }}</div>
+  </div>
+
+  <div class="state-box" *ngIf="loading()">
+    <i class="pi pi-spin pi-spinner"></i><span>Cargando períodos…</span>
+  </div>
+  <div class="notice" *ngIf="error()">
+    <i class="pi pi-info-circle"></i><span>{{ error() }}</span>
+  </div>
+
+  <div class="empty-box" *ngIf="!loading() && periods().length === 0">
+    <div class="empty-icon"><i class="pi pi-calendar"></i></div>
+    <div class="empty-title">No hay períodos registrados</div>
+    <div class="empty-desc">Crea el primer período académico para habilitar el registro de valoraciones.</div>
+  </div>
+
+  <div class="table-card" *ngIf="!loading() && periods().length > 0">
+    <table class="data-table">
+      <thead>
+        <tr><th>Código</th><th>Semestre</th><th>Año</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of periods()">
+          <td><span class="period-code">{{ p.code }}</span></td>
+          <td>{{ p.semester }}</td>
+          <td>{{ p.year }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,74 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="content-area">
+  <div class="page-header">
+    <h1>Periodos</h1>
+    <p>Gestiona los periodos académicos utilizados por materias, programación y reportes.</p>
+  </div>
+
+  <div class="toolbar">
+    <button mxButton pButton type="button" label="Descargar plantilla" icon="pi pi-download" class="p-button-secondary" (click)="downloadTemplate()"></button>
+    <button mxButton pButton type="button" label="Cargar Excel" icon="pi pi-upload" class="p-button-secondary" (click)="bulkInput.click()"></button>
+    <input mxInput #bulkInput type="file" accept=".xlsx" hidden (change)="onBulkFile($event)" />
+    <button mxButton pButton type="button" label="Nuevo periodo" icon="pi pi-plus" (click)="openCreate()"></button>
+  </div>
+
+  <div class="loading-wrap" *ngIf="loading()">
+    <p-progressSpinner strokeWidth="4" [style]="{ width: '40px', height: '40px' }"></p-progressSpinner>
+  </div>
+
+  <p-table *ngIf="!loading()" [value]="periods()" styleClass="p-datatable-sm" [rowHover]="true">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>ID</th>
+        <th>Código</th>
+        <th>Año</th>
+        <th>Periodo</th>
+        <th>Estado</th>
+        <th style="width:9rem">Acciones</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-p>
+      <tr>
+        <td>{{ p.id }}</td>
+        <td><span class="period-code">{{ p.code }}</span></td>
+        <td>{{ periodYear(p.code) }}</td>
+        <td>{{ periodTerm(p.code) }}</td>
+        <td>
+          <button mxButton type="button" class="state-switch" [class.is-active]="p.active"
+                  (click)="activatePeriod(p)"
+                  [attr.aria-label]="p.active ? 'Periodo activo' : 'Activar periodo'">
+            <span></span>
+          </button>
+        </td>
+        <td class="actions">
+          <button mxButton pButton type="button" icon="pi pi-pencil" class="p-button-sm p-button-text" (click)="openEdit(p)"></button>
+          <button mxButton pButton type="button" icon="pi pi-trash" class="p-button-sm p-button-text p-button-danger" (click)="confirmDelete(p)"></button>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="6" class="empty-cell">No hay periodos registrados.</td></tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '440px' }" [header]="editing() ? 'Editar periodo' : 'Nuevo periodo'">
+  <form [formGroup]="form" class="dialog-form">
+    <label>Código
+      <input mxInput pInputText formControlName="code" maxlength="6" placeholder="Ej. 202610" />
+      <small class="err" *ngIf="showErr('code')">Código requerido, máximo 6 caracteres.</small>
+    </label>
+  </form>
+  <ng-template pTemplate="footer">
+    <button mxButton pButton type="button" label="Cancelar" class="p-button-text" (click)="dialogVisible = false"></button>
+    <button mxButton pButton type="button" [label]="saving() ? 'Guardando...' : 'Guardar'" [disabled]="saving()" (click)="save()"></button>
+  </ng-template>
+</p-dialog>
+
+<app-bulk-result-dialog
+  title="Resultado cargue masivo de periodos"
+  [(visible)]="bulkVisible"
+  [summary]="bulkSummary">
+</app-bulk-result-dialog>

@@ -1,0 +1,5 @@
+<nav aria-label="Navegación principal"><a *ngFor="let item of items" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.exact ?? false }" class="nav-item" [title]="item.label"><i [class]="'pi ' + item.icon" aria-hidden="true"></i><span>{{ item.label }}</span></a></nav>
+<div class="sidebar-bottom"><a [routerLink]="helpRoute" routerLinkActive="active" class="nav-item"><i class="pi pi-question-circle" aria-hidden="true"></i><span>Ayuda y soporte</span></a>
+<a routerLink="/cuenta" class="nav-item"><i class="pi pi-user-edit" aria-hidden="true"></i><span>Mi cuenta</span></a>
+<a routerLink="/legal/privacidad" class="nav-item"><i class="pi pi-shield" aria-hidden="true"></i><span>Privacidad y términos</span></a>
+<button mxButton type="button" class="nav-item logout-item" (click)="logoutRequested.emit()"><i class="pi pi-sign-out" aria-hidden="true"></i><span>Cerrar sesión</span></button></div>

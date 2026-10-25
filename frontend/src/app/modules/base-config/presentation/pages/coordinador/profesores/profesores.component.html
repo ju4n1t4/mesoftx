@@ -1,0 +1,141 @@
+<div class="content-area">
+  <div class="page-header">
+    <h1>Profesores y roles</h1>
+    <p>Asigna roles, programa académico y supervisa el avance de valoración de cada profesor.</p>
+  </div>
+
+  <div class="notice" *ngIf="error()"><i class="pi pi-info-circle"></i> <span>{{ error() }}</span></div>
+
+  <ng-container *ngIf="!loading()">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <i class="pi pi-search"></i>
+        <input mxInput [(ngModel)]="search" placeholder="Buscar profesor..." class="search-input" />
+      </div>
+      <div class="toolbar-actions">
+        <button mxButton class="btn-light" (click)="downloadTemplate()">
+          <i class="pi pi-download"></i> Descargar plantilla
+        </button>
+        <button mxButton class="btn-light" (click)="bulkInput.click()" [disabled]="programs().length === 0">
+          <i class="pi pi-upload"></i> Cargar Excel
+        </button>
+        <input mxInput #bulkInput type="file" accept=".xlsx" hidden (change)="onBulkFile($event)" />
+        <button mxButton class="btn-new" (click)="openForm()">
+          <i class="pi pi-plus"></i> Nuevo profesor
+        </button>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="filtered().length === 0">
+      <div class="empty-icon"><i class="pi pi-users"></i></div>
+      <div class="empty-title">No hay usuarios registrados</div>
+      <div class="empty-desc">Crea el primer profesor con el botón "Nuevo profesor".</div>
+    </div>
+
+    <div class="table-card" *ngIf="filtered().length > 0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Código</th>
+            <th>Correo</th>
+            <th>Programa</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let u of filtered()">
+            <td>
+              <div class="user-cell">
+                <div class="u-av">{{ initials(u) }}</div>
+                <span class="u-name">{{ u.name }}</span>
+              </div>
+            </td>
+            <td class="code-cell">{{ u.document_number }}</td>
+            <td class="email-cell">{{ u.email }}</td>
+            <td><span class="prog-tag">{{ programName(u.program_id) }}</span></td>
+            <td><span class="role-tag">{{ roleName(u.role_id) }}</span></td>
+            <td><span class="status-badge" [class]="u.active ? 'open' : 'expired'">{{ u.active ? 'Activo' : 'Inactivo' }}</span></td>
+            <td>
+              <button mxButton class="btn-icon" title="Editar profesor" (click)="openEdit(u)">
+                <i class="pi pi-pencil"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+
+  <!-- Modal Nuevo profesor -->
+  <div class="modal-overlay" *ngIf="showForm()" (click)="closeForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ editing() ? 'Editar profesor' : 'Nuevo profesor' }}</h2>
+        <button mxButton class="modal-close" (click)="closeForm()"><i class="pi pi-times"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field span-2">
+            <label>Nombre completo</label>
+            <input mxInput [(ngModel)]="form.name" class="fc" placeholder="Juliana Ramírez" />
+          </div>
+          <div class="form-field">
+            <label>Documento</label>
+            <input mxInput [(ngModel)]="form.document_number" class="fc" placeholder="1098765432" />
+          </div>
+          <div class="form-field">
+            <label>Correo institucional</label>
+            <input mxInput [(ngModel)]="form.email" type="email" class="fc" placeholder="jramirez@unab.edu.co" />
+          </div>
+          <div class="form-field">
+            <label>Contraseña</label>
+            <input mxInput [(ngModel)]="form.password" type="password" class="fc" [placeholder]="editing() ? 'Dejar vacía para conservarla' : 'Mínimo 10 caracteres'" />
+          </div>
+          <div class="form-field">
+            <label>Rol</label>
+            <input mxInput class="fc fc-locked" value="Profesor" readonly />
+            <span class="field-hint">Los usuarios creados aquí se registran siempre con el rol Profesor.</span>
+          </div>
+          <!-- Campo Programa -->
+          <div class="form-field span-2">
+            <label>Programa académico <span class="req">*</span></label>
+            <select [(ngModel)]="form.program_id" class="fc">
+              <option value="" disabled>Selecciona el programa del profesor</option>
+              <option *ngFor="let c of programs()" [ngValue]="c.id">{{ c.name }} ({{ c.id }})</option>
+            </select>
+            <span class="field-hint">Identifica a qué programa pertenece este profesor.</span>
+          </div>
+          <div class="form-field span-2">
+            <label class="check-row">
+              <input mxInput type="checkbox" [(ngModel)]="form.active" />
+              <span>Profesor activo</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-error" *ngIf="formError()">
+          <i class="pi pi-exclamation-circle"></i> {{ formError() }}
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button mxButton class="btn-cancel" (click)="closeForm()">Cancelar</button>
+        <button mxButton class="btn-save" (click)="save()" [disabled]="saving()">
+          <i class="pi pi-spin pi-spinner" *ngIf="saving()"></i>
+          {{ saving() ? 'Guardando...' : (editing() ? 'Guardar cambios' : 'Crear profesor') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <app-bulk-result-dialog
+    title="Resultado cargue masivo de profesores"
+    [(visible)]="bulkVisible"
+    [summary]="bulkSummary">
+  </app-bulk-result-dialog>
+</div>

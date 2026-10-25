@@ -1,0 +1,23 @@
+<mx-workspace-shell>
+<div sidebar class="sidebar-content">
+    <div class="sidebar-brand">
+      <div class="brand-icon">M</div>
+      <div class="brand-info">
+        <span class="brand-name">MESOFTX</span>
+        <span class="brand-sub">Auditoría</span>
+      </div>
+    </div>
+    <div class="badge-wrap"><span class="role-badge"><i class="pi pi-eye"></i> Auditor · solo lectura</span></div>
+    <div class="sidebar-profile">
+      <div class="profile-avatar">{{ initial() }}</div>
+      <div class="profile-info"><span class="profile-name">{{ fullName() }}</span></div>
+    </div>
+    <div class="sidebar-section-label">CONSULTA</div>
+    <mx-sidebar-nav [items]="navItems" helpRoute="/auditor/soporte" (logoutRequested)="logout()" />
+  </div>
+<header class="topbar">
+      <span class="bc-current">Auditoría · consulta de indicadores y rúbricas</span>
+      <div class="topbar-avatar" title="{{ fullName() }}">{{ initial() }}</div>
+    </header>
+<router-outlet />
+</mx-workspace-shell>

@@ -1,0 +1,85 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+<div class="content-area">
+  <div class="page-header">
+    <h1>Perfiles y permisos</h1>
+    <p>Crea los perfiles del sistema y define qué permisos tiene cada uno.</p>
+  </div>
+
+  <div class="toolbar">
+    <button mxButton pButton type="button" label="Nuevo perfil" icon="pi pi-plus" (click)="openCreate()"></button>
+  </div>
+
+  <div class="loading-wrap" *ngIf="loading()">
+    <p-progressSpinner strokeWidth="4" [style]="{ width: '40px', height: '40px' }"></p-progressSpinner>
+  </div>
+
+  <p-table *ngIf="!loading()" [value]="roles()" styleClass="p-datatable-sm" [rowHover]="true">
+    <ng-template pTemplate="header"><tr><th>Perfil</th><th>Descripción</th><th style="width:14rem">Acciones</th></tr></ng-template>
+    <ng-template pTemplate="body" let-r>
+      <tr>
+        <td>{{ r.name }}</td>
+        <td>{{ r.description || '—' }}</td>
+        <td class="actions">
+          <button mxButton pButton type="button" label="Permisos" icon="pi pi-shield" class="p-button-sm p-button-secondary" [disabled]="loadingPerms()" (click)="openPermissions(r)"></button>
+          <button mxButton pButton type="button" icon="pi pi-pencil" class="p-button-sm p-button-text" (click)="openEdit(r)"></button>
+          <button mxButton pButton type="button" icon="pi pi-trash" class="p-button-sm p-button-text p-button-danger" (click)="confirmDelete(r)"></button>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage"><tr><td colspan="3" class="empty-cell">No hay perfiles. Crea el primero.</td></tr></ng-template>
+  </p-table>
+</div>
+
+<!-- Crear / editar perfil -->
+<p-dialog [(visible)]="roleVisible" [modal]="true" [style]="{ width: '440px' }" [header]="editing() ? 'Editar perfil' : 'Nuevo perfil'">
+  <form [formGroup]="roleForm" class="dialog-form">
+    <label>Nombre
+      <input mxInput pInputText formControlName="name" maxlength="255" placeholder="Ej. Coordinador" />
+      <small class="err" *ngIf="showErr('name')">Nombre requerido.</small>
+    </label>
+    <label>Descripción
+      <input mxInput pInputText formControlName="description" maxlength="255" placeholder="Opcional" />
+    </label>
+  </form>
+  <ng-template pTemplate="footer">
+    <button mxButton pButton type="button" label="Cancelar" class="p-button-text" (click)="roleVisible = false"></button>
+    <button mxButton pButton type="button" label="Guardar" [disabled]="saving()" (click)="saveRole()"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Asignar permisos -->
+<p-dialog [(visible)]="permVisible" [modal]="true" [style]="{ width: '620px' }" [header]="'Permisos de ' + (permTarget()?.name || '')">
+  <div class="permission-dialog">
+    <div class="permission-head">
+      <span>Permisos del perfil</span>
+      <span>{{ permCtrl.value.length }} seleccionados</span>
+    </div>
+
+    <div class="permission-list" role="group" aria-label="Permisos del perfil">
+      <section class="permission-group" *ngFor="let group of permissionGroups; trackBy: trackPermissionGroup">
+        <h3>{{ group.title }}</h3>
+
+        <div class="permission-actions">
+          <label
+            class="permission-action"
+            *ngFor="let action of group.actions; trackBy: trackPermissionAction"
+            [class.is-disabled]="!isActionEnabled(action)"
+          >
+            <input mxInput
+              type="checkbox"
+              [disabled]="!isActionEnabled(action)"
+              [checked]="isActionSelected(action)"
+              (change)="togglePermissionAction(action, $any($event.target).checked)"
+            />
+            <span>{{ action.label }}</span>
+          </label>
+        </div>
+      </section>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button mxButton pButton type="button" label="Cancelar" class="p-button-text" (click)="permVisible = false"></button>
+    <button mxButton pButton type="button" label="Guardar permisos" [disabled]="saving()" (click)="savePermissions()"></button>
+  </ng-template>
+</p-dialog>

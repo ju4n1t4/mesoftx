@@ -18,20 +18,9 @@ from app.infrastructure.database.models import (
 )
 
 
-class RepositoryError(Exception):
-    pass
-
-
-class EntityAlreadyExistsError(RepositoryError):
-    pass
-
-
-class EntityNotFoundError(RepositoryError):
-    pass
-
-
-class InvalidReferenceError(RepositoryError):
-    pass
+from app.application.ports.errors import (
+    RepositoryError, EntityAlreadyExistsError, EntityNotFoundError, InvalidReferenceError,
+)
 
 
 class SqlAlchemyRepository:
@@ -86,6 +75,13 @@ class StudentOutcomeRepository(SqlAlchemyRepository):
         return list(
             self.db.scalars(select(StudentOutcomeModel).where(StudentOutcomeModel.college_id == college_id)).all()
         )
+
+
+    def delete_many(self, entities: list) -> None:
+        for entity in entities:
+            self.db.delete(entity)
+        self.db.commit()
+
 
 
 class PerformanceRepository(SqlAlchemyRepository):
@@ -182,6 +178,28 @@ class SoScheduleRepository(SqlAlchemyRepository):
             select(ScheduleSubjectModel.subjects_id).where(ScheduleSubjectModel.schedule_id == schedule_id)
         ).all()
         return list(rows)
+
+
+    def closed_periods_for_so(self, so_id: str) -> list[str]:
+        stmt = select(SoScheduleModel.period_id).join(RubricModel, RubricModel.schedule_id == SoScheduleModel.id).where(SoScheduleModel.so_id == so_id, SoScheduleModel.status == "CERRADO").distinct()
+        return [str(p) for p in self.db.scalars(stmt).all()]
+
+    def closed_periods_for_period(self, period_id: int) -> list[str]:
+        return [str(p) for p in self.db.scalars(select(SoScheduleModel.period_id).where(SoScheduleModel.period_id == period_id, SoScheduleModel.status == "CERRADO").distinct()).all()]
+
+    def closed_periods_for_college(self, college_id: str) -> list[str]:
+        stmt = select(SoScheduleModel.period_id).join(RubricModel, RubricModel.schedule_id == SoScheduleModel.id).join(StudentOutcomeModel, StudentOutcomeModel.id == SoScheduleModel.so_id).where(StudentOutcomeModel.college_id == college_id, SoScheduleModel.status == "CERRADO").distinct()
+        return [str(p) for p in self.db.scalars(stmt).all()]
+
+    def assessments_for_nrcs(self, nrcs: list[int]) -> list[dict]:
+        stmt = select(SoScheduleModel.id, SoScheduleModel.so_id, StudentOutcomeModel.description, ScheduleSubjectModel.subjects_id, SoScheduleModel.period_id).join(StudentOutcomeModel, StudentOutcomeModel.id == SoScheduleModel.so_id).join(ScheduleSubjectModel, ScheduleSubjectModel.schedule_id == SoScheduleModel.id).where(SoScheduleModel.status == "EN_CURSO", ScheduleSubjectModel.subjects_id.in_(nrcs))
+        return [dict(schedule_id=r[0], so_id=r[1], description=r[2], nrc=r[3], period_id=r[4]) for r in self.db.execute(stmt).all()]
+
+    def delete_many(self, entities: list) -> None:
+        for entity in entities:
+            self.db.delete(entity)
+        self.db.commit()
+
 
 
 class PeriodTargetRepository:

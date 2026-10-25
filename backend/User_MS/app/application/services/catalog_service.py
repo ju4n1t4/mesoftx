@@ -1,10 +1,11 @@
 from typing import Any
 
-from app.infrastructure.repositories.sqlalchemy_repositories import EntityNotFoundError
+from app.application.ports.errors import EntityNotFoundError
+from app.application.ports.repositories import Repository
 
 
 class CatalogService:
-    def __init__(self, repository: Any):
+    def __init__(self, repository: Repository):
         self.repository = repository
 
     def get(self, entity_id: Any) -> Any:

@@ -1,0 +1,41 @@
+<div class="ac-page">
+  <header class="ac-header">
+    <a [routerLink]="home()" class="ac-back"><i class="pi pi-arrow-left"></i> Volver</a>
+    <strong>Mi cuenta</strong>
+  </header>
+  <main class="ac-main">
+    <section class="card">
+      <h2>Mis datos</h2>
+      <dl>
+        <dt>Nombre</dt><dd>{{ user()?.name }}</dd>
+        <dt>Correo</dt><dd>{{ user()?.email }}</dd>
+        <dt>Perfil</dt><dd>{{ user()?.role }}</dd>
+      </dl>
+      <p class="hint">Para corregir o actualizar estos datos, o para solicitar su supresión, escriba a
+        <a [href]="'mailto:' + contacto">{{ contacto }}</a>. Más información en la
+        <a routerLink="/legal/privacidad">Política de tratamiento de datos personales</a>.</p>
+    </section>
+
+    <section class="card">
+      <h2>Cambiar contraseña</h2>
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <label>Contraseña actual
+          <input mxInput type="password" formControlName="current" autocomplete="current-password" />
+        </label>
+        <label>Nueva contraseña
+          <input mxInput type="password" formControlName="next" autocomplete="new-password" />
+        </label>
+        <small class="err" *ngIf="form.get('next')?.touched && form.get('next')?.errors?.['short']">Debe tener al menos 10 caracteres.</small>
+        <small class="err" *ngIf="form.get('next')?.touched && form.get('next')?.errors?.['mix']">Debe combinar letras y números.</small>
+        <label>Repita la nueva contraseña
+          <input mxInput type="password" formControlName="again" autocomplete="new-password" />
+        </label>
+        <small class="err" *ngIf="form.get('again')?.touched && form.value.next !== form.value.again">Las contraseñas no coinciden.</small>
+        <div class="msg ok" *ngIf="ok()"><i class="pi pi-check-circle"></i> Contraseña actualizada.</div>
+        <div class="msg bad" *ngIf="error()"><i class="pi pi-exclamation-circle"></i> {{ error() }}</div>
+        <button mxButton type="submit" [disabled]="loading()">{{ loading() ? 'Guardando…' : 'Cambiar contraseña' }}</button>
+      </form>
+    </section>
+  </main>
+  <app-legal-footer />
+</div>

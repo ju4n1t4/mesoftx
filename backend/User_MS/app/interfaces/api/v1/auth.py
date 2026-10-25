@@ -7,6 +7,8 @@ from app.application.services.auth_service import (
     AuthService, DefaultPasswordError, DemoUnavailableError, InactiveUserError, InvalidCredentialsError,
 )
 from app.core.http_security import client_ip
+from app.infrastructure.security.password_service import verify_password
+from app.infrastructure.security.jwt_service import create_access_token
 from app.infrastructure.repositories.sqlalchemy_repositories import UserRepository
 from app.infrastructure.security.login_rate_limiter import get_login_rate_limiter
 from app.interfaces.api.v1.dependencies import db_session
@@ -37,7 +39,7 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(db_sess
             headers={"Retry-After": str(wait)},
         )
 
-    service = AuthService(UserRepository(db))
+    service = AuthService(UserRepository(db), get_settings(), verify_password, create_access_token)
     try:
         token = service.login(payload.email, payload.password)
     except InvalidCredentialsError as exc:
@@ -61,7 +63,7 @@ def auth_mode(db: Session = Depends(db_session)) -> AuthModeResponse:
     """Público. Indica si el servidor está en modo exposición (sin login) y qué perfiles ofrece."""
     if not get_settings().demo_mode:
         return AuthModeResponse(demo_enabled=False)
-    roles = AuthService(UserRepository(db)).available_demo_roles()
+    roles = AuthService(UserRepository(db), get_settings(), verify_password, create_access_token).available_demo_roles()
     return AuthModeResponse(demo_enabled=bool(roles), demo_roles=roles)
 
 
@@ -80,7 +82,7 @@ def demo_login(payload: DemoLoginRequest, request: Request, db: Session = Depend
             headers={"Retry-After": str(wait)},
         )
     try:
-        token = AuthService(UserRepository(db)).demo_login(payload.role.strip().lower())
+        token = AuthService(UserRepository(db), get_settings(), verify_password, create_access_token).demo_login(payload.role.strip().lower())
     except DemoUnavailableError as exc:
         limiter.register_failure("demo-login", ip)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

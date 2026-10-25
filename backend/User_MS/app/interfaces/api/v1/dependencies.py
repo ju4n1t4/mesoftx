@@ -70,6 +70,12 @@ def require_any_permission(*codes: str):
     return checker
 
 
+def require_user_manager(current_user=Depends(get_current_user)):
+    if not ({"USER_CRUD", "TEACHER_CRUD"} & set(getattr(current_user, "permissions", []))):
+        raise HTTPException(status_code=403, detail="Insufficient user management permissions.")
+    return current_user
+
+
 def require_service_token(x_service_token: str | None = Header(default=None)):
     """Valida el secreto compartido entre microservicios (paso 12)."""
     if x_service_token != settings.service_token:

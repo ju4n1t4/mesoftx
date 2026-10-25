@@ -1,12 +1,10 @@
 import logging
 from datetime import timedelta
 
-from app.core.config import get_settings
 from app.core.demo_accounts import DEMO_ROLES, demo_email, is_demo_email
 from app.core.security_constants import SEED_ADMIN_PASSWORD_HASH
-from app.infrastructure.repositories.sqlalchemy_repositories import UserRepository
-from app.infrastructure.security.jwt_service import create_access_token
-from app.infrastructure.security.password_service import verify_password
+from app.application.ports.repositories import UserRepository
+from app.application.ports.security import PasswordVerifier, TokenIssuer
 
 
 class InvalidCredentialsError(Exception):
@@ -29,16 +27,18 @@ audit = logging.getLogger("mesoftx.audit")
 
 
 class AuthService:
-    def __init__(self, user_repository: UserRepository):
+    def __init__(self, user_repository: UserRepository, settings, verify_password: PasswordVerifier, issue_token: TokenIssuer):
         self.user_repository = user_repository
-        self.settings = get_settings()
+        self.settings = settings
+        self.verify_password = verify_password
+        self.issue_token = issue_token
 
     def login(self, email: str, password: str) -> str:
         if is_demo_email(email):
             # Las cuentas de demostración nunca entran por contraseña.
             raise InvalidCredentialsError("Invalid email or password.")
         user = self.user_repository.get_by_email(email)
-        if not user or not user.password or not verify_password(password, user.password):
+        if not user or not user.password or not self.verify_password(password, user.password):
             raise InvalidCredentialsError("Invalid email or password.")
         if not user.active:
             raise InactiveUserError("User is inactive.")
@@ -73,7 +73,7 @@ class AuthService:
     def _issue_token(self, user) -> str:
         permissions = [rp.permission.code for rp in user.role.role_permissions]
         expires_delta = timedelta(minutes=self.settings.jwt_access_token_expire_minutes)
-        return create_access_token(
+        return self.issue_token(
             subject=str(user.id),
             claims={
                 "email": user.email,

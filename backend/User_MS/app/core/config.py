@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     service_token: str = Field(..., min_length=1)
 
     cors_origins: str = ""
+    integrations_encryption_key: str = ""
+    integrations_previous_keys: str = ""
+    external_api_allowed_hosts: str = ""
 
     # --- Límite de intentos de login (OWASP ASVS V2.2) ---
     login_max_attempts: int = 5            # fallos por correo dentro de la ventana

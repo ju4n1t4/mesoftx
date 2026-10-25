@@ -21,16 +21,9 @@ from app.infrastructure.database.models import (
 ModelT = TypeVar("ModelT")
 
 
-class RepositoryError(Exception):
-    pass
-
-
-class EntityAlreadyExistsError(RepositoryError):
-    pass
-
-
-class EntityNotFoundError(RepositoryError):
-    pass
+from app.application.ports.errors import (
+    RepositoryError, EntityAlreadyExistsError, EntityNotFoundError, InvalidReferenceError,
+)
 
 
 class SqlAlchemyRepository:

@@ -1,12 +1,14 @@
 from typing import Any
 
-from app.infrastructure.repositories.sqlalchemy_repositories import EntityNotFoundError, UserRepository
-from app.infrastructure.security.password_service import hash_password
+from app.application.ports.errors import EntityNotFoundError
+from app.application.ports.repositories import UserRepository
+from app.application.ports.security import PasswordHasher
 
 
 class UserService:
-    def __init__(self, user_repository: UserRepository):
+    def __init__(self, user_repository: UserRepository, hash_password: PasswordHasher):
         self.user_repository = user_repository
+        self.hash_password = hash_password
 
     def get(self, user_id: int) -> Any:
         user = self.user_repository.get_by_id(user_id)
@@ -20,7 +22,7 @@ class UserService:
     def create(self, data: dict[str, Any]) -> Any:
         if data.get("email"):
             data["email"] = data["email"].lower()
-        data["password"] = hash_password(data["password"])
+        data["password"] = self.hash_password(data["password"])
         data["active"] = True
         return self.user_repository.create_user(data)
 
@@ -28,7 +30,7 @@ class UserService:
         if "email" in data and data["email"]:
             data["email"] = data["email"].lower()
         if "password" in data and data["password"]:
-            data["password"] = hash_password(data["password"])
+            data["password"] = self.hash_password(data["password"])
 
         user = self.user_repository.update_user(user_id, data)
         if not user:

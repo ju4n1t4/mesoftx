@@ -1,7 +1,19 @@
+from functools import wraps
+from app.application.ports.errors import RemoteServiceError
 import httpx
 
 from app.core.config import get_settings
 
+
+
+def translate_transport_errors(operation):
+    @wraps(operation)
+    async def call(*args, **kwargs):
+        try:
+            return await operation(*args, **kwargs)
+        except httpx.HTTPError as exc:
+            raise RemoteServiceError("Remote service unavailable.") from exc
+    return call
 
 class UserMsClient:
     def __init__(self) -> None:
@@ -9,16 +21,19 @@ class UserMsClient:
         self.base_url = settings.user_ms_url
         self.headers = {"X-Service-Token": settings.service_token}
 
+    @translate_transport_errors
     async def user_exists(self, user_id: int) -> bool:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(f"{self.base_url}/api/v1/internal/users/{user_id}", headers=self.headers)
             return resp.status_code == 200
 
+    @translate_transport_errors
     async def subject_exists(self, nrc: int) -> bool:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(f"{self.base_url}/api/v1/internal/subjects/{nrc}", headers=self.headers)
             return resp.status_code == 200
 
+    @translate_transport_errors
     async def subject_period(self, nrc: int) -> int | None:
         """periods_id de la materia, o None si no existe. Sirve para validar que
         un NRC pertenezca al mismo periodo de la programación (paso 13)."""
@@ -28,16 +43,19 @@ class UserMsClient:
                 return None
             return resp.json().get("periods_id")
 
+    @translate_transport_errors
     async def period_exists(self, period_id: int) -> bool:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(f"{self.base_url}/api/v1/internal/periods/{period_id}", headers=self.headers)
             return resp.status_code == 200
 
+    @translate_transport_errors
     async def student_exists(self, student_id: int) -> bool:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(f"{self.base_url}/api/v1/students/{student_id}", headers=self.headers)
             return resp.status_code == 200
 
+    @translate_transport_errors
     async def student_enrolled(self, student_id: int, nrc: int) -> bool:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(
@@ -46,6 +64,7 @@ class UserMsClient:
             )
             return resp.status_code == 200
 
+    @translate_transport_errors
     async def teacher_has_subject(self, user_id: int, nrc: int) -> bool:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(
@@ -54,6 +73,7 @@ class UserMsClient:
             )
             return resp.status_code == 200
 
+    @translate_transport_errors
     async def teacher_subjects(self, user_id: int) -> list[int]:
         """Lista de NRC del profesor. La usa GET /me/assessments."""
         async with httpx.AsyncClient(timeout=5.0) as client:
@@ -65,6 +85,7 @@ class UserMsClient:
             resp.raise_for_status()
             return resp.json()
 
+    @translate_transport_errors
     async def enrolled_counts(self, nrcs: list[int]) -> dict[int, int]:
         """Estudiantes matriculados por NRC, en UNA sola llamada (anti N+1)."""
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -76,6 +97,7 @@ class UserMsClient:
             resp.raise_for_status()
             return {int(k): v for k, v in resp.json().items()}
 
+    @translate_transport_errors
     async def subjects_teachers(self, nrcs: list[int]) -> dict[int, list[int]]:
         """nrc -> lista de user_id de los profesores que lo dictan, en UNA sola
         llamada. La usa el dashboard de avance por profesor."""
@@ -88,6 +110,7 @@ class UserMsClient:
             resp.raise_for_status()
             return {int(k): [int(u) for u in v] for k, v in resp.json().items()}
 
+    @translate_transport_errors
     async def subjects_programs(self, nrcs: list[int]) -> dict[int, str]:
         """nrc -> program_id, en UNA sola llamada. La usa el dashboard de avance
         por programa."""
